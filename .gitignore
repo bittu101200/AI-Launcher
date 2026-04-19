@@ -1,0 +1,46 @@
+# Root-level ignore
+.DS_Store
+.claude/
+
+# Android Build Artifacts
+**/build/
+**/.gradle/
+**/captures/
+**/output-metadata.json
+
+# Signing Keys
+**/*.jks
+**/*.keystore
+**/*.p12
+release.jks
+
+# Local Configuration
+**/local.properties
+signing.properties
+keystore.properties
+google-services.json
+
+# IDE Files
+**/.idea/
+**/*.iml
+**/.classpath
+**/.project
+**/.settings/
+**/bin/
+
+# APKs and generated binaries
+**/*.apk
+**/*.idsig
+**/*.dm
+
+# System Files
+Thumbs.db
+
+# Temporary Files
+*.tmp
+*.log
+*.swp
+.worktrees/
+
+# Nested Git
+**/.git/

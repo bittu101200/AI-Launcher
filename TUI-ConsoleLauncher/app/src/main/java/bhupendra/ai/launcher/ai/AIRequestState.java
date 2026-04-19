@@ -1,0 +1,6 @@
+package bhupendra.ai.launcher.ai;
+
+public enum AIRequestState {
+    IDLE, THINKING, STREAMING, EXECUTING_TOOLS, FOLLOWUP,
+    COMPLETED, CANCELLED, TIMED_OUT_CONNECT, TIMED_OUT_INACTIVITY, FAILED
+}
