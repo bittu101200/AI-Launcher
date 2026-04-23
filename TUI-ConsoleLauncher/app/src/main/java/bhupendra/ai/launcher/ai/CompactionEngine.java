@@ -16,6 +16,8 @@ public class CompactionEngine {
         Map<String, Integer> trigramCounts = new HashMap<>();
 
         for (ConversationTurn t : history) {
+            if (t.content == null) continue;
+            
             String lower = t.content.toLowerCase();
             for (String kw : PREF_KW) if (lower.contains(kw)) { hasPrefs = true; break; }
             for (String kw : GOAL_KW) if (lower.contains(kw)) { hasGoals = true; break; }
@@ -45,7 +47,8 @@ public class CompactionEngine {
         }
         sb.append("\nConversation:\n");
         for (ConversationTurn t : history) {
-            sb.append(t.role.name()).append(": ").append(t.content).append("\n");
+            String content = t.content != null ? t.content : "[tool calls]";
+            sb.append(t.role.name()).append(": ").append(content).append("\n");
         }
         sb.append("\nOutput a structured summary only.");
         return sb.toString();

@@ -584,6 +584,11 @@ public class MainManager {
                         String argsStr = input.length() > cmd.length() ? input.substring(cmd.length()).trim() : "";
                         String[] finalArgs = argsStr.isEmpty() ? new String[0] : argsStr.split(" ");
                         bhupendra.ai.launcher.tuils.TermuxManager.runCommand(mContext, cmd, finalArgs, null, false);
+                        
+                        if (mainPack.aiSubsystem == null || !mainPack.aiSubsystem.isInFlight()) {
+                            android.util.Log.i("AI_OUTPUT", "CMD_FINISHED");
+                        }
+                        
                         return true;
                     }
                 }
@@ -651,7 +656,7 @@ public class MainManager {
 
                         // Only log CMD_FINISHED for non-AI commands. 
                         // AI commands will log AI_TURN_FINISHED themselves when truly done.
-                        boolean isAI = command.getClass().getName().contains(".ai") || input.trim().startsWith("ai ");
+                        boolean isAI = command.getClass().getSimpleName().equals("ai") || input.trim().startsWith("ai ");
                         if (!isAI) {
                             android.util.Log.i("AI_OUTPUT", "CMD_FINISHED");
                         }
