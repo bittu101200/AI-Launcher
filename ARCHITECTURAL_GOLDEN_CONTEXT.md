@@ -19,13 +19,13 @@ The core goal of the 2026 refactor was to transition from a monolithic "God Obje
 ## 2. Key Alterations & Findings
 
 ### A. AI Subsystem (The Plug-and-Play Brain)
-- **Alteration:** Dismantled the 400+ line `if-else` block in `AndroidToolExecutor`. Created `BaseAITool` and extracted 21 capabilities into discrete classes in `bhupendra.ai.launcher.ai.tools`.
+- **Alteration:** Dismantled the 400+ line `if-else` block in `AndroidToolExecutor`. Created `BaseAITool` and extracted 24+ capabilities into discrete classes in `bhupendra.ai.launcher.ai.tools`.
 - **Finding:** Hardcoded system prompts made iteration slow. **Moved the system prompt to `app/src/main/assets/ai_system_prompt.md`**. This file is copied to the internal TUI folder on first run and is used as the AI's base identity.
 - **Effect:** You can now add AI capabilities (e.g., "Control Spotify") simply by creating a new class and registering it in `AISubsystem`.
 
 ### B. Utility Decomposition (The Death of Tuils)
 - **Alteration:** Reduced `Tuils.java` (previously 1700 lines) by extracting logic into three specialized managers:
-    1. **`FileSystemManager`**: Centralizes file I/O, downloads, and `Uri` building.
+    1. **`FileSystemManager`**: Centralizes file I/O, downloads, and `Uri` building. **Added `readFile` and `saveFile` helper methods.**
     2. **`DeviceStateManager`**: Manages Android system sensors, battery, WiFi, and memory checks.
     3. **`TextProcessor`**: Handles regex matching, Markdown parsing, and string evaluation.
 - **Finding:** `Tuils` was a global bottleneck causing tight coupling. 
@@ -46,11 +46,15 @@ The core goal of the 2026 refactor was to transition from a monolithic "God Obje
 - **Finding:** Bundled binaries were brittle and posed security/compatibility risks. Termux is faster and more powerful.
 - **Effect:** The app is smaller, and the shell environment is a full, updated Linux environment.
 
-### F. Notification Access
-- **Mechanism:** `NotificationService` now maintains a static `instance` to allow AI tools to call `getActiveNotifications()`.
+### F. Notification Access & Automation
+- **Mechanism:** `NotificationService` maintains a static `instance` and invokes `NotificationHookManager` for every incoming notification.
+- **Hooks Subsystem:** `NotificationHookManager` stores rules in `notification_hooks.json` to trigger automatic replies based on package, sender, or content matching.
 - **Tools:**
-    - `system.get_notifications`: Lists active notifications with title, text, and package info.
-    - `system.reply_notification`: Allows the AI to send direct replies to notifications that support `RemoteInput` (e.g., WhatsApp, Signal, SMS).
+    - `system.get_notifications`: Lists active notifications.
+    - `system.reply_notification`: Manual reply via AI.
+    - `system.add_notification_hook`: Register an automated reply rule.
+    - `system.list_notification_hooks`: View active rules.
+    - `system.remove_notification_hook`: Delete a rule.
 
 ---
 
