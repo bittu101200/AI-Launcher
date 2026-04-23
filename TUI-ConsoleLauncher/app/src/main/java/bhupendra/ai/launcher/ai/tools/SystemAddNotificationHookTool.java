@@ -13,7 +13,7 @@ public class SystemAddNotificationHookTool extends BaseAITool {
 
     public SystemAddNotificationHookTool() {
         super("system.add_notification_hook",
-              "Add an automated reply rule for notifications. If all match criteria (package, sender, content) are met, the reply is sent automatically.",
+              "Add an automated reply rule for notifications. Supports temporal windows, static replies, AI-generated replies, and update logging.",
               createParams(),
               ToolRiskClass.STATE_CHANGING);
     }
@@ -23,7 +23,11 @@ public class SystemAddNotificationHookTool extends BaseAITool {
         params.put("package", "Optional: Filter by app package (e.g., 'com.whatsapp')");
         params.put("sender_regex", "Optional: Regex to match notification title/sender (e.g., 'Poorab')");
         params.put("content_regex", "Optional: Regex to match notification message content (e.g., 'hello')");
-        params.put("reply_text", "The message to send back automatically.");
+        params.put("reply_text", "Static reply text (optional if use_ai is true)");
+        params.put("use_ai", "Boolean: If true, use AI to generate the reply based on ai_instruction");
+        params.put("ai_instruction", "The instruction for the AI to generate a reply (e.g., 'let him know I am busy')");
+        params.put("log_update", "Boolean: If true, log the notification details for later review");
+        params.put("time_window", "Optional: Time window in HH:mm-HH:mm format (e.g., '17:00-20:00')");
         return params;
     }
 
@@ -34,10 +38,15 @@ public class SystemAddNotificationHookTool extends BaseAITool {
         hook.packageName = args.optString("package", null);
         hook.senderRegex = args.optString("sender_regex", null);
         hook.contentRegex = args.optString("content_regex", null);
-        hook.replyText = args.getString("reply_text");
+        hook.replyText = args.optString("reply_text", null);
+        
+        hook.useAI = args.optBoolean("use_ai", false);
+        hook.aiInstruction = args.optString("ai_instruction", null);
+        hook.logUpdate = args.optBoolean("log_update", false);
+        hook.timeWindow = args.optString("time_window", null);
         
         NotificationHookManager.getInstance(context).addHook(hook);
         
-        return "Hook added successfully with ID: " + hook.id;
+        return "Powerful hook added successfully with ID: " + hook.id;
     }
 }
