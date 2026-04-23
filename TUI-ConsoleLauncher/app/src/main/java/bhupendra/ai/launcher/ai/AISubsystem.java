@@ -204,6 +204,27 @@ public class AISubsystem {
             java.util.Collections.singletonMap("name", "The full name of the contact to remove."),
             ToolRiskClass.STATE_CHANGING));
 
+        toolRegistry.register(ToolRegistry.Tier.SYSTEM, new SystemExecuteCommandTool(
+            "system.backup",
+            "Create a backup of all TUI configuration files to the Downloads/TUI_Backup folder.",
+            java.util.Collections.emptyMap(),
+            ToolRiskClass.READ_ONLY));
+
+        toolRegistry.register(ToolRegistry.Tier.SYSTEM, new SystemExecuteCommandTool(
+            "system.restore",
+            "Initiate an interactive restore process to recover configuration from a backup.",
+            java.util.Collections.emptyMap(),
+            ToolRiskClass.STATE_CHANGING));
+
+        java.util.Map<String, String> smsArgs = new java.util.HashMap<>();
+        smsArgs.put("recipient", "The name of the contact or a direct phone number.");
+        smsArgs.put("message", "The content of the SMS message.");
+        toolRegistry.register(ToolRegistry.Tier.SYSTEM, new SystemSendSMSTool(
+            "system.send_sms",
+            "Send an SMS message to a contact or phone number.",
+            smsArgs,
+            ToolRiskClass.STATE_CHANGING));
+
         toolRegistry.register(ToolRegistry.Tier.SYSTEM, new TermuxExecuteTool(
             "termux.execute",
             "Execute a Linux command in the Termux environment. Use this for complex tasks like git, python, node, or package management.",

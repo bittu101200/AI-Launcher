@@ -50,7 +50,16 @@ public class SystemExecuteCommandTool extends BaseAITool {
     @Override
     public String execute(Context context, JSONObject args) throws Exception {
             
-            String commandLine = args.getString("command");
+            String commandLine = args.optString("command", null);
+            if (commandLine == null) {
+                if ("system.backup".equals(this.name)) {
+                    commandLine = "backup";
+                } else if ("system.restore".equals(this.name)) {
+                    commandLine = "restore";
+                }
+            }
+            
+            if (commandLine == null) return "[error: command is required]";
             
             if (mainPack == null) {
                 // Try to get from AISubsystem if not set directly

@@ -780,8 +780,20 @@ public class UIManager implements OnTouchListener {
     public MainPack pack;
 
     private boolean clearOnLock;
+    private final ViewGroup rootView;
+    private final boolean canApplyTheme;
+
+    public void reapplyBackground() {
+        if (!XMLPrefsManager.getBoolean(Ui.system_wallpaper) || !canApplyTheme) {
+            rootView.setBackgroundColor(XMLPrefsManager.getColor(Theme.bg_color));
+        } else {
+            rootView.setBackgroundColor(XMLPrefsManager.getColor(Theme.overlay_color));
+        }
+    }
 
     protected UIManager(final Context context, final ViewGroup rootView, MainPack mainPack, boolean canApplyTheme, CommandExecuter executer) {
+        this.rootView = rootView;
+        this.canApplyTheme = canApplyTheme;
 
         IntentFilter filter = new IntentFilter();
         filter.addAction(ACTION_UPDATE_SUGGESTIONS);
@@ -902,11 +914,7 @@ public class UIManager implements OnTouchListener {
 
         imm = (InputMethodManager) mContext.getSystemService(Context.INPUT_METHOD_SERVICE);
 
-        if (!XMLPrefsManager.getBoolean(Ui.system_wallpaper) || !canApplyTheme) {
-            rootView.setBackgroundColor(XMLPrefsManager.getColor(Theme.bg_color));
-        } else {
-            rootView.setBackgroundColor(XMLPrefsManager.getColor(Theme.overlay_color));
-        }
+        reapplyBackground();
 
 //        scrolllllll
         if(XMLPrefsManager.getBoolean(Behavior.auto_scroll)) {

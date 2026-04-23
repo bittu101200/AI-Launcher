@@ -210,9 +210,14 @@
     <string name="output_numbernotfound">Contact not found</string>
     <string name="output_smsnotsent">SMS not sent</string>
     <string name="output_smssent">SMS sent</string>
+    <string name="output_backup_success">Backup created at: %s</string>
+    <string name="output_restore_success">Backup restored successfully. Restarting...</string>
+    <string name="restore_hint">Select a backup number or enter path</string>
+    <string name="help_restore">Restore configuration from a backup in Downloads/TUI_Backup</string>
 
 
     <string name="help_airplane">Toggle airplane mode</string>
+    <string name="help_backup">Copy all TUI configuration files to Downloads/TUI_Backup</string>
     <string name="help_alias">-add [aliasName] [alias content] -> add a new alias
         \n-rm [aliasName] -> remove an existing alias
         \n-ls -> list your aliases

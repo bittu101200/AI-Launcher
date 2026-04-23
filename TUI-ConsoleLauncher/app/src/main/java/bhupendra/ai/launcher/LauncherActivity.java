@@ -10,6 +10,7 @@ import bhupendra.ai.launcher.managers.FileSystemManager;
 
 
 import android.Manifest;
+import android.net.Uri;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -431,6 +432,8 @@ public class LauncherActivity extends AppCompatActivity implements Reloadable {
         main.setRedirectionListener(ui.buildRedirectionListener());
         ui.pack = main.getMainPack();
 
+        bhupendra.ai.launcher.ai.platform.AIOnboardingManager.checkAndStart(main.getMainPack());
+
         in.in(Tuils.EMPTYSTRING);
         ui.focusTerminal();
 
@@ -577,6 +580,7 @@ public class LauncherActivity extends AppCompatActivity implements Reloadable {
 
         if (hasFocus && ui != null) {
             ui.focusTerminal();
+            ui.reapplyBackground();
         }
     }
 
@@ -690,6 +694,20 @@ public class LauncherActivity extends AppCompatActivity implements Reloadable {
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
 
+        if (intent.getData() != null && "tui-ai".equals(intent.getData().getScheme())) {
+            Uri data = intent.getData();
+            if ("callback".equals(data.getHost())) {
+                String token = data.getQueryParameter("token");
+                if (token != null && !token.isEmpty()) {
+                    Ai.provider.parent().write(Ai.provider, "openai");
+                    Ai.api_key.parent().write(Ai.api_key, token);
+                    Toast.makeText(this, "Logged in via ChatGPT successfully!", Toast.LENGTH_SHORT).show();
+                    reload();
+                    return;
+                }
+            }
+        }
+
         String cmd = intent.getStringExtra(PrivateIOReceiver.TEXT);
         if(cmd != null) {
             Intent i = new Intent(MainManager.ACTION_EXEC);
@@ -703,6 +721,9 @@ public class LauncherActivity extends AppCompatActivity implements Reloadable {
     @Override
     public void onConfigurationChanged(Configuration newConfig) {
         super.onConfigurationChanged(newConfig);
+        if (ui != null) {
+            ui.reapplyBackground();
+        }
     }
 
     private AISubsystem buildAISubsystem(String providerName) {
@@ -722,6 +743,10 @@ public class LauncherActivity extends AppCompatActivity implements Reloadable {
                 String geminiModel = (model != null && !model.isEmpty()) ? model : "gemini-flash-latest";
                 android.util.Log.d("AI_INIT", "Gemini: model=" + geminiModel + " baseUrl=https://generativelanguage.googleapis.com/v1beta/openai");
                 provider = new OpenAIProvider(key, "https://generativelanguage.googleapis.com/v1beta/openai", geminiModel);
+                break;
+            }
+            case "claude": {
+                provider = new bhupendra.ai.launcher.ai.providers.ClaudeProvider(key);
                 break;
             }
             default:
