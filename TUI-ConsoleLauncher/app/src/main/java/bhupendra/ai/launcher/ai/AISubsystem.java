@@ -89,6 +89,9 @@ public class AISubsystem {
             java.util.Collections.singletonMap("command", "The full command string to execute"),
             ToolRiskClass.STATE_CHANGING));
 
+        toolRegistry.register(ToolRegistry.Tier.SYSTEM, new SystemGetNotificationsTool());
+        toolRegistry.register(ToolRegistry.Tier.SYSTEM, new SystemReplyNotificationTool());
+
         java.util.Map<String, String> configArgs = new java.util.HashMap<>();
         configArgs.put("action", "get or set");
         configArgs.put("key", "The preference key (e.g., 'ui_input_output_color', 'behavior_auto_show_keyboard')");

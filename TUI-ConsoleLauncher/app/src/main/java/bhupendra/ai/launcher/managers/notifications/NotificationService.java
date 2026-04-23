@@ -46,6 +46,7 @@ import bhupendra.ai.launcher.tuils.Tuils;
 @TargetApi(Build.VERSION_CODES.JELLY_BEAN_MR2)
 public class NotificationService extends NotificationListenerService {
 
+    public static NotificationService instance;
     public static final String DESTROY = "destroy";
 
     private final int UPDATE_TIME = 2000;
@@ -76,7 +77,7 @@ public class NotificationService extends NotificationListenerService {
     @Override
     public void onCreate() {
         super.onCreate();
-
+        instance = this;
         init();
     }
 
@@ -376,7 +377,7 @@ public class NotificationService extends NotificationListenerService {
     @Override
     public void onDestroy() {
         super.onDestroy();
-
+        instance = null;
 //        ondestroy won't ever be called
     }
 
