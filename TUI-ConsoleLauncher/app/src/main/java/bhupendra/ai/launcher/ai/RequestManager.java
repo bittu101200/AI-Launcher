@@ -60,6 +60,10 @@ public class RequestManager {
         }
     }
 
+    public boolean isCancelRequested() {
+        return cancelRequested;
+    }
+
     public boolean isInFlight() {
         AIRequestState s = state.get();
         return s == AIRequestState.THINKING || s == AIRequestState.STREAMING

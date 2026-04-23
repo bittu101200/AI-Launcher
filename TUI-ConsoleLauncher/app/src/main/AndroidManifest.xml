@@ -38,6 +38,12 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
     <uses-permission android:name="android.permission.ACCESS_NOTIFICATION_POLICY" />
     <uses-permission android:name="android.permission.REQUEST_DELETE_PACKAGES" />
+    <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
+    <uses-permission android:name="com.termux.permission.RUN_COMMAND" />
+
+    <queries>
+        <package android:name="com.termux" />
+    </queries>
 
     <!-- features -->
     <uses-feature
@@ -254,6 +260,28 @@
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </activity>
+
+        <receiver android:name="bhupendra.ai.launcher.tuils.PublicIOReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="bhupendra.ai.launcher.main_exec" />
+            </intent-filter>
+        </receiver>
+
+        <receiver android:name="bhupendra.ai.launcher.tuils.TermuxResultReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="bhupendra.ai.launcher.TERMUX_RESULT" />
+            </intent-filter>
+        </receiver>
+
+        <receiver android:name="bhupendra.ai.launcher.managers.CronManager$ScheduledTaskReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="bhupendra.ai.launcher.SCHEDULED_EXEC" />
+            </intent-filter>
+        </receiver>
+
     </application>
 
 </manifest>

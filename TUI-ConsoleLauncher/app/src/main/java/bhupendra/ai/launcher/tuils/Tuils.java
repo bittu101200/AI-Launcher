@@ -829,6 +829,7 @@ public class Tuils {
     }
 
     public static void sendOutput(int color, Context context, CharSequence s, int type) {
+        android.util.Log.i("AI_OUTPUT", String.valueOf(s));
         Intent intent = new Intent(PrivateIOReceiver.ACTION_OUTPUT);
         intent.putExtra(PrivateIOReceiver.TEXT, s);
         intent.putExtra(PrivateIOReceiver.COLOR, color);
@@ -845,6 +846,7 @@ public class Tuils {
     }
 
     public static void sendOutput(int color, Context context, CharSequence s, int type, Object action) {
+        android.util.Log.i("AI_OUTPUT", String.valueOf(s));
         Intent intent = new Intent(PrivateIOReceiver.ACTION_OUTPUT);
         intent.putExtra(PrivateIOReceiver.TEXT, s);
         intent.putExtra(PrivateIOReceiver.COLOR, color);
@@ -861,6 +863,7 @@ public class Tuils {
     }
 
     public static void sendOutput(int color, Context context, CharSequence s, int type, Object action, Object longAction) {
+        android.util.Log.i("AI_OUTPUT", String.valueOf(s));
         Intent intent = new Intent(PrivateIOReceiver.ACTION_OUTPUT);
         intent.putExtra(PrivateIOReceiver.TEXT, s);
         intent.putExtra(PrivateIOReceiver.COLOR, color);

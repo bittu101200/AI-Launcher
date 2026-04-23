@@ -39,7 +39,7 @@ import bhupendra.ai.launcher.managers.notifications.KeeperService;
 import bhupendra.ai.launcher.managers.xml.XMLPrefsManager;
 import bhupendra.ai.launcher.managers.xml.options.Behavior;
 import bhupendra.ai.launcher.managers.xml.options.Theme;
-import bhupendra.ai.launcher.tuils.BusyBoxInstaller;
+import bhupendra.ai.launcher.tuils.TermuxManager;
 import bhupendra.ai.launcher.tuils.PrivateIOReceiver;
 import bhupendra.ai.launcher.tuils.StoppableThread;
 import bhupendra.ai.launcher.tuils.Tuils;
@@ -571,11 +571,11 @@ public class MainManager {
             final String trimmed = input.trim();
             final String cmd = trimmed.split(" ")[0];
 
-            if (!BusyBoxInstaller.isInstalled(mContext)) {
+            if (!bhupendra.ai.launcher.tuils.TermuxManager.isTermuxInstalled(mContext)) {
                 String[] common = {"ping", "echo", "ls", "grep", "cat", "vi", "top", "ps", "ip"};
                 for (String c : common) {
                     if (cmd.equalsIgnoreCase(c)) {
-                        Tuils.sendOutput(mContext, "Command not found. You can install BusyBox using: bbman -install", TerminalManager.CATEGORY_OUTPUT);
+                        Tuils.sendOutput(mContext, "Command not found. Install Termux for a full Linux environment: termux", TerminalManager.CATEGORY_OUTPUT);
                         return true;
                     }
                 }
@@ -592,6 +592,10 @@ public class MainManager {
                         interactive.addCommand(input, CD_CODE, result);
                     } else interactive.addCommand(input);
 
+                    // Suppress CMD_FINISHED for ALWAYS-ON AI turns that fallback to shell
+                    if (mainPack.aiSubsystem == null || !mainPack.aiSubsystem.isInFlight()) {
+                        android.util.Log.i("AI_OUTPUT", "CMD_FINISHED");
+                    }
                 }
             }.start();
 
@@ -627,6 +631,13 @@ public class MainManager {
                         String output = command.exec(info);
                         if(output != null) {
                             Tuils.sendOutput(info, output, TerminalManager.CATEGORY_OUTPUT);
+                        }
+
+                        // Only log CMD_FINISHED for non-AI commands. 
+                        // AI commands will log AI_TURN_FINISHED themselves when truly done.
+                        boolean isAI = command.getClass().getName().contains(".ai") || input.trim().startsWith("ai ");
+                        if (!isAI) {
+                            android.util.Log.i("AI_OUTPUT", "CMD_FINISHED");
                         }
                     } catch (Exception e) {
                         Tuils.sendOutput(mContext, Tuils.getStackTrace(e));

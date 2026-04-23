@@ -22,7 +22,8 @@ import bhupendra.ai.launcher.commands.CommandTuils;
 import bhupendra.ai.launcher.commands.main.MainPack;
 import bhupendra.ai.launcher.managers.xml.XMLPrefsManager;
 import bhupendra.ai.launcher.managers.xml.classes.XMLPrefsSave;
-import bhupendra.ai.launcher.tuils.Tuils;
+import bhupendra.ai.launcher.managers.CronManager;
+import bhupendra.ai.launcher.tuils.TermuxManager;
 
 import static android.provider.Settings.System.SCREEN_BRIGHTNESS;
 import static android.provider.Settings.System.SCREEN_BRIGHTNESS_MODE;
@@ -53,6 +54,20 @@ public class AndroidToolExecutor implements ToolExecutor {
             return "[launched " + tool.description + "]";
         }
 
+        if ("termux.execute".equals(tool.name)) {
+            JSONObject args = new JSONObject(arguments);
+            String cmd = args.getString("command");
+            String argStr = args.optString("arguments", "");
+            
+            if (!TermuxManager.isTermuxInstalled(context)) {
+                return "[error: Termux is not installed]";
+            }
+
+            String[] finalArgs = argStr.isEmpty() ? new String[0] : argStr.split(" ");
+            // Run synchronously for tool execution so AI can see the output
+            return TermuxManager.runCommandSync(context, cmd, finalArgs, null, 15000); // 15s timeout
+        }
+
         if ("system.execute_command".equals(tool.name)) {
             JSONObject args = new JSONObject(arguments);
             String commandLine = args.getString("command");
@@ -74,6 +89,35 @@ public class AndroidToolExecutor implements ToolExecutor {
             }
             String output = command.exec(mainPack);
             return output != null ? output : "[executed: " + commandLine + "]";
+        }
+
+        if ("system.schedule_task".equals(tool.name)) {
+            JSONObject args = new JSONObject(arguments);
+            String command = args.getString("command");
+            int delayMinutes = args.getInt("delay_minutes");
+            CronManager cron = new CronManager(context);
+            String id = cron.addOneTimeTask(command, delayMinutes * 60 * 1000L);
+            return "[scheduled task " + id + " to run in " + delayMinutes + " minutes: " + command + "]";
+        }
+
+        if ("system.list_tasks".equals(tool.name)) {
+            CronManager cron = new CronManager(context);
+            java.util.List<CronManager.Task> tasks = cron.getAllTasks();
+            if (tasks.isEmpty()) return "[no tasks scheduled]";
+            StringBuilder sb = new StringBuilder("Scheduled tasks:\n");
+            for (CronManager.Task t : tasks) {
+                long remaining = (t.timestamp - System.currentTimeMillis()) / 1000;
+                sb.append("- ").append(t.id).append(": ").append(t.command).append(" (in ").append(remaining).append("s)\n");
+            }
+            return sb.toString().trim();
+        }
+
+        if ("system.cancel_task".equals(tool.name)) {
+            JSONObject args = new JSONObject(arguments);
+            String id = args.getString("id");
+            CronManager cron = new CronManager(context);
+            cron.cancelTask(id);
+            return "[cancelled task " + id + "]";
         }
 
         if ("system.search_config".equals(tool.name)) {

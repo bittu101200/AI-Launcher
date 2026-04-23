@@ -10,6 +10,7 @@ import bhupendra.ai.launcher.managers.xml.XMLPrefsManager;
 import bhupendra.ai.launcher.managers.xml.classes.XMLPrefsSave;
 import bhupendra.ai.launcher.managers.xml.options.Ai;
 import bhupendra.ai.launcher.commands.main.MainPack;
+import bhupendra.ai.launcher.tuils.TermuxManager;
 
 public class AISubsystem {
 
@@ -149,6 +150,27 @@ public class AISubsystem {
             java.util.Collections.singletonMap("query", "The search query."),
             ToolRiskClass.READ_ONLY));
 
+        java.util.Map<String, String> scheduleArgs = new java.util.HashMap<>();
+        scheduleArgs.put("command", "The full TUI command to execute (e.g., 'wifi -on', 'apps -l')");
+        scheduleArgs.put("delay_minutes", "Minutes to wait before execution (integer)");
+        toolRegistry.register(ToolRegistry.Tier.SYSTEM, new Tool(
+            "system.schedule_task",
+            "Schedule a command to be executed after a certain delay in minutes.",
+            scheduleArgs,
+            ToolRiskClass.STATE_CHANGING));
+
+        toolRegistry.register(ToolRegistry.Tier.SYSTEM, new Tool(
+            "system.list_tasks",
+            "List all currently scheduled tasks.",
+            java.util.Collections.emptyMap(),
+            ToolRiskClass.READ_ONLY));
+
+        toolRegistry.register(ToolRegistry.Tier.SYSTEM, new Tool(
+            "system.cancel_task",
+            "Cancel a scheduled task by its ID.",
+            java.util.Collections.singletonMap("id", "The task ID (e.g., 'task_12345678')"),
+            ToolRiskClass.STATE_CHANGING));
+
         toolRegistry.register(ToolRegistry.Tier.SYSTEM, new Tool(
             "system.uninstall_app",
             "Initiate uninstallation of an Android application.",
@@ -168,6 +190,15 @@ public class AISubsystem {
             "system.remove_contact",
             "Remove an existing contact from the device.",
             java.util.Collections.singletonMap("name", "The full name of the contact to remove."),
+            ToolRiskClass.STATE_CHANGING));
+
+        toolRegistry.register(ToolRegistry.Tier.SYSTEM, new Tool(
+            "termux.execute",
+            "Execute a Linux command in the Termux environment. Use this for complex tasks like git, python, node, or package management.",
+            new java.util.HashMap<String, String>() {{
+                put("command", "The base command (e.g., 'git', 'python', 'ls').");
+                put("arguments", "The arguments for the command as a single string (optional).");
+            }},
             ToolRiskClass.STATE_CHANGING));
     }
 
@@ -208,10 +239,14 @@ public class AISubsystem {
             callback.onResponse(response);
             requestManager.finishToolExecution(requestId, true);
             notifyListeners(false);
+            
+            // Central completion signal for all AI turns (including tool follow-ups)
+            android.util.Log.i("AI_OUTPUT", "AI_TURN_FINISHED");
         } else if (response.type == AIResponse.Type.ERROR) {
             callback.onResponse(response);
             requestManager.finishToolExecution(requestId, false);
             notifyListeners(false);
+            android.util.Log.i("AI_OUTPUT", "AI_TURN_FINISHED");
         }
     }
 
@@ -293,7 +328,12 @@ public class AISubsystem {
             .append("CONFIG MANAGEMENT:\n")
             .append("To change settings (colors, behavior, UI), ALWAYS use 'system.search_config' first to find the correct key if you are not 100% certain. ")
             .append("Once you have the exact key, use 'system.config' with action='set' to apply the change.\n")
-            .append("Categories available: THEME, UI, BEHAVIOR, TOOLBAR, CMD, SUGGESTIONS, AI.");
+            .append("Categories available: THEME, UI, BEHAVIOR, TOOLBAR, CMD, SUGGESTIONS, AI.\n\n")
+            .append("TERMUX & LINUX:\n")
+            .append("You can execute powerful Linux commands via 'termux.execute'. ")
+            .append("Use this for file management (ls, cp, mv, rm), git operations (git status, commit, push), ")
+            .append("running scripts (python, node), or installing packages (pkg install). ")
+            .append("Always use this tool if the user asks for advanced 'Linux' or 'Shell' tasks.");
         
         return systemPrompt.toString();
     }
@@ -302,6 +342,7 @@ public class AISubsystem {
         awaitingConfirmation = false;
         pendingConfirmAction = null;
         pendingDeclineAction = null;
+        TermuxManager.cancelAll();
         String rid = lastRequestId.get();
         if (rid != null) {
             requestManager.cancel(rid);
@@ -337,6 +378,11 @@ public class AISubsystem {
     }
 
     private void executeToolAtIndex(String requestId, List<ToolCall> toolCalls, int index, AICallback callback) {
+        if (requestManager.isCancelRequested()) {
+            android.util.Log.i("AI_OUTPUT", "Tool execution cancelled by user");
+            return;
+        }
+
         if (index >= toolCalls.size()) {
             performFollowUp(requestId, callback);
             return;
@@ -354,13 +400,20 @@ public class AISubsystem {
 
         Runnable runTool = () -> {
             try {
+                if (requestManager.isCancelRequested()) return;
+                
                 String output = toolExecutor.execute(appContext, tool, toolCall.argumentsJson);
+                
+                if (requestManager.isCancelRequested()) return;
+
                 conversationManager.append(ConversationTurn.tool(toolCall.callId, output != null ? output : "[done]"));
                 if (output != null && !output.isEmpty()) {
                     callback.onResponse(AIResponse.toolOutput(requestId, output));
                 }
                 executeToolAtIndex(requestId, toolCalls, index + 1, callback);
             } catch (Exception e) {
+                if (requestManager.isCancelRequested()) return;
+
                 String error = e.getMessage() != null ? e.getMessage() : "Execution failed";
                 conversationManager.append(ConversationTurn.tool(toolCall.callId, "[error: " + error + "]"));
                 callback.onResponse(AIResponse.error(requestId, error));
