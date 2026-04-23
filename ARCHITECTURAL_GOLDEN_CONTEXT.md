@@ -19,7 +19,7 @@ The core goal of the 2026 refactor was to transition from a monolithic "God Obje
 ## 2. Key Alterations & Findings
 
 ### A. AI Subsystem (The Plug-and-Play Brain)
-- **Alteration:** Dismantled the 400+ line `if-else` block in `AndroidToolExecutor`. Created `BaseAITool` and extracted 19 capabilities into discrete classes in `bhupendra.ai.launcher.ai.tools`.
+- **Alteration:** Dismantled the 400+ line `if-else` block in `AndroidToolExecutor`. Created `BaseAITool` and extracted 21 capabilities into discrete classes in `bhupendra.ai.launcher.ai.tools`.
 - **Finding:** Hardcoded system prompts made iteration slow. **Moved the system prompt to `app/src/main/assets/ai_system_prompt.md`**. This file is copied to the internal TUI folder on first run and is used as the AI's base identity.
 - **Effect:** You can now add AI capabilities (e.g., "Control Spotify") simply by creating a new class and registering it in `AISubsystem`.
 
@@ -45,6 +45,12 @@ The core goal of the 2026 refactor was to transition from a monolithic "God Obje
 - **Alteration:** Deprecated `BusyBoxInstaller` and removed bundled BusyBox binaries. Updated `MainManager` to route standard Linux commands (ls, cat, git) to the **Termux Bridge**.
 - **Finding:** Bundled binaries were brittle and posed security/compatibility risks. Termux is faster and more powerful.
 - **Effect:** The app is smaller, and the shell environment is a full, updated Linux environment.
+
+### F. Notification Access
+- **Mechanism:** `NotificationService` now maintains a static `instance` to allow AI tools to call `getActiveNotifications()`.
+- **Tools:**
+    - `system.get_notifications`: Lists active notifications with title, text, and package info.
+    - `system.reply_notification`: Allows the AI to send direct replies to notifications that support `RemoteInput` (e.g., WhatsApp, Signal, SMS).
 
 ---
 
@@ -81,7 +87,7 @@ The core goal of the 2026 refactor was to transition from a monolithic "God Obje
 
 ---
 
-## 6. Execution Control & Stability Improvements
+## 5. Execution Control & Stability Improvements
 
 ### Command Signaling & adb-run.sh
 - **Mechanism:** `adb-run.sh` streams Logcat with the tag `AI_OUTPUT` and waits for two specific signals: `CMD_FINISHED` or `AI_TURN_FINISHED`.
@@ -96,7 +102,7 @@ The core goal of the 2026 refactor was to transition from a monolithic "God Obje
 
 ---
 
-## 7. Known "Dangling Edges" to Watch
+## 6. Known "Dangling Edges" to Watch
 - **Reflection in Preferences:** `XMLPrefsManager` still uses reflection for some type transformations. This should eventually be moved to a type-safe adapter system.
 - **MusicManager:** The `MusicManager2` is still quite complex and could be further modularized into specific player adapters (Local vs. Spotify).
 
