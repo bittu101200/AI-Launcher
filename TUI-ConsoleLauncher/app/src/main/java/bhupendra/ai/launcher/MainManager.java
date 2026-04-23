@@ -577,7 +577,16 @@ public class MainManager {
             final String trimmed = input.trim();
             final String cmd = trimmed.split(" ")[0];
 
-            if (!bhupendra.ai.launcher.tuils.TermuxManager.isTermuxInstalled(mContext)) {
+            if (bhupendra.ai.launcher.tuils.TermuxManager.isTermuxInstalled(mContext)) {
+                String[] common = {"ping", "echo", "ls", "grep", "cat", "vi", "top", "ps", "ip", "pkg", "git", "python", "node", "vim", "sed", "awk", "find"};
+                for (String c : common) {
+                    if (cmd.equalsIgnoreCase(c)) {
+                        String args = input.length() > cmd.length() ? input.substring(cmd.length()).trim() : "";
+                        bhupendra.ai.launcher.tuils.TermuxManager.execute(mContext, cmd, args);
+                        return true;
+                    }
+                }
+            } else {
                 String[] common = {"ping", "echo", "ls", "grep", "cat", "vi", "top", "ps", "ip"};
                 for (String c : common) {
                     if (cmd.equalsIgnoreCase(c)) {
