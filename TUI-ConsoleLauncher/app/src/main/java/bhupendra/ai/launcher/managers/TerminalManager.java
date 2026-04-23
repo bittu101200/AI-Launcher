@@ -364,22 +364,19 @@ public class TerminalManager {
 
     public void setOutput(CharSequence output, int type) {
         if (output == null || output.length() == 0) return;
-
         writeToView(output, type);
     }
 
     public void setOutput(int color, CharSequence output) {
         if(output == null || output.length() == 0) return;
 
-        if(color == TerminalManager.NO_COLOR) {
-            color = XMLPrefsManager.getColor(Theme.output_color);
+        // Use standard category output but override the color if specified
+        CharSequence finalOut = getFinalText(output, CATEGORY_OUTPUT);
+        if (color != TerminalManager.NO_COLOR && finalOut instanceof Spannable) {
+            ((Spannable) finalOut).setSpan(new ForegroundColorSpan(color), 0, finalOut.length(), Spanned.SPAN_MARK_MARK);
         }
-
-        SpannableString si = new SpannableString(output);
-        si.setSpan(new ForegroundColorSpan(color), 0, output.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-
-        CharSequence s = TextUtils.concat(Tuils.NEWLINE, si);
-        writeToView(s);
+        
+        writeToView(TextUtils.concat(Tuils.NEWLINE, finalOut));
     }
 
     public String getTerminalText() {
@@ -434,77 +431,65 @@ public class TerminalManager {
     }
 
     private CharSequence getFinalText(CharSequence t, int type) {
-        CharSequence s;
+        SpannableStringBuilder finalSsb = new SpannableStringBuilder();
         switch (type) {
             case CATEGORY_INPUT:
                 boolean su = t.toString().startsWith("su ") || suMode;
-
                 SpannableString si = Tuils.span(inputFormat, inputColor);
                 if(clickCommands || longClickCommands) si.setSpan(new LongClickableSpan(clickCommands ? t.toString() : null, longClickCommands ? t.toString() : null, PrivateIOReceiver.ACTION_INPUT), 0,
                         si.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
 
-                s = TimeManager.instance.replace(si);
-                s = TextUtils.replace(s,
+                CharSequence processedInput = TimeManager.instance.replace(si);
+                processedInput = TextUtils.replace(processedInput,
                         new String[] {FORMAT_INPUT, FORMAT_PREFIX, FORMAT_NEWLINE, FORMAT_INPUT.toUpperCase(), FORMAT_PREFIX.toUpperCase(), FORMAT_NEWLINE.toUpperCase()},
                         new CharSequence[] {t, su ? suPrefix : prefix, Tuils.NEWLINE, t, su ? suPrefix : prefix, Tuils.NEWLINE});
-
+                finalSsb.append(processedInput);
                 break;
             case CATEGORY_OUTPUT:
                 t = Tuils.parseMarkdown(t);
-                // Template handling for output
                 String outputTemplate = XMLPrefsManager.get(Behavior.output_format);
                 int outCol = XMLPrefsManager.getColor(Theme.output_color);
                 
-                SpannableStringBuilder builderOut = new SpannableStringBuilder();
                 int oIndex = outputTemplate.indexOf(FORMAT_OUTPUT);
                 if (oIndex != -1) {
-                    builderOut.append(outputTemplate.substring(0, oIndex));
-                    builderOut.append(t);
-                    builderOut.append(outputTemplate.substring(oIndex + FORMAT_OUTPUT.length()));
+                    finalSsb.append(outputTemplate.substring(0, oIndex));
+                    finalSsb.append(t);
+                    finalSsb.append(outputTemplate.substring(oIndex + FORMAT_OUTPUT.length()));
                 } else {
-                    builderOut.append(t);
+                    finalSsb.append(t);
                 }
-                
-                // Wrap in output color IF no spans were already set in markdown
-                builderOut.setSpan(new ForegroundColorSpan(outCol), 0, builderOut.length(), Spanned.SPAN_MARK_MARK);
-                s = builderOut;
+                finalSsb.setSpan(new ForegroundColorSpan(outCol), 0, finalSsb.length(), Spanned.SPAN_MARK_MARK);
                 break;
             case CATEGORY_AI:
                 t = Tuils.parseMarkdown(t);
-                // Template handling for AI
                 String aiTemplate = XMLPrefsManager.get(Behavior.output_format);
                 int aiCol = XMLPrefsManager.getColor(Theme.output_color);
 
-                SpannableStringBuilder builderAi = new SpannableStringBuilder();
                 int aiIndex = aiTemplate.indexOf(FORMAT_OUTPUT);
                 if (aiIndex != -1) {
-                    builderAi.append(aiTemplate.substring(0, aiIndex));
-                    builderAi.append(t);
-                    builderAi.append(aiTemplate.substring(aiIndex + FORMAT_OUTPUT.length()));
+                    finalSsb.append(aiTemplate.substring(0, aiIndex));
+                    finalSsb.append(t);
+                    finalSsb.append(aiTemplate.substring(aiIndex + FORMAT_OUTPUT.length()));
                 } else {
-                    builderAi.append(t);
+                    finalSsb.append(t);
                 }
-                
-                // Wrap in AI color
-                builderAi.setSpan(new ForegroundColorSpan(aiCol), 0, builderAi.length(), Spanned.SPAN_MARK_MARK);
-                s = builderAi;
+                finalSsb.setSpan(new ForegroundColorSpan(aiCol), 0, finalSsb.length(), Spanned.SPAN_MARK_MARK);
                 break;
             case CATEGORY_ERROR:
-                // Error Styling: Red color
                 SpannableString ser = Tuils.span(outputFormat, Color.RED);
-                s = TextUtils.replace(ser,
+                CharSequence err = TextUtils.replace(ser,
                         new String[] {FORMAT_OUTPUT, FORMAT_NEWLINE, FORMAT_OUTPUT.toUpperCase(), FORMAT_NEWLINE.toUpperCase()},
                         new CharSequence[] {t, Tuils.NEWLINE, t, Tuils.NEWLINE});
+                finalSsb.append(err);
                 break;
-//            already colored here
             case CATEGORY_NO_COLOR:
-                s = t;
+                finalSsb.append(t);
                 break;
             default:
                 return null;
         }
 
-        return s;
+        return finalSsb;
     }
 
     public void simulateEnter() {

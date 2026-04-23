@@ -1616,8 +1616,6 @@ public class Tuils {
         if (text == null) return null;
         SpannableStringBuilder ssb = new SpannableStringBuilder(text);
 
-        // Process in order, using simple replacement that handles its own length changes
-        
         // 1. Code Blocks (``` ... ```)
         applyRegex(ssb, "```[\\s\\S]*?```", (builder, start, end) -> {
             builder.setSpan(new ForegroundColorSpan(0xFF888888), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
@@ -1652,7 +1650,6 @@ public class Tuils {
         applyRegex(ssb, "(?m)^#{1,6}\\s+(.*)$", (builder, start, end) -> {
             builder.setSpan(new android.text.style.StyleSpan(android.graphics.Typeface.BOLD), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
             builder.setSpan(new android.text.style.RelativeSizeSpan(1.1f), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-            // Just strip the # and keep the text
             int hashEnd = start;
             while(hashEnd < end && builder.charAt(hashEnd) == '#') hashEnd++;
             while(hashEnd < end && Character.isWhitespace(builder.charAt(hashEnd))) hashEnd++;
@@ -1663,6 +1660,14 @@ public class Tuils {
         applyRegex(ssb, "(?m)^\\s*[\\*\\-]\\s+", (builder, start, end) -> {
             builder.replace(start, end, " • ");
         });
+
+        // 7. Final Cleanup: If any ** or ### still exist, strip them (fallback)
+        String finalStr = ssb.toString();
+        if (finalStr.contains("**") || finalStr.contains("###")) {
+             applyRegex(ssb, "\\*\\*", (builder, start, end) -> builder.delete(start, end));
+             applyRegex(ssb, "###", (builder, start, end) -> builder.delete(start, end));
+             applyRegex(ssb, "##", (builder, start, end) -> builder.delete(start, end));
+        }
 
         return ssb;
     }
