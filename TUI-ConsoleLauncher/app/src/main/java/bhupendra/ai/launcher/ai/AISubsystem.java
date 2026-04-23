@@ -11,6 +11,8 @@ import bhupendra.ai.launcher.managers.xml.classes.XMLPrefsSave;
 import bhupendra.ai.launcher.managers.xml.options.Ai;
 import bhupendra.ai.launcher.commands.main.MainPack;
 import bhupendra.ai.launcher.tuils.TermuxManager;
+import bhupendra.ai.launcher.ai.tools.*;
+
 
 public class AISubsystem {
 
@@ -66,19 +68,19 @@ public class AISubsystem {
     }
 
     private void registerSystemTools() {
-        toolRegistry.register(ToolRegistry.Tier.SYSTEM, new Tool(
+        toolRegistry.register(ToolRegistry.Tier.SYSTEM, new SystemSetBrightnessTool(
             "system.set_brightness",
             "Set screen brightness percentage (0-100)",
             java.util.Collections.singletonMap("percentage", "integer from 0 to 100"),
             ToolRiskClass.STATE_CHANGING));
             
-        toolRegistry.register(ToolRegistry.Tier.SYSTEM, new Tool(
+        toolRegistry.register(ToolRegistry.Tier.SYSTEM, new SystemGetBrightnessTool(
             "system.get_brightness",
             "Get current screen brightness percentage",
             java.util.Collections.emptyMap(),
             ToolRiskClass.READ_ONLY));
 
-        toolRegistry.register(ToolRegistry.Tier.SYSTEM, new Tool(
+        toolRegistry.register(ToolRegistry.Tier.SYSTEM, new SystemExecuteCommandTool(
             "system.execute_command",
             "Execute a raw TUI command (e.g., 'wifi -on', 'bluetooth -off', 'apps -l', 'status'). Use this for existing app features.",
             java.util.Collections.singletonMap("command", "The full command string to execute"),
@@ -89,19 +91,19 @@ public class AISubsystem {
         configArgs.put("key", "The preference key (e.g., 'ui_input_output_color', 'behavior_auto_show_keyboard')");
         configArgs.put("value", "The value to set (optional for 'get')");
         
-        toolRegistry.register(ToolRegistry.Tier.SYSTEM, new Tool(
+        toolRegistry.register(ToolRegistry.Tier.SYSTEM, new SystemConfigTool(
             "system.config",
             "Get or set application configuration preferences.",
             configArgs,
             ToolRiskClass.STATE_CHANGING));
 
-        toolRegistry.register(ToolRegistry.Tier.SYSTEM, new Tool(
+        toolRegistry.register(ToolRegistry.Tier.SYSTEM, new SystemSearchConfigTool(
             "system.search_config",
             "Search for configuration keys by name or description. Use this to find the right key before setting it.",
             java.util.Collections.singletonMap("query", "The search term (e.g., 'color', 'size', 'toolbar')"),
             ToolRiskClass.READ_ONLY));
 
-        toolRegistry.register(ToolRegistry.Tier.SYSTEM, new Tool(
+        toolRegistry.register(ToolRegistry.Tier.SYSTEM, new SystemSearchContactsTool(
             "system.search_contacts",
             "Search for contacts by name to find their exact name or phone number.",
             java.util.Collections.singletonMap("query", "The name or partial name of the contact"),
@@ -110,7 +112,7 @@ public class AISubsystem {
         java.util.Map<String, String> volumeArgs = new java.util.HashMap<>();
         volumeArgs.put("stream", "one of: 'ring', 'media', 'alarm', 'notification', 'system', 'voice_call'");
         volumeArgs.put("percentage", "integer from 0 to 100");
-        toolRegistry.register(ToolRegistry.Tier.SYSTEM, new Tool(
+        toolRegistry.register(ToolRegistry.Tier.SYSTEM, new SystemSetVolumeTool(
             "system.set_volume",
             "Set volume for a specific stream.",
             volumeArgs,
@@ -120,31 +122,31 @@ public class AISubsystem {
         java.util.Map<String, String> storeArgs = new java.util.HashMap<>();
         storeArgs.put("key", "A short descriptive name for the memory (e.g., 'Mom's Birthday')");
         storeArgs.put("value", "The actual important information to store.");
-        toolRegistry.register(ToolRegistry.Tier.SYSTEM, new Tool(
+        toolRegistry.register(ToolRegistry.Tier.SYSTEM, new SystemMemoryStoreTool(
             "system.memory_store",
             "Persistently store highly important information explicitly requested by the user.",
             storeArgs,
             ToolRiskClass.STATE_CHANGING));
 
-        toolRegistry.register(ToolRegistry.Tier.SYSTEM, new Tool(
+        toolRegistry.register(ToolRegistry.Tier.SYSTEM, new SystemMemoryRetrieveTool(
             "system.memory_retrieve",
             "Retrieve stored memories by searching for a key or keyword.",
             java.util.Collections.singletonMap("query", "A keyword or key to search for in memories."),
             ToolRiskClass.READ_ONLY));
 
-        toolRegistry.register(ToolRegistry.Tier.SYSTEM, new Tool(
+        toolRegistry.register(ToolRegistry.Tier.SYSTEM, new SystemSearchWebTool(
             "system.search_web",
             "Open a Google search in Chrome.",
             java.util.Collections.singletonMap("query", "The search query."),
             ToolRiskClass.STATE_CHANGING));
 
-        toolRegistry.register(ToolRegistry.Tier.SYSTEM, new Tool(
+        toolRegistry.register(ToolRegistry.Tier.SYSTEM, new SystemWebFetchTool(
             "system.web_fetch",
             "Fetch the text content of a URL to answer questions accurately.",
             java.util.Collections.singletonMap("url", "The full URL starting with http/https."),
             ToolRiskClass.READ_ONLY));
 
-        toolRegistry.register(ToolRegistry.Tier.SYSTEM, new Tool(
+        toolRegistry.register(ToolRegistry.Tier.SYSTEM, new SystemWebSearchQueryTool(
             "system.web_search_query",
             "Perform a web search and return the results as text. Use this to find information BACKGROUND without opening Chrome.",
             java.util.Collections.singletonMap("query", "The search query."),
@@ -153,31 +155,31 @@ public class AISubsystem {
         java.util.Map<String, String> scheduleArgs = new java.util.HashMap<>();
         scheduleArgs.put("command", "The full TUI command to execute (e.g., 'wifi -on', 'apps -l')");
         scheduleArgs.put("delay_minutes", "Minutes to wait before execution (integer)");
-        toolRegistry.register(ToolRegistry.Tier.SYSTEM, new Tool(
+        toolRegistry.register(ToolRegistry.Tier.SYSTEM, new SystemScheduleTaskTool(
             "system.schedule_task",
             "Schedule a command to be executed after a certain delay in minutes.",
             scheduleArgs,
             ToolRiskClass.STATE_CHANGING));
 
-        toolRegistry.register(ToolRegistry.Tier.SYSTEM, new Tool(
+        toolRegistry.register(ToolRegistry.Tier.SYSTEM, new SystemListTasksTool(
             "system.list_tasks",
             "List all currently scheduled tasks.",
             java.util.Collections.emptyMap(),
             ToolRiskClass.READ_ONLY));
 
-        toolRegistry.register(ToolRegistry.Tier.SYSTEM, new Tool(
+        toolRegistry.register(ToolRegistry.Tier.SYSTEM, new SystemCancelTaskTool(
             "system.cancel_task",
             "Cancel a scheduled task by its ID.",
             java.util.Collections.singletonMap("id", "The task ID (e.g., 'task_12345678')"),
             ToolRiskClass.STATE_CHANGING));
 
-        toolRegistry.register(ToolRegistry.Tier.SYSTEM, new Tool(
+        toolRegistry.register(ToolRegistry.Tier.SYSTEM, new SystemUninstallAppTool(
             "system.uninstall_app",
             "Initiate uninstallation of an Android application.",
             java.util.Collections.singletonMap("packageName", "The full package name of the app to uninstall (e.g., com.example.app)."),
             ToolRiskClass.STATE_CHANGING));
 
-        toolRegistry.register(ToolRegistry.Tier.SYSTEM, new Tool(
+        toolRegistry.register(ToolRegistry.Tier.SYSTEM, new SystemAddContactTool(
             "system.add_contact",
             "Add a new contact to the device.",
             new java.util.HashMap<String, String>() {{
@@ -186,13 +188,13 @@ public class AISubsystem {
             }},
             ToolRiskClass.STATE_CHANGING));
 
-        toolRegistry.register(ToolRegistry.Tier.SYSTEM, new Tool(
+        toolRegistry.register(ToolRegistry.Tier.SYSTEM, new SystemRemoveContactTool(
             "system.remove_contact",
             "Remove an existing contact from the device.",
             java.util.Collections.singletonMap("name", "The full name of the contact to remove."),
             ToolRiskClass.STATE_CHANGING));
 
-        toolRegistry.register(ToolRegistry.Tier.SYSTEM, new Tool(
+        toolRegistry.register(ToolRegistry.Tier.SYSTEM, new TermuxExecuteTool(
             "termux.execute",
             "Execute a Linux command in the Termux environment. Use this for complex tasks like git, python, node, or package management.",
             new java.util.HashMap<String, String>() {{
@@ -292,54 +294,54 @@ public class AISubsystem {
     }
 
     private String getSystemPrompt() {
-        StringBuilder systemPrompt = new StringBuilder();
-        systemPrompt.append("You are an AI assistant embedded in a Linux-style terminal launcher on Android. ")
-            .append("Be concise. Use tools when action is needed. Ask one clarifying question when unsure.\n\n")
-            .append("WEB SEARCH & INFO RETRIEVAL:\n")
-            .append("1. USE 'system.web_search_query' + 'system.web_fetch' to find facts and answer questions DIRECTLY in the terminal. ")
-            .append("DO NOT open Chrome for simple questions.\n")
-            .append("2. USE 'system.search_web' ONLY if the user explicitly asks to 'search on google', 'browse', or 'open results in browser'.\n")
-            .append("3. USE 'system.uninstall_app' when asked to delete, remove, or uninstall an application. You must find the correct package name first if not provided.\n\n")
-            .append("PERSISTENT MEMORY:\n")
-            .append("You have access to a Long-Term Memory on disk. ")
-            .append("ONLY store information if the user explicitly asks you to remember or save something important. ")
-            .append("Before answering a personal question about the user, use 'system.memory_retrieve' to see if you have relevant info stored.\n\n")
-            .append("You have access to all terminal commands via 'system.execute_command'. ")
-            .append("Available commands include: ");
-            
-        MainPack mp = getMainPack();
-        if (mp != null && mp.commandGroup != null) {
-            String[] names = mp.commandGroup.getCommandNames();
-            for (int i = 0; i < names.length; i++) {
-                systemPrompt.append(names[i]);
-                if (i < names.length - 1) systemPrompt.append(", ");
+        java.io.File promptFile = new java.io.File(bhupendra.ai.launcher.tuils.Tuils.getFolder(), "ai_system_prompt.md");
+        if (!promptFile.exists()) {
+            try {
+                java.io.InputStream is = appContext.getAssets().open("ai_system_prompt.md");
+                java.io.FileOutputStream os = new java.io.FileOutputStream(promptFile);
+                byte[] buffer = new byte[1024];
+                int length;
+                while ((length = is.read(buffer)) > 0) {
+                    os.write(buffer, 0, length);
+                }
+                is.close();
+                os.close();
+            } catch (Exception e) {
+                android.util.Log.e("AISubsystem", "Failed to copy default prompt", e);
             }
-        } else {
-            systemPrompt.append("wifi, bluetooth, apps, status, call, flash, volume, etc.");
         }
         
-        systemPrompt.append("\n\nCONTACTS & CALLS:\n")
-            .append("To call someone, use 'system.execute_command' with 'call NAME_OR_NUMBER'. ")
-            .append("To add a new contact, use 'system.add_contact' with their name and phone number. ")
-            .append("To remove a contact, use 'system.remove_contact' with their name. ")
-            .append("If you are not sure about a contact name, use 'system.search_contacts' to find them first. ")
-            .append("If a search result has a 100% Match, proceed to call that person IMMEDIATELY without asking. ")
-            .append("Only ask for clarification if there are multiple matches >= 75% but none are 100%.\n\n")
-            .append("CONFIG MANAGEMENT:\n")
-            .append("To change settings (colors, behavior, UI), ALWAYS use 'system.search_config' first to find the correct key if you are not 100% certain. ")
-            .append("Once you have the exact key, use 'system.config' with action='set' to apply the change.\n")
-            .append("Categories available: THEME, UI, BEHAVIOR, TOOLBAR, CMD, SUGGESTIONS, AI.\n\n")
-            .append("TERMUX & LINUX:\n")
-            .append("You can execute powerful Linux commands via 'termux.execute'. ")
-            .append("Use this for file management (ls, cp, mv, rm), git operations (git status, commit, push), ")
-            .append("running scripts (python, node), or installing packages (pkg install). ")
-            .append("Always use this tool if the user asks for advanced 'Linux' or 'Shell' tasks.\n\n")
-            .append("MARKDOWN & WEB:\n")
-            .append("1. Always use Markdown for formatting your responses. Use **bold**, *italics*, `inline code`, and ```code blocks``` for clarity.\n")
-            .append("2. When using 'system.web_fetch', you will receive Clean Markdown. Filter out the noise (ads, navigation) and present only the most relevant information to the user in a structured format.");
-
-            return systemPrompt.toString();
+        try {
+            if (promptFile.exists()) {
+                java.io.BufferedReader reader = new java.io.BufferedReader(new java.io.FileReader(promptFile));
+                StringBuilder sb = new StringBuilder();
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    sb.append(line).append("n");
+                }
+                reader.close();
+                
+                String prompt = sb.toString();
+                
+                // Append command names dynamically
+                MainPack mp = getMainPack();
+                StringBuilder cmds = new StringBuilder();
+                if (mp != null && mp.commandGroup != null) {
+                    String[] names = mp.commandGroup.getCommandNames();
+                    for (int i = 0; i < names.length; i++) {
+                        cmds.append(names[i]);
+                        if (i < names.length - 1) cmds.append(", ");
+                    }
+                } else {
+                    cmds.append("wifi, bluetooth, apps, status, call, flash, volume, etc.");
+                }
+                return prompt.replace("{{AVAILABLE_COMMANDS}}", cmds.toString());
             }
+        } catch (Exception e) {
+            android.util.Log.e("AISubsystem", "Error reading prompt file", e);
+        }
+        return "You are an AI assistant in a terminal launcher.";
+    }
 
     public void cancel() {
         awaitingConfirmation = false;
