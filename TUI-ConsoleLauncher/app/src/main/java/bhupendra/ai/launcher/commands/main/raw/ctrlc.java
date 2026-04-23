@@ -32,14 +32,14 @@ public class ctrlc implements CommandAbstraction {
                 MainManager.interactive.close();
                 MainManager.interactive = null;
 
-                MainManager.interactive = ((MainPack) pack).shellHolder.build();
+                MainManager.interactive = pack.getShellHolder().build();
 
-                ((MainPack) pack).currentDirectory = XMLPrefsManager.get(File.class, Behavior.home_path);
-                LocalBroadcastManager.getInstance(pack.context.getApplicationContext()).sendBroadcast(new Intent(UIManager.ACTION_UPDATE_HINT));
+                pack.setCurrentDirectory(XMLPrefsManager.get(File.class, Behavior.home_path));
+                LocalBroadcastManager.getInstance(pack.getContext().getApplicationContext()).sendBroadcast(new Intent(UIManager.ACTION_UPDATE_HINT));
             }
         }.start();
 
-        LocalBroadcastManager.getInstance(pack.context.getApplicationContext()).sendBroadcast(new Intent(UIManager.ACTION_NOROOT));
+        LocalBroadcastManager.getInstance(pack.getContext().getApplicationContext()).sendBroadcast(new Intent(UIManager.ACTION_NOROOT));
 
         return null;
     }

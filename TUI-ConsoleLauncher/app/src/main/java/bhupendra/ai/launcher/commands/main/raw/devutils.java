@@ -38,8 +38,8 @@ public class devutils extends ParamCommand {
                     if(text.size() >= 2) txt = TextProcessor.toPlanString(text, Tuils.SPACE);
                 }
 
-                NotificationManagerCompat.from(pack.context).notify(200,
-                        new NotificationCompat.Builder(pack.context)
+                NotificationManagerCompat.from(pack.getContext()).notify(200,
+                        new NotificationCompat.Builder(pack.getContext())
                             .setSmallIcon(R.mipmap.ic_launcher)
                             .setContentTitle(title)
                             .setContentText(txt)
@@ -61,7 +61,7 @@ public class devutils extends ParamCommand {
 
             @Override
             public String exec(ExecutePack pack) {
-                return "Notification access: " + NotificationManagerCompat.getEnabledListenerPackages(pack.context).contains(BuildConfig.APPLICATION_ID) + Tuils.NEWLINE + "Notification service running: " + DeviceStateManager.notificationServiceIsRunning(pack.context);
+                return "Notification access: " + NotificationManagerCompat.getEnabledListenerPackages(pack.getContext()).contains(BuildConfig.APPLICATION_ID) + Tuils.NEWLINE + "Notification service running: " + DeviceStateManager.notificationServiceIsRunning(pack.getContext());
             }
         };
 
@@ -92,7 +92,7 @@ public class devutils extends ParamCommand {
 
         @Override
         public String onNotArgEnough(ExecutePack pack, int n) {
-            return pack.context.getString(R.string.help_devutils);
+            return pack.getContext().getString(R.string.help_devutils);
         }
 
         @Override

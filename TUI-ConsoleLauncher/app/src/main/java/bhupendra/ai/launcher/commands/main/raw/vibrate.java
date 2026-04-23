@@ -21,7 +21,7 @@ public class vibrate implements CommandAbstraction {
     @Override
     public String exec(ExecutePack pack) throws Exception {
         String text = pack.getString();
-        Context context = ((MainPack) pack).context;
+        Context context = pack.getContext();
 
         char separator = TextProcessor.firstNonDigit(text);
 
@@ -84,6 +84,6 @@ public class vibrate implements CommandAbstraction {
 
     @Override
     public String onNotArgEnough(ExecutePack pack, int nArgs) {
-        return ((MainPack) pack).context.getString(helpRes());
+        return pack.getContext().getString(helpRes());
     }
 }

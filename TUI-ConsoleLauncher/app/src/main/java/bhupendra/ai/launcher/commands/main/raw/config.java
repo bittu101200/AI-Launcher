@@ -55,12 +55,12 @@ public class config extends ParamCommand {
                 String value = pack.getString();
                 save.parent().write(save, value);
 
-                ((Reloadable) pack.context).addMessage(save.parent().path(), save.label() + " -> " + value);
+                ((Reloadable) pack.getContext()).addMessage(save.parent().path(), save.label() + " -> " + value);
 
                 if(save.label().startsWith("default_app_n")) {
-                    return pack.context.getString(R.string.output_usedefapp);
+                    return pack.getContext().getString(R.string.output_usedefapp);
                 } else if(save == Behavior.unlock_counter_cycle_start) {
-                    SharedPreferences preferences = pack.context.getSharedPreferences(PREFS_NAME, 0);
+                    SharedPreferences preferences = pack.getContext().getSharedPreferences(PREFS_NAME, 0);
                     preferences.edit()
                             .putLong(UIManager.NEXT_UNLOCK_CYCLE_RESTART, 0)
                             .putInt(UIManager.UNLOCK_KEY, 0)
@@ -102,7 +102,7 @@ public class config extends ParamCommand {
                 File file = new File(FileSystemManager.getFolder(), pack.getString());
 
                 try {
-                    pack.context.startActivity(FileSystemManager.openFile(pack.context, file));
+                    pack.getContext().startActivity(FileSystemManager.openFile(pack.getContext(), file));
                 } catch (ActivityNotFoundException e) {
                     Tuils.log("nf");
                     FileSystemManager.toFile(e);
@@ -116,7 +116,7 @@ public class config extends ParamCommand {
 
             @Override
             public String onArgNotFound(ExecutePack pack, int index) {
-                return pack.context.getString(R.string.output_filenotfound);
+                return pack.getContext().getString(R.string.output_filenotfound);
             }
         },
         append {
@@ -132,7 +132,7 @@ public class config extends ParamCommand {
 
                 save.parent().write(save, value);
 
-                ((Reloadable) pack.context).addMessage(save.parent().path(), save.label() + " -> " + value);
+                ((Reloadable) pack.getContext()).addMessage(save.parent().path(), save.label() + " -> " + value);
 
                 return null;
             }
@@ -154,7 +154,7 @@ public class config extends ParamCommand {
                 XMLPrefsSave save = pack.getPrefsSave();
                 save.parent().write(save, Tuils.EMPTYSTRING);
 
-                ((Reloadable) pack.context).addMessage(save.parent().path(), save.label() + " -> " + "\"\"");
+                ((Reloadable) pack.getContext()).addMessage(save.parent().path(), save.label() + " -> " + "\"\"");
 
                 return null;
             }
@@ -219,7 +219,7 @@ public class config extends ParamCommand {
 
             @Override
             public String onArgNotFound(ExecutePack pack, int index) {
-                return pack.context.getString(R.string.output_filenotfound);
+                return pack.getContext().getString(R.string.output_filenotfound);
             }
 
             @Override
@@ -285,7 +285,7 @@ public class config extends ParamCommand {
                 XMLPrefsSave save = pack.getPrefsSave();
                 save.parent().write(save, save.defaultValue());
 
-                ((Reloadable) pack.context).addMessage(save.parent().path(), save.label() + " -> " + save.defaultValue());
+                ((Reloadable) pack.getContext()).addMessage(save.parent().path(), save.label() + " -> " + save.defaultValue());
 
                 return null;
             }
@@ -331,7 +331,7 @@ public class config extends ParamCommand {
 
             @Override
             public String exec(ExecutePack pack) {
-                pack.context.startActivity(Tuils.webPage("https://github.com/Andre1299/TUI-ConsoleLauncher/wiki/Customize-T_UI"));
+                pack.getContext().startActivity(Tuils.webPage("https://github.com/Andre1299/TUI-ConsoleLauncher/wiki/Customize-T_UI"));
                 return null;
             }
         };
@@ -361,12 +361,12 @@ public class config extends ParamCommand {
 
         @Override
         public String onNotArgEnough(ExecutePack pack, int n) {
-            return pack.context.getString(R.string.help_config);
+            return pack.getContext().getString(R.string.help_config);
         }
 
         @Override
         public String onArgNotFound(ExecutePack pack, int index) {
-            return pack.context.getString(R.string.output_invalidarg);
+            return pack.getContext().getString(R.string.output_invalidarg);
         }
     }
 

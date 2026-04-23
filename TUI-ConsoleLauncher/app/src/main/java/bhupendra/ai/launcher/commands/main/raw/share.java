@@ -20,10 +20,10 @@ public class share implements CommandAbstraction {
         MainPack info = (MainPack) pack;
         File f = info.get(File.class);
         if (f.isDirectory())
-            return info.res.getString(R.string.output_isdirectory);
+            return info.getResources().getString(R.string.output_isdirectory);
 
-        Intent sharingIntent = FileSystemManager.shareFile(pack.context, f);
-        info.context.startActivity(Intent.createChooser(sharingIntent, info.res.getString(R.string.share_label)));
+        Intent sharingIntent = FileSystemManager.shareFile(pack.getContext(), f);
+        info.getContext().startActivity(Intent.createChooser(sharingIntent, info.getResources().getString(R.string.share_label)));
 
         return Tuils.EMPTYSTRING;
     }
@@ -46,13 +46,13 @@ public class share implements CommandAbstraction {
     @Override
     public String onNotArgEnough(ExecutePack pack, int nArgs) {
         MainPack info = (MainPack) pack;
-        return info.res.getString(helpRes());
+        return info.getResources().getString(helpRes());
     }
 
     @Override
     public String onArgNotFound(ExecutePack pack, int index) {
         MainPack info = (MainPack) pack;
-        return info.res.getString(R.string.output_filenotfound);
+        return info.getResources().getString(R.string.output_filenotfound);
     }
 
 }

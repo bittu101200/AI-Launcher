@@ -20,7 +20,7 @@ public class termux implements APICommand, CommandAbstraction {
 
     @Override
     public String exec(final ExecutePack pack) throws Exception {
-        final Context context = ((MainPack) pack).context;
+        final Context context = pack.getContext();
 
         if (!TermuxManager.isTermuxInstalled(context)) {
             Tuils.sendOutput(Color.YELLOW, context, "Termux is not installed. Opening Play Store...");

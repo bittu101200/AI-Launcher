@@ -33,7 +33,7 @@ public class theme extends ParamCommand {
             public String exec(ExecutePack pack) {
                 Intent intent = new Intent(ThemeManager.ACTION_APPLY);
                 intent.putExtra(ThemeManager.NAME, pack.getString());
-                LocalBroadcastManager.getInstance(pack.context.getApplicationContext()).sendBroadcast(intent);
+                LocalBroadcastManager.getInstance(pack.getContext().getApplicationContext()).sendBroadcast(intent);
                 return null;
             }
         },
@@ -61,8 +61,8 @@ public class theme extends ParamCommand {
                 XMLPrefsManager.XMLPrefsRoot.THEME.write(element, color);
 
                 try {
-                    if (pack.context instanceof Reloadable) {
-                        ((Reloadable) pack.context).reload();
+                    if (pack.getContext() instanceof Reloadable) {
+                        ((Reloadable) pack.getContext()).reload();
                     }
                 } catch (Exception e) {}
 
@@ -199,8 +199,8 @@ public class theme extends ParamCommand {
                 }
 
                 try {
-                    if (pack.context instanceof Reloadable) {
-                        ((Reloadable) pack.context).reload();
+                    if (pack.getContext() instanceof Reloadable) {
+                        ((Reloadable) pack.getContext()).reload();
                     }
                 } catch (Exception e) {}
 
@@ -215,14 +215,14 @@ public class theme extends ParamCommand {
 
             @Override
             public String exec(ExecutePack pack) {
-                LocalBroadcastManager.getInstance(pack.context.getApplicationContext()).sendBroadcast(new Intent(ThemeManager.ACTION_STANDARD));
+                LocalBroadcastManager.getInstance(pack.getContext().getApplicationContext()).sendBroadcast(new Intent(ThemeManager.ACTION_STANDARD));
                 return null;
             }
         },
         old {
             @Override
             public String exec(ExecutePack pack) {
-                LocalBroadcastManager.getInstance(pack.context.getApplicationContext()).sendBroadcast(new Intent(ThemeManager.ACTION_REVERT));
+                LocalBroadcastManager.getInstance(pack.getContext().getApplicationContext()).sendBroadcast(new Intent(ThemeManager.ACTION_REVERT));
                 return null;
             }
         };
@@ -254,7 +254,7 @@ public class theme extends ParamCommand {
 
         @Override
         public String onNotArgEnough(ExecutePack pack, int n) {
-            return pack.context.getString(R.string.help_theme);
+            return pack.getContext().getString(R.string.help_theme);
         }
 
         @Override

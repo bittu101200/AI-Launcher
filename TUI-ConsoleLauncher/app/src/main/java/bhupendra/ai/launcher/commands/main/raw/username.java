@@ -22,8 +22,8 @@ public class username implements CommandAbstraction {
         XMLPrefsManager.XMLPrefsRoot.UI.write(Ui.deviceName, newDevice);
 
         try {
-            if (pack.context instanceof Reloadable) {
-                ((Reloadable) pack.context).reload();
+            if (pack.getContext() instanceof Reloadable) {
+                ((Reloadable) pack.getContext()).reload();
             }
         } catch (Exception e) {}
 
@@ -47,7 +47,7 @@ public class username implements CommandAbstraction {
 
     @Override
     public String onNotArgEnough(ExecutePack pack, int n) {
-        return pack.context.getString(R.string.help_username);
+        return pack.getContext().getString(R.string.help_username);
     }
 
     @Override

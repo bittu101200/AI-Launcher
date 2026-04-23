@@ -16,10 +16,10 @@ public class open implements CommandAbstraction {
         MainPack info = (MainPack) pack;
         File file = info.get(File.class);
 
-        int result = FileManager.openFile(info.context, file);
+        int result = FileManager.openFile(info.getContext(), file);
 
-        if (result == FileManager.ISDIRECTORY) return info.res.getString(R.string.output_isdirectory);
-        if (result == FileManager.IOERROR) return info.res.getString(R.string.output_error);
+        if (result == FileManager.ISDIRECTORY) return info.getResources().getString(R.string.output_isdirectory);
+        if (result == FileManager.IOERROR) return info.getResources().getString(R.string.output_error);
 
         return Tuils.EMPTYSTRING;
     }
@@ -42,13 +42,13 @@ public class open implements CommandAbstraction {
     @Override
     public String onNotArgEnough(ExecutePack pack, int nArgs) {
         MainPack info = (MainPack) pack;
-        return info.res.getString(helpRes());
+        return info.getResources().getString(helpRes());
     }
 
     @Override
     public String onArgNotFound(ExecutePack pack, int index) {
         MainPack info = (MainPack) pack;
-        return info.res.getString(R.string.output_filenotfound);
+        return info.getResources().getString(R.string.output_filenotfound);
     }
 
 }

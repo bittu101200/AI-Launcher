@@ -11,7 +11,7 @@ public class pin implements CommandAbstraction {
     @Override
     public String exec(ExecutePack pack) throws Exception {
         MainPack mp = (MainPack) pack;
-        AISubsystem ai = mp.aiSubsystem;
+        AISubsystem ai = mp.getAiSubsystem();
         if (ai == null) return "[AI not initialized]";
         return ai.getConversationManager().pinLatestAssistantTurn()
             ? "[latest AI response pinned]"

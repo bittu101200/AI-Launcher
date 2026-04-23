@@ -13,11 +13,11 @@ public class wifi implements CommandAbstraction {
     @Override
     public String exec(ExecutePack pack) {
         MainPack info = (MainPack) pack;
-        if (info.wifi == null)
-            info.wifi = (WifiManager) info.context.getSystemService(Context.WIFI_SERVICE);
-        boolean active = !info.wifi.isWifiEnabled();
-        info.wifi.setWifiEnabled(active);
-        return info.res.getString(R.string.output_wifi) + " " + Boolean.toString(active);
+        if (info.getWifiManager() == null)
+            info.wifi = (WifiManager) info.getContext().getSystemService(Context.WIFI_SERVICE);
+        boolean active = !info.getWifiManager().isWifiEnabled();
+        info.getWifiManager().setWifiEnabled(active);
+        return info.getResources().getString(R.string.output_wifi) + " " + Boolean.toString(active);
     }
 
     @Override

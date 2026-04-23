@@ -19,7 +19,7 @@ public class integrate implements CommandAbstraction {
         AISubsystem ai = ((bhupendra.ai.launcher.commands.main.MainPack) pack).aiSubsystem;
         if (ai == null || !ai.isAvailable()) return "[AI subsystem not available]";
 
-        AppCapabilityScanner scanner = new AppCapabilityScanner(pack.context);
+        AppCapabilityScanner scanner = new AppCapabilityScanner(pack.getContext());
         List<Capability> caps = scanner.scanInstalledApps();
         if (caps.isEmpty()) return "[no capabilities found]";
 
@@ -32,9 +32,9 @@ public class integrate implements CommandAbstraction {
                 .append("\n");
         }
         list.append("\nType numbers to integrate (e.g. '1 3 5') or 'all':");
-        Tuils.sendOutput(Color.WHITE, pack.context, list.toString());
+        Tuils.sendOutput(Color.WHITE, pack.getContext(), list.toString());
 
-        new AppCapabilityScanner.PendingIntegration(caps, ai, pack.context);
+        new AppCapabilityScanner.PendingIntegration(caps, ai, pack.getContext());
         return null;
     }
 

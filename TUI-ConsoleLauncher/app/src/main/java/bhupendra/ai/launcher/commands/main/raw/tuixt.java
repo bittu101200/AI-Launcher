@@ -26,13 +26,13 @@ public class tuixt implements CommandAbstraction {
         MainPack info = (MainPack) pack;
         File file = info.get(File.class);
         if(file.isDirectory()) {
-            return info.res.getString(R.string.output_isdirectory);
+            return info.getResources().getString(R.string.output_isdirectory);
         }
 
-        Intent intent = new Intent(info.context, TuixtActivity.class);
+        Intent intent = new Intent(info.getContext(), TuixtActivity.class);
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         intent.putExtra(TuixtActivity.PATH, file.getAbsolutePath());
-        ((Activity) info.context).startActivityForResult(intent, LauncherActivity.TUIXT_REQUEST);
+        ((Activity) info.getContext()).startActivityForResult(intent, LauncherActivity.TUIXT_REQUEST);
 
         return Tuils.EMPTYSTRING;
     }
@@ -61,11 +61,11 @@ public class tuixt implements CommandAbstraction {
             return onNotArgEnough(info, info.args.length);
         }
 
-        FileManager.DirInfo dirInfo = FileManager.cd(info.currentDirectory, path);
+        FileManager.DirInfo dirInfo = FileManager.cd(info.getCurrentDirectory(), path);
 
         File file = new File(dirInfo.getCompletePath());
         if(!file.getParentFile().exists() && !file.getParentFile().mkdirs()) {
-            return info.res.getString(R.string.output_error);
+            return info.getResources().getString(R.string.output_error);
         }
 
         try {
@@ -74,9 +74,9 @@ public class tuixt implements CommandAbstraction {
             return e.toString();
         }
 
-        Intent intent = new Intent(info.context, TuixtActivity.class);
+        Intent intent = new Intent(info.getContext(), TuixtActivity.class);
         intent.putExtra(TuixtActivity.PATH, file.getAbsolutePath());
-        ((Activity) info.context).startActivityForResult(intent, LauncherActivity.TUIXT_REQUEST);
+        ((Activity) info.getContext()).startActivityForResult(intent, LauncherActivity.TUIXT_REQUEST);
 
         return Tuils.EMPTYSTRING;
     }
@@ -84,6 +84,6 @@ public class tuixt implements CommandAbstraction {
     @Override
     public String onNotArgEnough(ExecutePack pack, int nArgs) {
         MainPack info = (MainPack) pack;
-        return info.res.getString(R.string.help_tuixt);
+        return info.getResources().getString(R.string.help_tuixt);
     }
 }

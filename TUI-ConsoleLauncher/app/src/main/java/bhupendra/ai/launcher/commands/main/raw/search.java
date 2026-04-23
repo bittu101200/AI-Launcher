@@ -38,7 +38,7 @@ public class search extends ParamCommand {
             @Override
             public String exec(ExecutePack pack) {
                 List<String> args = pack.getList();
-                return playstore(args, pack.context);
+                return playstore(args, pack.getContext());
             }
         },
 //        file {
@@ -46,35 +46,35 @@ public class search extends ParamCommand {
 //            public String exec(ExecutePack pack) {
 //                List<String> args = pack.get(ArrayList.class, 1);
 //                MainPack p = ((MainPack) pack);
-//                return file(args, p.currentDirectory, p.res, p.outputable);
+//                return file(args, p.getCurrentDirectory(), p.getResources(), p.outputable);
 //            }
 //        },
         gg {
             @Override
             public String exec(ExecutePack pack) {
                 List<String> args = pack.getList();
-                return google(args, pack.context);
+                return google(args, pack.getContext());
             }
         },
         yt {
             @Override
             public String exec(ExecutePack pack) {
                 List<String> args = pack.getList();
-                return youTube(args, pack.context);
+                return youTube(args, pack.getContext());
             }
         },
         u {
             @Override
             public String exec(ExecutePack pack) {
                 List<String> args = pack.getList();
-                return url(TextProcessor.toPlanString(args, Tuils.SPACE), pack.context);
+                return url(TextProcessor.toPlanString(args, Tuils.SPACE), pack.getContext());
             }
         },
         dd {
             @Override
             public String exec(ExecutePack pack) {
                 List<String> args = pack.getList();
-                return duckDuck(args, pack.context);
+                return duckDuck(args, pack.getContext());
             }
         };
 
@@ -110,7 +110,7 @@ public class search extends ParamCommand {
 
         @Override
         public String onNotArgEnough(ExecutePack pack, int n) {
-            return pack.context.getString(R.string.help_search);
+            return pack.getContext().getString(R.string.help_search);
         }
 
         @Override

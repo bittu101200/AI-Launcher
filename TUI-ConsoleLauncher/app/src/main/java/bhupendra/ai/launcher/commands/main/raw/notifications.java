@@ -46,7 +46,7 @@ public class notifications extends ParamCommand implements APICommand {
 
             @Override
             public String onArgNotFound(ExecutePack pack, int index) {
-                return pack.context.getString(R.string.output_appnotfound);
+                return pack.getContext().getString(R.string.output_appnotfound);
             }
         },
         exc {
@@ -64,7 +64,7 @@ public class notifications extends ParamCommand implements APICommand {
 
             @Override
             public String onArgNotFound(ExecutePack pack, int index) {
-                return pack.context.getString(R.string.output_appnotfound);
+                return pack.getContext().getString(R.string.output_appnotfound);
             }
         },
         color {
@@ -87,7 +87,7 @@ public class notifications extends ParamCommand implements APICommand {
                 if(index == 1) res = R.string.output_invalidcolor;
                 else res = R.string.output_appnotfound;
 
-                return pack.context.getString(res);
+                return pack.getContext().getString(res);
             }
         },
         format {
@@ -106,7 +106,7 @@ public class notifications extends ParamCommand implements APICommand {
 
             @Override
             public String onArgNotFound(ExecutePack pack, int index) {
-                return pack.context.getString(R.string.invalid_integer);
+                return pack.getContext().getString(R.string.invalid_integer);
             }
         },
         add_filter {
@@ -125,7 +125,7 @@ public class notifications extends ParamCommand implements APICommand {
 
             @Override
             public String onArgNotFound(ExecutePack pack, int index) {
-                return pack.context.getString(R.string.invalid_integer);
+                return pack.getContext().getString(R.string.invalid_integer);
             }
         },
         add_format {
@@ -144,7 +144,7 @@ public class notifications extends ParamCommand implements APICommand {
 
             @Override
             public String onArgNotFound(ExecutePack pack, int index) {
-                return pack.context.getString(R.string.invalid_integer);
+                return pack.getContext().getString(R.string.invalid_integer);
             }
         },
         rm_filter {
@@ -162,7 +162,7 @@ public class notifications extends ParamCommand implements APICommand {
 
             @Override
             public String onArgNotFound(ExecutePack pack, int index) {
-                return pack.context.getString(R.string.invalid_integer);
+                return pack.getContext().getString(R.string.invalid_integer);
             }
         },
         rm_format {
@@ -180,7 +180,7 @@ public class notifications extends ParamCommand implements APICommand {
 
             @Override
             public String onArgNotFound(ExecutePack pack, int index) {
-                return pack.context.getString(R.string.invalid_integer);
+                return pack.getContext().getString(R.string.invalid_integer);
             }
         },
         file {
@@ -191,7 +191,7 @@ public class notifications extends ParamCommand implements APICommand {
 
             @Override
             public String exec(ExecutePack pack) {
-                pack.context.startActivity(FileSystemManager.openFile(pack.context, new File(FileSystemManager.getFolder(), NotificationManager.PATH)));
+                pack.getContext().startActivity(FileSystemManager.openFile(pack.getContext(), new File(FileSystemManager.getFolder(), NotificationManager.PATH)));
                 return null;
             }
         },
@@ -204,9 +204,9 @@ public class notifications extends ParamCommand implements APICommand {
             @Override
             public String exec(ExecutePack pack) {
                 try {
-                    pack.context.startActivity(new Intent("android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS"));
+                    pack.getContext().startActivity(new Intent("android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS"));
                 } catch (Exception e) {
-                    return pack.context.getString(R.string.activity_not_found);
+                    return pack.getContext().getString(R.string.activity_not_found);
                 }
                 return null;
             }
@@ -219,7 +219,7 @@ public class notifications extends ParamCommand implements APICommand {
 
             @Override
             public String exec(ExecutePack pack) {
-                pack.context.startActivity(Tuils.webPage("https://github.com/Andre1299/TUI-ConsoleLauncher/wiki/Notifications"));
+                pack.getContext().startActivity(Tuils.webPage("https://github.com/Andre1299/TUI-ConsoleLauncher/wiki/Notifications"));
                 return null;
             }
         };
@@ -256,7 +256,7 @@ public class notifications extends ParamCommand implements APICommand {
 
         @Override
         public String onNotArgEnough(ExecutePack pack, int n) {
-            return pack.context.getString(R.string.help_notifications);
+            return pack.getContext().getString(R.string.help_notifications);
         }
     }
 

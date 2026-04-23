@@ -39,13 +39,13 @@ public class tui extends ParamCommand {
             public String exec(ExecutePack pack) {
                 MainPack info = (MainPack) pack;
 
-                DevicePolicyManager policy = (DevicePolicyManager) info.context.getSystemService(Context.DEVICE_POLICY_SERVICE);
-                ComponentName name = new ComponentName(info.context, PolicyReceiver.class);
+                DevicePolicyManager policy = (DevicePolicyManager) info.getContext().getSystemService(Context.DEVICE_POLICY_SERVICE);
+                ComponentName name = new ComponentName(info.getContext(), PolicyReceiver.class);
                 policy.removeActiveAdmin(name);
 
                 Uri packageURI = Uri.parse("package:" + BuildConfig.APPLICATION_ID);
                 Intent uninstallIntent = new Intent(Intent.ACTION_DELETE, packageURI);
-                info.context.startActivity(uninstallIntent);
+                info.getContext().startActivity(uninstallIntent);
 
                 return null;
             }
@@ -56,7 +56,7 @@ public class tui extends ParamCommand {
                 MainPack info = (MainPack) pack;
                 return "Version:" + Tuils.SPACE + BuildConfig.VERSION_NAME + " (code: " + BuildConfig.VERSION_CODE + ")" +
                         (BuildConfig.DEBUG ? Tuils.NEWLINE + BuildConfig.BUILD_TYPE : Tuils.EMPTYSTRING) +
-                        Tuils.NEWLINE + Tuils.NEWLINE + info.res.getString(R.string.output_about);
+                        Tuils.NEWLINE + Tuils.NEWLINE + info.getResources().getString(R.string.output_about);
             }
         },
         log {
@@ -69,14 +69,14 @@ public class tui extends ParamCommand {
             public String exec(ExecutePack pack) {
                 Intent i = new Intent(UIManager.ACTION_LOGTOFILE);
                 i.putExtra(UIManager.FILE_NAME, pack.getString());
-                LocalBroadcastManager.getInstance(pack.context.getApplicationContext()).sendBroadcast(i);
+                LocalBroadcastManager.getInstance(pack.getContext().getApplicationContext()).sendBroadcast(i);
 
                 return null;
             }
 
             @Override
             public String onNotArgEnough(ExecutePack pack, int n) {
-                return pack.context.getString(R.string.help_tui);
+                return pack.getContext().getString(R.string.help_tui);
             }
         },
         priority {
@@ -93,18 +93,18 @@ public class tui extends ParamCommand {
 
             @Override
             public String onNotArgEnough(ExecutePack pack, int n) {
-                return pack.context.getString(R.string.help_tui);
+                return pack.getContext().getString(R.string.help_tui);
             }
 
             @Override
             public String onArgNotFound(ExecutePack pack, int index) {
-                return pack.context.getString(R.string.output_invalidarg);
+                return pack.getContext().getString(R.string.output_invalidarg);
             }
         },
         sourcecode {
             @Override
             public String exec(ExecutePack pack) {
-                pack.context.startActivity(Tuils.webPage("https://github.com/cycloarcane/TUI-ConsoleLauncher"));
+                pack.getContext().startActivity(Tuils.webPage("https://github.com/cycloarcane/TUI-ConsoleLauncher"));
                 return null;
             }
         },
@@ -113,8 +113,8 @@ public class tui extends ParamCommand {
             public String exec(ExecutePack pack) {
                 FileSystemManager.deleteContentOnly(FileSystemManager.getFolder());
 
-                ((LauncherActivity) pack.context).addMessage(pack.context.getString(R.string.tui_reset), null);
-                ((Reloadable) pack.context).reload();
+                ((LauncherActivity) pack.getContext()).addMessage(pack.getContext().getString(R.string.tui_reset), null);
+                ((Reloadable) pack.getContext()).reload();
                 return null;
             }
         },
@@ -126,8 +126,8 @@ public class tui extends ParamCommand {
                 Intent intent = new Intent(Intent.ACTION_VIEW);
                 intent.setDataAndType(selectedUri, "resource/folder");
 
-                if (intent.resolveActivityInfo(pack.context.getPackageManager(), 0) != null) {
-                    pack.context.startActivity(intent);
+                if (intent.resolveActivityInfo(pack.getContext().getPackageManager(), 0) != null) {
+                    pack.getContext().startActivity(intent);
                 } else {
                     return FileSystemManager.getFolder().getAbsolutePath();
                 }

@@ -15,7 +15,7 @@ import bhupendra.ai.launcher.tuils.Tuils;
 public class exit implements CommandAbstraction {
     @Override
     public String exec(ExecutePack pack) throws Exception {
-        DeviceStateManager.resetPreferredLauncherAndOpenChooser(pack.context);
+        DeviceStateManager.resetPreferredLauncherAndOpenChooser(pack.getContext());
         return null;
     }
 

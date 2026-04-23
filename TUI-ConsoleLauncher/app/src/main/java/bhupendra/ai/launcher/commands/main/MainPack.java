@@ -113,4 +113,27 @@ public class MainPack extends ExecutePack {
 
         commandColor = TerminalManager.NO_COLOR;
     }
+
+    @Override public Context getContext() { return context; }
+    @Override public Resources getResources() { return res; }
+    @Override public File getCurrentDirectory() { return currentDirectory; }
+    @Override public void setCurrentDirectory(File directory) { this.currentDirectory = directory; }
+    @Override public WifiManager getWifiManager() { return wifi; }
+    @Override public ConnectivityManager getConnectivityManager() { return connectivityMgr; }
+    @Override public Object getConnectMgr() { return connectMgr; }
+    @Override public ContactManager getContactManager() { return contacts; }
+    @Override public MusicManager2 getMusicManager() { return player; }
+    @Override public AliasManager getAliasManager() { return aliasManager; }
+    @Override public AppsManager getAppsManager() { return appsManager; }
+    @Override public bhupendra.ai.launcher.commands.CommandsPreferences getCmdPrefs() { return cmdPrefs; }
+    @Override public String getLastCommand() { return lastCommand; }
+    @Override public void setLastCommand(String command) { this.lastCommand = command; }
+    @Override public Redirectator getRedirectator() { return redirectator; }
+    @Override public ShellHolder getShellHolder() { return shellHolder; }
+    @Override public RssManager getRssManager() { return rssManager; }
+    @Override public OkHttpClient getHttpClient() { return client; }
+    @Override public bhupendra.ai.launcher.ai.AISubsystem getAiSubsystem() { return aiSubsystem; }
+    @Override public int getCommandColor() { return commandColor; }
+    @Override public void setCommandColor(int color) { this.commandColor = color; }
+
 }

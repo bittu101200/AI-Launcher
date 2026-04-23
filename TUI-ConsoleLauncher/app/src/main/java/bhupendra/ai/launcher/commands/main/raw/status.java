@@ -32,12 +32,12 @@ public class status implements CommandAbstraction {
         MainPack info = (MainPack) pack;
 
 //        wifi
-        ConnectivityManager connManager = (ConnectivityManager) info.context.getSystemService(Context.CONNECTIVITY_SERVICE);
+        ConnectivityManager connManager = (ConnectivityManager) info.getContext().getSystemService(Context.CONNECTIVITY_SERVICE);
         NetworkInfo mWifi = connManager.getNetworkInfo(ConnectivityManager.TYPE_WIFI);
         boolean wifiConnected = mWifi.isConnected();
 
 //        battery
-        Intent batteryIntent = info.context.getApplicationContext().registerReceiver(null, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
+        Intent batteryIntent = info.getContext().getApplicationContext().registerReceiver(null, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
         int rawlevel = batteryIntent.getIntExtra("level", -1);
         double scale = batteryIntent.getIntExtra("scale", -1);
         double level = -1;
@@ -59,7 +59,7 @@ public class status implements CommandAbstraction {
         } catch (Exception e) {}
 
 //        brightness
-        ContentResolver cResolver = pack.context.getApplicationContext().getContentResolver();
+        ContentResolver cResolver = pack.getContext().getApplicationContext().getContentResolver();
         int b = 0;
         try {
             b = Settings.System.getInt(cResolver, SCREEN_BRIGHTNESS);
@@ -72,7 +72,7 @@ public class status implements CommandAbstraction {
         } catch (Exception e) {}
 
 //        location
-        LocationManager lm = (LocationManager) pack.context.getSystemService(Context.LOCATION_SERVICE);
+        LocationManager lm = (LocationManager) pack.getContext().getSystemService(Context.LOCATION_SERVICE);
         boolean gps_enabled = false;
         boolean network_enabled = false;
 
@@ -92,12 +92,12 @@ public class status implements CommandAbstraction {
 
         StringBuilder builder = new StringBuilder();
         builder
-                .append(info.res.getString(R.string.battery_label)).append(Tuils.SPACE).append(level).append("%").append(Tuils.NEWLINE)
-                .append(info.res.getString(R.string.wifi_label)).append(Tuils.SPACE).append(wifiConnected).append(Tuils.NEWLINE)
-                .append(info.res.getString(R.string.mobile_data_label)).append(Tuils.SPACE).append(mobileOn).append(Tuils.NEWLINE)
-                .append(info.res.getString(R.string.bluetooth_label)).append(Tuils.SPACE).append(bluetoothOn).append(Tuils.NEWLINE)
-                .append(info.res.getString(R.string.location_label)).append(Tuils.SPACE).append(gps_enabled || network_enabled).append(Tuils.NEWLINE)
-                .append(info.res.getString(R.string.brightness_label)).append(Tuils.SPACE).append(autobrightnessState == SCREEN_BRIGHTNESS_MODE_AUTOMATIC ? "(auto) " : Tuils.EMPTYSTRING).append(b).append("%");
+                .append(info.getResources().getString(R.string.battery_label)).append(Tuils.SPACE).append(level).append("%").append(Tuils.NEWLINE)
+                .append(info.getResources().getString(R.string.wifi_label)).append(Tuils.SPACE).append(wifiConnected).append(Tuils.NEWLINE)
+                .append(info.getResources().getString(R.string.mobile_data_label)).append(Tuils.SPACE).append(mobileOn).append(Tuils.NEWLINE)
+                .append(info.getResources().getString(R.string.bluetooth_label)).append(Tuils.SPACE).append(bluetoothOn).append(Tuils.NEWLINE)
+                .append(info.getResources().getString(R.string.location_label)).append(Tuils.SPACE).append(gps_enabled || network_enabled).append(Tuils.NEWLINE)
+                .append(info.getResources().getString(R.string.brightness_label)).append(Tuils.SPACE).append(autobrightnessState == SCREEN_BRIGHTNESS_MODE_AUTOMATIC ? "(auto) " : Tuils.EMPTYSTRING).append(b).append("%");
 
         return builder.toString();
     }

@@ -22,7 +22,7 @@ public class help implements CommandAbstraction {
         MainPack info = (MainPack) pack;
         CommandAbstraction cmd = info.get(CommandAbstraction.class);
         int res = cmd == null ? R.string.output_commandnotfound : cmd.helpRes();
-        return "Priority: " + info.cmdPrefs.getPriority(cmd) + Tuils.NEWLINE + info.res.getString(res);
+        return "Priority: " + info.getCmdPrefs().getPriority(cmd) + Tuils.NEWLINE + info.getResources().getString(res);
     }
 
     @Override
@@ -57,7 +57,7 @@ public class help implements CommandAbstraction {
     @Override
     public String onArgNotFound(ExecutePack pack, int index) {
         MainPack info = (MainPack) pack;
-        return info.res.getString(R.string.output_commandnotfound);
+        return info.getResources().getString(R.string.output_commandnotfound);
     }
 
 }

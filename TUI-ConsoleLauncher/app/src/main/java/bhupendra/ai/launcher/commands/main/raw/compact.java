@@ -21,13 +21,13 @@ public class compact implements CommandAbstraction {
     @Override
     public String exec(ExecutePack pack) throws Exception {
         MainPack mp = (MainPack) pack;
-        AISubsystem ai = mp.aiSubsystem;
+        AISubsystem ai = mp.getAiSubsystem();
         if (ai == null || !ai.isAvailable()) return "[AI subsystem not available]";
 
         List<ConversationTurn> history = ai.getConversationManager().getHistory();
         if (history.isEmpty()) return "[No conversation history to compact]";
 
-        Tuils.sendOutput(Color.GRAY, pack.context, "[compacting conversation history...]");
+        Tuils.sendOutput(Color.GRAY, pack.getContext(), "[compacting conversation history...]");
         CompactionEngine engine = new CompactionEngine();
         String prompt = engine.buildCompactionPrompt(history);
 
@@ -38,10 +38,10 @@ public class compact implements CommandAbstraction {
                     ConversationTurn summary = new ConversationTurn(
                         ConversationTurn.Role.ASSISTANT, "[Compacted] " + r.text);
                     engine.applyCompaction(ai.getConversationManager(), summary);
-                    Tuils.sendOutput(Color.GREEN, pack.context,
+                    Tuils.sendOutput(Color.GREEN, pack.getContext(),
                         "[compacted — " + ai.getConversationManager().getHistory().size() + " turn(s) remain]");
                 } else {
-                    Tuils.sendOutput(Color.RED, pack.context, "[compaction failed]");
+                    Tuils.sendOutput(Color.RED, pack.getContext(), "[compaction failed]");
                 }
             }
             @Override public void onStateChange(String rid, AIRequestState s) {}

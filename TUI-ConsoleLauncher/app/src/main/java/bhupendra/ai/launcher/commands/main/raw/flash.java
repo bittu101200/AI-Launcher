@@ -16,17 +16,17 @@ public class flash implements CommandAbstraction {
 
     @Override
     public String exec(ExecutePack pack) {
-        if (ContextCompat.checkSelfPermission(pack.context, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
+        if (ContextCompat.checkSelfPermission(pack.getContext(), Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
 
-            ActivityCompat.requestPermissions((Activity) pack.context, new String[]{Manifest.permission.CAMERA}, LauncherActivity.COMMAND_REQUEST_PERMISSION);
-            return pack.context.getString(R.string.output_waitingpermission);
+            ActivityCompat.requestPermissions((Activity) pack.getContext(), new String[]{Manifest.permission.CAMERA}, LauncherActivity.COMMAND_REQUEST_PERMISSION);
+            return pack.getContext().getString(R.string.output_waitingpermission);
         }
 
-        TorchManager.getInstance().toggle(pack.context);
+        TorchManager.getInstance().toggle(pack.getContext());
 
 //        final MainPack info = (MainPack) pack;
 //        if (!info.canUseFlash) {
-//            return info.res.getString(R.string.output_flashlightnotavailable);
+//            return info.getResources().getString(R.string.output_flashlightnotavailable);
 //        }
 //
 //        final boolean flashOn = info.isFlashOn;
@@ -34,7 +34,7 @@ public class flash implements CommandAbstraction {
 //            info.initCamera();
 //
 //            if(info.camera == null) {
-//                return info.res.getString(R.string.output_problemcamera);
+//                return info.getResources().getString(R.string.output_problemcamera);
 //            }
 //
 //            new Thread() {
@@ -73,17 +73,17 @@ public class flash implements CommandAbstraction {
 //            }.start();
 //        } else {
 //            if(!flashOn) {
-//                flashOnMarshy(info.context);
+//                flashOnMarshy(info.getContext());
 //            } else {
-//                flashOffMarshy(info.context);
+//                flashOffMarshy(info.getContext());
 //            }
 //        }
 //
 //        info.isFlashOn = !flashOn;
 //        if (info.isFlashOn) {
-//            return info.res.getString(R.string.output_flashon);
+//            return info.getResources().getString(R.string.output_flashon);
 //        } else {
-//            return info.res.getString(R.string.output_flashoff);
+//            return info.getResources().getString(R.string.output_flashoff);
 //        }
         return null;
     }

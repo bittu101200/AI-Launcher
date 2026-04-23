@@ -10,13 +10,13 @@ public class refresh implements CommandAbstraction {
     @Override
     public String exec(ExecutePack pack) {
         MainPack info = (MainPack) pack;
-        info.appsManager.fill();
-        info.aliasManager.reload();
-        if(info.player != null) info.player.refresh();
-        info.contacts.refreshContacts(info.context);
-        info.rssManager.refresh();
+        info.getAppsManager().fill();
+        info.getAliasManager().reload();
+        if(info.getMusicManager() != null) info.getMusicManager().refresh();
+        info.getContactManager().refreshContacts(info.getContext());
+        info.getRssManager().refresh();
 
-        return info.res.getString(R.string.output_refresh);
+        return info.getResources().getString(R.string.output_refresh);
     }
 
     @Override

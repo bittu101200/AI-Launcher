@@ -48,7 +48,7 @@ public class calc implements PermanentSuggestionCommand {
     @Override
     public String onNotArgEnough(ExecutePack pack, int nArgs) {
         MainPack info = (MainPack) pack;
-        return info.res.getString(helpRes());
+        return info.getResources().getString(helpRes());
     }
 
     @Override

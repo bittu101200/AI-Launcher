@@ -35,7 +35,7 @@ public class rss extends ParamCommand {
                 long tm = pack.get(long.class);
                 String url = pack.getString();
 
-                return ((MainPack) pack).rssManager.add(id, tm, url);
+                return pack.getRssManager().add(id, tm, url);
             }
 
             @Override
@@ -48,7 +48,7 @@ public class rss extends ParamCommand {
             public String exec(ExecutePack pack) {
                 int id = pack.getInt();
 
-                return ((MainPack) pack).rssManager.rm(id);
+                return pack.getRssManager().rm(id);
             }
 
             @Override
@@ -61,7 +61,7 @@ public class rss extends ParamCommand {
         ls {
             @Override
             public String exec(ExecutePack pack) {
-                return ((MainPack) pack).rssManager.list();
+                return pack.getRssManager().list();
             }
 
             @Override
@@ -73,7 +73,7 @@ public class rss extends ParamCommand {
             @Override
             public String exec(ExecutePack pack) {
                 int id = pack.getInt();
-                return ((MainPack) pack).rssManager.l(id);
+                return pack.getRssManager().l(id);
             }
 
             @Override
@@ -87,7 +87,7 @@ public class rss extends ParamCommand {
                 int id = pack.getInt();
                 boolean show = pack.getBoolean();
 
-                return ((MainPack) pack).rssManager.setShow(id, show);
+                return pack.getRssManager().setShow(id, show);
             }
 
             @Override
@@ -101,7 +101,7 @@ public class rss extends ParamCommand {
                 int id = pack.getInt();
                 long tm = pack.get(long.class);
 
-                return ((MainPack) pack).rssManager.setTime(id, tm);
+                return pack.getRssManager().setTime(id, tm);
             }
 
             @Override
@@ -112,7 +112,7 @@ public class rss extends ParamCommand {
         time_format {
             @Override
             public String exec(ExecutePack pack) {
-                return ((MainPack) pack).rssManager.setTimeFormat(pack.getInt(), pack.getString());
+                return pack.getRssManager().setTimeFormat(pack.getInt(), pack.getString());
             }
 
             @Override
@@ -131,7 +131,7 @@ public class rss extends ParamCommand {
                 int id = pack.getInt();
                 String s = pack.getString();
 
-                return ((MainPack) pack).rssManager.setFormat(id, s);
+                return pack.getRssManager().setFormat(id, s);
             }
         },
         color {
@@ -145,12 +145,12 @@ public class rss extends ParamCommand {
                 int id = pack.getInt();
                 String c = pack.getString();
 
-                return ((MainPack) pack).rssManager.setColor(id, c);
+                return pack.getRssManager().setColor(id, c);
             }
 
             @Override
             public String onArgNotFound(ExecutePack pack, int index) {
-                if(index == 2) return pack.context.getString(R.string.output_invalidcolor);
+                if(index == 2) return pack.getContext().getString(R.string.output_invalidcolor);
                 return super.onArgNotFound(pack, index);
             }
         },
@@ -162,7 +162,7 @@ public class rss extends ParamCommand {
 
             @Override
             public String exec(ExecutePack pack) {
-                return ((MainPack) pack).rssManager.setEntryTag(pack.getInt(), pack.getString());
+                return pack.getRssManager().setEntryTag(pack.getInt(), pack.getString());
             }
         },
         date_tag {
@@ -173,7 +173,7 @@ public class rss extends ParamCommand {
 
             @Override
             public String exec(ExecutePack pack) {
-                return ((MainPack) pack).rssManager.setDateTag(pack.getInt(), pack.getString());
+                return pack.getRssManager().setDateTag(pack.getInt(), pack.getString());
             }
         },
         last_check {
@@ -185,19 +185,19 @@ public class rss extends ParamCommand {
             @Override
             public String exec(ExecutePack pack) {
                 Node n = XMLPrefsManager.findNode(new File(FileSystemManager.getFolder(), RssManager.PATH), RssManager.RSS_LABEL, new String[] {RssManager.ID_ATTRIBUTE}, new String[] {String.valueOf(pack.getInt())});
-                if(n == null) return pack.context.getString(R.string.id_notfound);
+                if(n == null) return pack.getContext().getString(R.string.id_notfound);
 
                 Element el = (Element) n;
 
                 String value = el.hasAttribute(RssManager.LASTCHECKED_ATTRIBUTE) ? el.getAttribute(RssManager.LASTCHECKED_ATTRIBUTE) : null;
-                if(value == null) return pack.context.getString(R.string.rss_never_checked);
+                if(value == null) return pack.getContext().getString(R.string.rss_never_checked);
 
                 try {
                     return TimeManager.instance.replace(XMLPrefsManager.get(Rss.rss_time_format), Long.parseLong(value),
                             Integer.MAX_VALUE).toString();
                 } catch (Exception e) {
                     Tuils.log(e);
-                    return pack.context.getString(R.string.output_error);
+                    return pack.getContext().getString(R.string.output_error);
                 }
             }
         },
@@ -209,7 +209,7 @@ public class rss extends ParamCommand {
 
             @Override
             public String exec(ExecutePack pack) {
-                if(!((MainPack) pack).rssManager.updateRss(pack.getInt(), false, true)) return pack.context.getString(R.string.id_notfound);
+                if(!pack.getRssManager().updateRss(pack.getInt(), false, true)) return pack.getContext().getString(R.string.id_notfound);
                 return null;
             }
         },
@@ -221,8 +221,8 @@ public class rss extends ParamCommand {
 
             @Override
             public String exec(ExecutePack pack) {
-                RssManager.Rss rss = ((MainPack) pack).rssManager.findId(pack.getInt());
-                if(rss == null) return pack.context.getString(R.string.id_notfound);
+                RssManager.Rss rss = pack.getRssManager().findId(pack.getInt());
+                if(rss == null) return pack.getContext().getString(R.string.id_notfound);
 
                 return rss.toString();
             }
@@ -238,7 +238,7 @@ public class rss extends ParamCommand {
                 int id = pack.getInt();
                 String r = pack.getString();
 
-                return ((MainPack) pack).rssManager.setIncludeIfMatches(id, r);
+                return pack.getRssManager().setIncludeIfMatches(id, r);
             }
         },
         exclude_if_matches {
@@ -252,7 +252,7 @@ public class rss extends ParamCommand {
                 int id = pack.getInt();
                 String r = pack.getString();
 
-                return ((MainPack) pack).rssManager.setExcludeIfMatches(id, r);
+                return pack.getRssManager().setExcludeIfMatches(id, r);
             }
         },
         add_command {
@@ -275,7 +275,7 @@ public class rss extends ParamCommand {
                     return e.toString();
                 }
 
-                return ((MainPack) pack).rssManager.addRegexCommand(id, on, regex, cmd);
+                return pack.getRssManager().addRegexCommand(id, on, regex, cmd);
             }
         },
         rm_command {
@@ -286,7 +286,7 @@ public class rss extends ParamCommand {
 
             @Override
             public String exec(ExecutePack pack) {
-                return ((MainPack) pack).rssManager.rmRegexCommand(pack.getInt());
+                return pack.getRssManager().rmRegexCommand(pack.getInt());
             }
         },
         wifi_only {
@@ -300,13 +300,13 @@ public class rss extends ParamCommand {
                 int id = pack.getInt();
                 boolean w = pack.getBoolean();
 
-                return ((MainPack) pack).rssManager.setWifiOnly(id, w);
+                return pack.getRssManager().setWifiOnly(id, w);
             }
         },
         add_format {
             @Override
             public String exec(ExecutePack pack) {
-                return ((MainPack) pack).rssManager.addFormat(pack.getInt(), pack.getString());
+                return pack.getRssManager().addFormat(pack.getInt(), pack.getString());
             }
 
             @Override
@@ -317,7 +317,7 @@ public class rss extends ParamCommand {
         rm_format {
             @Override
             public String exec(ExecutePack pack) {
-                return ((MainPack) pack).rssManager.removeFormat(pack.getInt());
+                return pack.getRssManager().removeFormat(pack.getInt());
             }
 
             @Override
@@ -328,7 +328,7 @@ public class rss extends ParamCommand {
         file {
             @Override
             public String exec(ExecutePack pack) {
-                pack.context.startActivity(FileSystemManager.openFile(pack.context, new File(FileSystemManager.getFolder(), RssManager.PATH)));
+                pack.getContext().startActivity(FileSystemManager.openFile(pack.getContext(), new File(FileSystemManager.getFolder(), RssManager.PATH)));
                 return null;
             }
 
@@ -365,12 +365,12 @@ public class rss extends ParamCommand {
 
         @Override
         public String onNotArgEnough(ExecutePack pack, int n) {
-            return pack.context.getString(R.string.help_rss);
+            return pack.getContext().getString(R.string.help_rss);
         }
 
         @Override
         public String onArgNotFound(ExecutePack pack, int index) {
-            return pack.context.getString(R.string.invalid_integer);
+            return pack.getContext().getString(R.string.invalid_integer);
         }
     }
 

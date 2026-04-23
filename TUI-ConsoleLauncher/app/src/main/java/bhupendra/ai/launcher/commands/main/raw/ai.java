@@ -25,16 +25,16 @@ public class ai implements CommandAbstraction {
         String query = pack.getString();
         Log.d(TAG, "exec: query=" + query);
         if (query == null || query.trim().isEmpty()) {
-            return pack.context.getString(R.string.help_ai);
+            return pack.getContext().getString(R.string.help_ai);
         }
         MainPack mp = (MainPack) pack;
-        AISubsystem aiSubsystem = mp.aiSubsystem;
+        AISubsystem aiSubsystem = mp.getAiSubsystem();
         Log.d(TAG, "exec: aiSubsystem=" + aiSubsystem + " available=" + (aiSubsystem != null && aiSubsystem.isAvailable()));
         if (aiSubsystem == null || !aiSubsystem.isAvailable()) {
             return "[AI subsystem not available — check ai.xml]";
         }
 
-        Tuils.sendOutput(Color.GRAY, pack.context, "[thinking...]", TerminalManager.CATEGORY_OUTPUT);
+        Tuils.sendOutput(Color.GRAY, pack.getContext(), "[thinking...]", TerminalManager.CATEGORY_OUTPUT);
 
         aiSubsystem.submit(query.trim(), new AICallback() {
             private StringBuilder tokenBuffer = new StringBuilder();
@@ -69,7 +69,7 @@ public class ai implements CommandAbstraction {
                         }
                         
                         if (notify != null) {
-                            Tuils.sendOutput(Color.GRAY, pack.context, notify, TerminalManager.CATEGORY_OUTPUT);
+                            Tuils.sendOutput(Color.GRAY, pack.getContext(), notify, TerminalManager.CATEGORY_OUTPUT);
                         }
                         return;
                     }
@@ -79,15 +79,15 @@ public class ai implements CommandAbstraction {
                         return;
                     }
                     // Send FULL text here so it can be parsed as markdown correctly
-                    Tuils.sendOutput(Color.WHITE, pack.context, r.text, TerminalManager.CATEGORY_AI);
+                    Tuils.sendOutput(Color.WHITE, pack.getContext(), r.text, TerminalManager.CATEGORY_AI);
                 } else if (r.type == AIResponse.Type.ERROR) {
-                    Tuils.sendOutput(Color.RED, pack.context, "[AI error: " + r.errorMessage + "]", TerminalManager.CATEGORY_ERROR);
+                    Tuils.sendOutput(Color.RED, pack.getContext(), "[AI error: " + r.errorMessage + "]", TerminalManager.CATEGORY_ERROR);
                 }
             }
 
             @Override public void onStateChange(String rid, AIRequestState s) {
                 if (s == AIRequestState.EXECUTING_TOOLS) {
-                    Tuils.sendOutput(Color.GRAY, pack.context, "[executing tools...]", TerminalManager.CATEGORY_OUTPUT);
+                    Tuils.sendOutput(Color.GRAY, pack.getContext(), "[executing tools...]", TerminalManager.CATEGORY_OUTPUT);
                 }
             }
         });
@@ -97,6 +97,6 @@ public class ai implements CommandAbstraction {
     @Override public int[] argType() { return new int[]{CommandAbstraction.PLAIN_TEXT}; }
     @Override public int priority() { return 0; }
     @Override public int helpRes() { return R.string.help_ai; }
-    @Override public String onArgNotFound(ExecutePack pack, int indexNotFound) { return pack.context.getString(R.string.help_ai); }
-    @Override public String onNotArgEnough(ExecutePack pack, int nArgs) { return pack.context.getString(R.string.help_ai); }
+    @Override public String onArgNotFound(ExecutePack pack, int indexNotFound) { return pack.getContext().getString(R.string.help_ai); }
+    @Override public String onNotArgEnough(ExecutePack pack, int nArgs) { return pack.getContext().getString(R.string.help_ai); }
 }

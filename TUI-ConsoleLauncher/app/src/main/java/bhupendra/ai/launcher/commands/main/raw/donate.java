@@ -30,8 +30,8 @@ public class donate implements CommandAbstraction {
     public String exec(ExecutePack pack) {
         MainPack info = (MainPack) pack;
         Intent donateIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(DONATE_URL));
-        info.context.startActivity(donateIntent);
-        return info.res.getString(R.string.output_rate);
+        info.getContext().startActivity(donateIntent);
+        return info.getResources().getString(R.string.output_rate);
     }
 
     @Override

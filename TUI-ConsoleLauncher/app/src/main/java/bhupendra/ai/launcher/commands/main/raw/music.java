@@ -17,13 +17,13 @@ public class music extends ParamCommand {
 
             @Override
             public String exec(ExecutePack pack) {
-                if(((MainPack) pack).player == null) {
+                if(pack.getMusicManager() == null) {
                     execute("NEXT");
                     return null;
                 }
 
-                String title = ((MainPack) pack).player.playNext();
-                if(title != null) return pack.context.getString(R.string.output_playing) + Tuils.SPACE + title;
+                String title = pack.getMusicManager().playNext();
+                if(title != null) return pack.getContext().getString(R.string.output_playing) + Tuils.SPACE + title;
                 return null;
             }
         },
@@ -31,13 +31,13 @@ public class music extends ParamCommand {
 
             @Override
             public String exec(ExecutePack pack) {
-                if(((MainPack) pack).player == null) {
+                if(pack.getMusicManager() == null) {
                     execute("PREVIOUS");
                     return null;
                 }
 
-                String title = ((MainPack) pack).player.playPrev();
-                if(title != null) return pack.context.getString(R.string.output_playing) + Tuils.SPACE + title;
+                String title = pack.getMusicManager().playPrev();
+                if(title != null) return pack.getContext().getString(R.string.output_playing) + Tuils.SPACE + title;
                 return null;
             }
         },
@@ -45,35 +45,35 @@ public class music extends ParamCommand {
 
             @Override
             public String exec(ExecutePack pack) {
-                if(((MainPack) pack).player == null) return pack.context.getString(R.string.output_musicdisabled);
+                if(pack.getMusicManager() == null) return pack.getContext().getString(R.string.output_musicdisabled);
 
-                return ((MainPack) pack).player.lsSongs();
+                return pack.getMusicManager().lsSongs();
             }
         },
         play {
 
             @Override
             public String exec(ExecutePack pack) {
-                if(((MainPack) pack).player == null) {
+                if(pack.getMusicManager() == null) {
                     execute("PLAY_PAUSE");
                     return null;
                 }
 
-                String title = ((MainPack) pack).player.play();
+                String title = pack.getMusicManager().play();
                 if(title == null) return null;
-                return pack.context.getString(R.string.output_playing) + Tuils.SPACE + title;
+                return pack.getContext().getString(R.string.output_playing) + Tuils.SPACE + title;
             }
         },
         stop {
 
             @Override
             public String exec(ExecutePack pack) {
-                if(((MainPack) pack).player == null) {
+                if(pack.getMusicManager() == null) {
                     execute("CLOSE");
                     return null;
                 }
 
-                ((MainPack) pack).player.stop();
+                pack.getMusicManager().stop();
                 return null;
             }
         },
@@ -85,29 +85,29 @@ public class music extends ParamCommand {
 
             @Override
             public String exec(ExecutePack pack) {
-                if(((MainPack) pack).player == null) return pack.context.getString(R.string.output_musicdisabled);
+                if(pack.getMusicManager() == null) return pack.getContext().getString(R.string.output_musicdisabled);
 
                 String s = pack.getString();
-                ((MainPack) pack).player.select(s);
+                pack.getMusicManager().select(s);
                 return null;
             }
 
             @Override
             public String onArgNotFound(ExecutePack pack, int indexNotFound) {
-                return pack.context.getString(R.string.output_songnotfound);
+                return pack.getContext().getString(R.string.output_songnotfound);
             }
         },
         info {
 
             @Override
             public String exec(ExecutePack pack) {
-                if(((MainPack) pack).player == null) return pack.context.getString(R.string.output_musicdisabled);
+                if(pack.getMusicManager() == null) return pack.getContext().getString(R.string.output_musicdisabled);
 
                 StringBuilder builder = new StringBuilder();
 
-                MusicManager2 m = ((MainPack) pack).player;
+                MusicManager2 m = pack.getMusicManager();
                 Song song = m.get(m.getSongIndex());
-                if(song == null) return pack.context.getString(R.string.output_songnotfound);
+                if(song == null) return pack.getContext().getString(R.string.output_songnotfound);
 
                 builder.append("Name: ").append(song.getTitle()).append(Tuils.NEWLINE);
                 if(song.getID() == -1) builder.append("Path: ").append(song.getPath()).append(Tuils.NEWLINE);
@@ -139,15 +139,15 @@ public class music extends ParamCommand {
 
             @Override
             public String exec(ExecutePack pack) {
-                if(((MainPack) pack).player == null) return pack.context.getString(R.string.output_musicdisabled);
+                if(pack.getMusicManager() == null) return pack.getContext().getString(R.string.output_musicdisabled);
 
-                ((MainPack) pack).player.seekTo(pack.getInt() * 1000);
+                pack.getMusicManager().seekTo(pack.getInt() * 1000);
                 return null;
             }
 
             @Override
             public String onArgNotFound(ExecutePack pack, int indexNotFound) {
-                return pack.context.getString(R.string.invalid_integer);
+                return pack.getContext().getString(R.string.invalid_integer);
             }
         };
 
@@ -183,7 +183,7 @@ public class music extends ParamCommand {
 
         @Override
         public String onNotArgEnough(ExecutePack pack, int n) {
-            return pack.context.getString(R.string.help_music);
+            return pack.getContext().getString(R.string.help_music);
         }
 
         @Override

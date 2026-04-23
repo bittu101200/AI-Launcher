@@ -22,11 +22,11 @@ public class data implements APICommand, CommandAbstraction {
     public String exec(ExecutePack pack) {
         MainPack info = (MainPack) pack;
         boolean active = toggle(info);
-        return info.res.getString(R.string.output_data) + Tuils.SPACE + Boolean.toString(active);
+        return info.getResources().getString(R.string.output_data) + Tuils.SPACE + Boolean.toString(active);
     }
 
     private boolean toggle(MainPack info) {
-        if (info.connectivityMgr == null) {
+        if (info.getConnectivityManager() == null) {
             try {
                 init(info);
             } catch (Exception e) {}
@@ -34,19 +34,19 @@ public class data implements APICommand, CommandAbstraction {
 
         boolean mobileConnected;
 
-        if (info.wifi == null)
-            info.wifi = (WifiManager) info.context.getSystemService(Context.WIFI_SERVICE);
+        if (info.getWifiManager() == null)
+            ((MainPack) info).wifi = (WifiManager) info.getContext().getSystemService(Context.WIFI_SERVICE);
 
-        if (info.wifi.isWifiEnabled())
+        if (info.getWifiManager().isWifiEnabled())
             mobileConnected = true;
         else {
-            NetworkInfo mobileInfo = info.connectivityMgr.getNetworkInfo(ConnectivityManager.TYPE_MOBILE);
+            NetworkInfo mobileInfo = info.getConnectivityManager().getNetworkInfo(ConnectivityManager.TYPE_MOBILE);
             State state = mobileInfo.getState();
             mobileConnected = state == NetworkInfo.State.CONNECTED || state == NetworkInfo.State.CONNECTING;
         }
 
         try {
-            info.setMobileDataEnabledMethod.invoke(info.connectMgr, !mobileConnected);
+            info.setMobileDataEnabledMethod.invoke(info.getConnectMgr(), !mobileConnected);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -55,12 +55,12 @@ public class data implements APICommand, CommandAbstraction {
     }
 
     private void init(MainPack info) throws Exception {
-        info.connectivityMgr = (ConnectivityManager) info.context.getSystemService(Context.CONNECTIVITY_SERVICE);
-        Class<?> conmanClass = Class.forName(info.connectivityMgr.getClass().getName());
+        info.connectivityMgr = (ConnectivityManager) info.getContext().getSystemService(Context.CONNECTIVITY_SERVICE);
+        Class<?> conmanClass = Class.forName(info.getConnectivityManager().getClass().getName());
         Field iConnectivityManagerField = conmanClass.getDeclaredField("mService");
         iConnectivityManagerField.setAccessible(true);
-        info.connectMgr = iConnectivityManagerField.get(info.connectivityMgr);
-        Class<?> iConnectivityManagerClass = Class.forName(info.connectMgr.getClass().getName());
+        info.connectMgr = iConnectivityManagerField.get(info.getConnectivityManager());
+        Class<?> iConnectivityManagerClass = Class.forName(info.getConnectMgr().getClass().getName());
         info.setMobileDataEnabledMethod = iConnectivityManagerClass.getDeclaredMethod("setMobileDataEnabled", Boolean.TYPE);
         info.setMobileDataEnabledMethod.setAccessible(true);
     }

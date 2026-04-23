@@ -28,9 +28,9 @@ public class alias extends ParamCommand {
             @Override
             public String exec(ExecutePack pack) {
                 ArrayList<String> args = pack.getList();
-                if(args.size() < 2) return pack.context.getString(R.string.output_lessarg);
+                if(args.size() < 2) return pack.getContext().getString(R.string.output_lessarg);
 
-                ((MainPack) pack).aliasManager.add(pack.context, args.remove(0), TextProcessor.toPlanString(args, Tuils.SPACE));
+                pack.getAliasManager().add(pack.getContext(), args.remove(0), TextProcessor.toPlanString(args, Tuils.SPACE));
                 return null;
             }
 
@@ -43,8 +43,8 @@ public class alias extends ParamCommand {
             @Override
             public String exec(ExecutePack pack) {
                 ArrayList<String> args = pack.getList();
-                if(args.size() < 1) return pack.context.getString(R.string.output_lessarg);
-                ((MainPack) pack).aliasManager.remove(pack.context, args.get(0));
+                if(args.size() < 1) return pack.getContext().getString(R.string.output_lessarg);
+                pack.getAliasManager().remove(pack.getContext(), args.get(0));
                 return null;
             }
 
@@ -56,7 +56,7 @@ public class alias extends ParamCommand {
         file {
             @Override
             public String exec(ExecutePack pack) {
-                pack.context.startActivity(FileSystemManager.openFile(pack.context, new File(FileSystemManager.getFolder(), AliasManager.PATH)));
+                pack.getContext().startActivity(FileSystemManager.openFile(pack.getContext(), new File(FileSystemManager.getFolder(), AliasManager.PATH)));
                 return null;
             }
 
@@ -68,7 +68,7 @@ public class alias extends ParamCommand {
         ls {
             @Override
             public String exec(ExecutePack pack) {
-                return ((MainPack) pack).aliasManager.printAliases();
+                return pack.getAliasManager().printAliases();
             }
 
             @Override
@@ -84,7 +84,7 @@ public class alias extends ParamCommand {
 
             @Override
             public String exec(ExecutePack pack) {
-                pack.context.startActivity(Tuils.webPage("https://github.com/Andre1299/TUI-ConsoleLauncher/wiki/Alias"));
+                pack.getContext().startActivity(Tuils.webPage("https://github.com/Andre1299/TUI-ConsoleLauncher/wiki/Alias"));
                 return null;
             }
         };
@@ -116,7 +116,7 @@ public class alias extends ParamCommand {
 
         @Override
         public String onNotArgEnough(ExecutePack pack, int index) {
-            return pack.context.getString(R.string.help_alias);
+            return pack.getContext().getString(R.string.help_alias);
         }
 
         @Override
