@@ -1616,60 +1616,66 @@ public class Tuils {
         if (text == null) return null;
         SpannableStringBuilder ssb = new SpannableStringBuilder(text);
 
-        // 1. Code Blocks (``` ... ```) - Using a distinct color
-        java.util.regex.Pattern codeBlockPattern = java.util.regex.Pattern.compile("```[\\s\\S]*?```");
-        java.util.regex.Matcher codeBlockMatcher = codeBlockPattern.matcher(ssb);
-        int offset = 0;
-        while (codeBlockMatcher.find()) {
-            int start = codeBlockMatcher.start() - offset;
-            int end = codeBlockMatcher.end() - offset;
-            ssb.setSpan(new ForegroundColorSpan(0xFF888888), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-            ssb.setSpan(new android.text.style.TypefaceSpan("monospace"), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-            ssb.delete(end - 3, end);
-            ssb.delete(start, start + 3);
-            offset += 6;
-        }
+        // Process in order, using simple replacement that handles its own length changes
+        
+        // 1. Code Blocks (``` ... ```)
+        applyRegex(ssb, "```[\\s\\S]*?```", (builder, start, end) -> {
+            builder.setSpan(new ForegroundColorSpan(0xFF888888), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            builder.setSpan(new android.text.style.TypefaceSpan("monospace"), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            builder.delete(end - 3, end);
+            builder.delete(start, start + 3);
+        });
 
         // 2. Bold (**text**)
-        java.util.regex.Pattern boldPattern = java.util.regex.Pattern.compile("\\*\\*(.*?)\\*\\*");
-        java.util.regex.Matcher boldMatcher = boldPattern.matcher(ssb);
-        offset = 0;
-        while (boldMatcher.find()) {
-            int start = boldMatcher.start() - offset;
-            int end = boldMatcher.end() - offset;
-            ssb.setSpan(new android.text.style.StyleSpan(android.graphics.Typeface.BOLD), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-            ssb.delete(end - 2, end);
-            ssb.delete(start, start + 2);
-            offset += 4;
-        }
+        applyRegex(ssb, "\\*\\*(.*?)\\*\\*", (builder, start, end) -> {
+            builder.setSpan(new android.text.style.StyleSpan(android.graphics.Typeface.BOLD), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            builder.delete(end - 2, end);
+            builder.delete(start, start + 2);
+        });
 
         // 3. Italic (*text*)
-        java.util.regex.Pattern italicPattern = java.util.regex.Pattern.compile("\\*(.*?)\\*");
-        java.util.regex.Matcher italicMatcher = italicPattern.matcher(ssb);
-        offset = 0;
-        while (italicMatcher.find()) {
-            int start = italicMatcher.start() - offset;
-            int end = italicMatcher.end() - offset;
-            ssb.setSpan(new android.text.style.StyleSpan(android.graphics.Typeface.ITALIC), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-            ssb.delete(end - 1, end);
-            ssb.delete(start, start + 1);
-            offset += 2;
-        }
+        applyRegex(ssb, "\\*(.*?)\\*", (builder, start, end) -> {
+            builder.setSpan(new android.text.style.StyleSpan(android.graphics.Typeface.ITALIC), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            builder.delete(end - 1, end);
+            builder.delete(start, start + 1);
+        });
 
         // 4. Inline Code (`text`)
-        java.util.regex.Pattern inlineCodePattern = java.util.regex.Pattern.compile("`(.*?)`");
-        java.util.regex.Matcher inlineCodeMatcher = inlineCodePattern.matcher(ssb);
-        offset = 0;
-        while (inlineCodeMatcher.find()) {
-            int start = inlineCodeMatcher.start() - offset;
-            int end = inlineCodeMatcher.end() - offset;
-            ssb.setSpan(new ForegroundColorSpan(0xFF888888), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-            ssb.setSpan(new android.text.style.TypefaceSpan("monospace"), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-            ssb.delete(end - 1, end);
-            ssb.delete(start, start + 1);
-            offset += 2;
-        }
+        applyRegex(ssb, "`(.*?)`", (builder, start, end) -> {
+            builder.setSpan(new ForegroundColorSpan(0xFF888888), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            builder.setSpan(new android.text.style.TypefaceSpan("monospace"), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            builder.delete(end - 1, end);
+            builder.delete(start, start + 1);
+        });
+
+        // 5. Headers (### text)
+        applyRegex(ssb, "(?m)^#{1,6}\\s+(.*)$", (builder, start, end) -> {
+            builder.setSpan(new android.text.style.StyleSpan(android.graphics.Typeface.BOLD), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            builder.setSpan(new android.text.style.RelativeSizeSpan(1.1f), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            // Just strip the # and keep the text
+            int hashEnd = start;
+            while(hashEnd < end && builder.charAt(hashEnd) == '#') hashEnd++;
+            while(hashEnd < end && Character.isWhitespace(builder.charAt(hashEnd))) hashEnd++;
+            builder.delete(start, hashEnd);
+        });
 
         return ssb;
+    }
+
+    private interface RegexAction {
+        void apply(SpannableStringBuilder builder, int start, int end);
+    }
+
+    private static void applyRegex(SpannableStringBuilder ssb, String pattern, RegexAction action) {
+        java.util.regex.Pattern p = java.util.regex.Pattern.compile(pattern);
+        java.util.regex.Matcher m = p.matcher(ssb.toString());
+        int offset = 0;
+        while (m.find()) {
+            int start = m.start() - offset;
+            int end = m.end() - offset;
+            int oldLen = ssb.length();
+            action.apply(ssb, start, end);
+            offset += (oldLen - ssb.length());
+        }
     }
 }

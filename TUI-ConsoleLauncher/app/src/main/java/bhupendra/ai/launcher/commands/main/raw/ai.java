@@ -37,28 +37,23 @@ public class ai implements CommandAbstraction {
 
         aiSubsystem.submit(query.trim(), new AICallback() {
             private StringBuilder tokenBuffer = new StringBuilder();
-
             private final java.util.regex.Pattern TOOL_CALL_PATTERN = java.util.regex.Pattern.compile("^tool_[A-Za-z0-9_]+\\(.*\\)$", java.util.regex.Pattern.DOTALL);
 
             @Override public void onToken(String rid, String token) {
-                Log.d(TAG, "onToken: " + token);
+                // HACK: Don't stream tokens because it breaks markdown parsing midway.
+                // We'll wait for the full response in onResponse.
+                // If we want streaming, TerminalManager needs complex partial markdown logic.
                 tokenBuffer.append(token);
-                // If it looks like it's starting a tool call, buffer it
-                if (tokenBuffer.toString().trim().startsWith("tool_")) {
-                    return;
-                }
-                Tuils.sendOutput(Color.WHITE, pack.context, token, TerminalManager.CATEGORY_AI);
             }
 
             @Override public void onResponse(AIResponse r) {
                 Log.d(TAG, "onResponse: type=" + r.type + " text=" + r.text + " err=" + r.errorMessage);
                 if (r.type == AIResponse.Type.TEXT && r.text != null) {
                     String currentText = r.text.trim();
-                    // If it looks exactly like a raw tool call that escaped parsing, hide it
                     if (TOOL_CALL_PATTERN.matcher(currentText).matches()) {
-                        Log.d(TAG, "onResponse: Hiding escaped tool call: " + currentText);
                         return;
                     }
+                    // Send FULL text here so it can be parsed as markdown correctly
                     Tuils.sendOutput(Color.WHITE, pack.context, r.text, TerminalManager.CATEGORY_AI);
                 } else if (r.type == AIResponse.Type.ERROR) {
                     Tuils.sendOutput(Color.RED, pack.context, "[AI error: " + r.errorMessage + "]", TerminalManager.CATEGORY_ERROR);
@@ -66,7 +61,6 @@ public class ai implements CommandAbstraction {
             }
 
             @Override public void onStateChange(String rid, AIRequestState s) {
-                Log.d(TAG, "onStateChange: " + s);
                 if (s == AIRequestState.EXECUTING_TOOLS) {
                     Tuils.sendOutput(Color.GRAY, pack.context, "[executing tools...]", TerminalManager.CATEGORY_OUTPUT);
                 }

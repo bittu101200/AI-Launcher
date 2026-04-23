@@ -34,11 +34,16 @@ public class WebFetcher {
                 String html = content.toString();
                 Document doc = Jsoup.parse(html, urlString);
                 
-                // Noise Management: Remove non-content elements
-                doc.select("script, style, nav, footer, header, aside, .sidebar, .menu, .ads").remove();
+                // Aggressive Noise Management
+                doc.select("script, style, nav, footer, header, aside, .sidebar, .menu, .ads, .header, .footer, #header, #footer").remove();
                 
+                // DDG Specific Noise
+                if (urlString.contains("duckduckgo.com")) {
+                    doc.select(".header--wrapper, .search-filters, .region-filter, .time-filter").remove();
+                }
+
                 // Focus on article/main if available
-                Element mainContent = doc.select("article, main, .content, #content, .post, #post").first();
+                Element mainContent = doc.select("article, main, .content, #content, .post, #post, .results, #results").first();
                 if (mainContent == null) mainContent = doc.body();
 
                 return htmlToMarkdown(mainContent);
@@ -65,11 +70,15 @@ public class WebFetcher {
             } else if (tag.equals("li")) {
                 md.append("- ").append(child.text()).append("\n");
             } else if (tag.equals("a")) {
-                md.append("[").append(child.text()).append("](").append(child.attr("abs:href")).append(")");
+                String text = child.text().trim();
+                String href = child.attr("abs:href");
+                if (!text.isEmpty() && !href.isEmpty()) {
+                    md.append("[").append(text).append("](").append(href).append(")");
+                }
             } else if (child.children().size() > 0) {
                 md.append(htmlToMarkdown(child));
             } else {
-                String text = child.text();
+                String text = child.text().trim();
                 if (!text.isEmpty()) md.append(text).append("\n\n");
             }
         }
