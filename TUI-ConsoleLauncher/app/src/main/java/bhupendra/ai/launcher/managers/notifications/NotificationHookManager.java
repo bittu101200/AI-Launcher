@@ -6,6 +6,9 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.service.notification.StatusBarNotification;
 import android.util.Log;
+import android.media.AudioManager;
+import android.media.ToneGenerator;
+import android.graphics.Color;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
 import org.json.JSONArray;
@@ -35,10 +38,9 @@ public class NotificationHookManager {
     private final List<Hook> hooks = new ArrayList<>();
     private final Context context;
 
-    // Debouncing / Spam prevention
     private final Map<String, String> lastProcessedContent = new HashMap<>();
     private final Map<String, Long> lastTriggerTime = new HashMap<>();
-    private static final long COOLDOWN_MS = 10000; // 10 seconds per hook/sender
+    private static final long COOLDOWN_MS = 10000; 
 
     public static class Hook {
         public String id;
@@ -142,18 +144,12 @@ public class NotificationHookManager {
         final String text = extras != null ? String.valueOf(extras.getCharSequence(Notification.EXTRA_TEXT)) : "";
         final String pkg = sbn.getPackageName();
 
-        // 1. Ignore generic "X new messages" notifications from WhatsApp
-        if (text.matches("\\d+ new messages")) {
-            return;
-        }
+        if (text.matches("\\d+ new messages")) return;
 
         for (final Hook h : hooks) {
             if (!h.enabled) continue;
-
-            // 2. Time Check
             if (!isWithinTimeWindow(h.timeWindow)) continue;
 
-            // 3. Matching Logic
             if (h.packageName != null && !h.packageName.isEmpty() && !h.packageName.equals(pkg)) continue;
             if (h.senderRegex != null && !h.senderRegex.isEmpty()) {
                 if (!Pattern.compile(h.senderRegex, Pattern.CASE_INSENSITIVE).matcher(title).find()) continue;
@@ -162,27 +158,20 @@ public class NotificationHookManager {
                 if (!Pattern.compile(h.contentRegex, Pattern.CASE_INSENSITIVE).matcher(text).find()) continue;
             }
 
-            // 4. Debounce - Don't reply to the exact same text twice in a row, or within cooldown
             String stateKey = h.id + "_" + title;
             String lastText = lastProcessedContent.get(stateKey);
             long now = System.currentTimeMillis();
             long lastTime = lastTriggerTime.getOrDefault(stateKey, 0L);
 
-            if (text.equals(lastText) || (now - lastTime < COOLDOWN_MS)) {
-                continue;
-            }
+            if (text.equals(lastText) || (now - lastTime < COOLDOWN_MS)) continue;
 
             lastProcessedContent.put(stateKey, text);
             lastTriggerTime.put(stateKey, now);
 
-            Log.d(TAG, "Hook " + h.id + " matched for unique content: " + text);
-
-            // 5. Log Update if requested
             if (h.logUpdate) {
                 NotificationUpdateManager.getInstance().logUpdate(title, text, pkg);
             }
 
-            // 6. Trigger Reply (AI or Static)
             if (h.useAI) {
                 triggerAIReply(sbn, title, text, h.aiInstruction);
             } else if (h.replyText != null && !h.replyText.isEmpty()) {
@@ -212,11 +201,13 @@ public class NotificationHookManager {
         AISubsystem ai = AISubsystem.getInstance();
         if (ai == null || !ai.isAvailable()) return;
 
-        // Use a more distinct instruction to keep the AI in "background reply mode"
         String query = String.format("BACKGROUND AUTOMATION: Generate a short, natural reply to a notification.\\n" +
                 "From: %s\\nMessage: %s\\nGoal: %s\\n\\n" +
-                "CRITICAL: Output ONLY the reply text. Do NOT use tools. Do NOT add meta-commentary. " +
-                "Reply in the same language as the incoming message (e.g. if message is in Hindi, reply in Hindi).",
+                "INSTRUCTIONS:\\n" +
+                "1. Output ONLY the reply text.\\n" +
+                "2. If the message seems URGENT, prefix your reply with [URGENT: <brief reason why>].\\n" +
+                "3. Do NOT use tools or add meta-commentary.\\n" +
+                "4. Reply in the same language as the message.",
                 sender, message, instruction);
 
         ai.submit(query, new AICallback() {
@@ -224,16 +215,50 @@ public class NotificationHookManager {
             @Override public void onResponse(AIResponse r) {
                 if (r.type == AIResponse.Type.TEXT && r.text != null && !r.text.isEmpty()) {
                     String cleanReply = r.text.trim().replaceAll("^\"|\"$", "");
-                    // Skip if AI just returned JSON or tool calls despite instructions
-                    if (cleanReply.startsWith("{") || cleanReply.startsWith("[") || cleanReply.contains("tool_")) {
-                        Log.d(TAG, "AI returned invalid background response: " + cleanReply);
-                        return;
+                    
+                    if (cleanReply.contains("[URGENT")) {
+                        String reason = "Urgent message detected";
+                        if (cleanReply.contains("[URGENT:") && cleanReply.contains("]")) {
+                            int start = cleanReply.indexOf("[URGENT:") + 8;
+                            int end = cleanReply.indexOf("]", start);
+                            reason = cleanReply.substring(start, end).trim();
+                            cleanReply = cleanReply.substring(0, cleanReply.indexOf("[URGENT:")) + cleanReply.substring(end + 1);
+                        } else {
+                            cleanReply = cleanReply.replace("[URGENT]", "").trim();
+                        }
+                        triggerUrgentAlert(reason);
+                    } else {
+                        if (cleanReply.startsWith("{") || cleanReply.startsWith("[") || cleanReply.contains("tool_")) return;
                     }
-                    triggerReply(sbn, cleanReply);
+                    
+                    if (!cleanReply.trim().isEmpty()) {
+                        triggerReply(sbn, cleanReply.trim());
+                    }
                 }
             }
             @Override public void onStateChange(String rid, AIRequestState s) {}
         });
+    }
+
+    private void triggerUrgentAlert(String reason) {
+        try {
+            new Thread(() -> {
+                try {
+                    ToneGenerator toneG = new ToneGenerator(AudioManager.STREAM_ALARM, 100);
+                    toneG.startTone(ToneGenerator.TONE_CDMA_EMERGENCY_RINGBACK, 1500);
+                    Thread.sleep(1500);
+                    toneG.release();
+                } catch (Exception e) {
+                    Log.e(TAG, "Tone failed", e);
+                }
+            }).start();
+            
+            // Orange: 255, 165, 0
+            int orange = Color.rgb(255, 165, 0);
+            Tuils.sendOutput(orange, context, "[URGENT] BEEP REASON: " + reason.toUpperCase(), 0);
+        } catch (Exception e) {
+            Log.e(TAG, "Urgent alert failed", e);
+        }
     }
 
     private void triggerReply(StatusBarNotification sbn, String replyText) {

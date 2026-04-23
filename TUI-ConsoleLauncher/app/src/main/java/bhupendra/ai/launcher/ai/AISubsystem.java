@@ -216,6 +216,8 @@ public class AISubsystem {
             java.util.Collections.emptyMap(),
             ToolRiskClass.STATE_CHANGING));
 
+        toolRegistry.register(ToolRegistry.Tier.SYSTEM, new SystemBeepTool());
+
         java.util.Map<String, String> smsArgs = new java.util.HashMap<>();
         smsArgs.put("recipient", "The name of the contact or a direct phone number.");
         smsArgs.put("message", "The content of the SMS message.");
