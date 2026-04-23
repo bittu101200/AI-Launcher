@@ -14,6 +14,7 @@ import bhupendra.ai.launcher.tuils.Tuils;
 import android.util.Log;
 
 import bhupendra.ai.launcher.managers.TerminalManager;
+import org.json.JSONObject;
 
 public class ai implements CommandAbstraction {
 
@@ -47,8 +48,32 @@ public class ai implements CommandAbstraction {
             }
 
             @Override public void onResponse(AIResponse r) {
-                Log.d(TAG, "onResponse: type=" + r.type + " text=" + r.text + " err=" + r.errorMessage);
+                Log.d(TAG, "onResponse: type=" + r.type + " text=" + (r.text != null ? r.text.substring(0, Math.min(20, r.text.length())) : "null") + " err=" + r.errorMessage + " isTool=" + r.isToolOutput);
                 if (r.type == AIResponse.Type.TEXT && r.text != null) {
+                    if (r.isToolOutput && r.toolCall != null) {
+                        // Minimal notification for web tools
+                        String notify = null;
+                        try {
+                            JSONObject args = new JSONObject(r.toolCall.argumentsJson);
+                            if ("system.web_search_query".equals(r.toolCall.toolName)) {
+                                notify = "[searching: " + args.optString("query", "...") + "]";
+                            } else if ("system.web_fetch".equals(r.toolCall.toolName)) {
+                                String url = args.optString("url", "...");
+                                if (url.length() > 40) url = url.substring(0, 37) + "...";
+                                notify = "[fetching: " + url + "]";
+                            } else {
+                                notify = "[executed: " + r.toolCall.toolName + "]";
+                            }
+                        } catch (Exception e) {
+                            notify = "[executed: " + r.toolCall.toolName + "]";
+                        }
+                        
+                        if (notify != null) {
+                            Tuils.sendOutput(Color.GRAY, pack.context, notify, TerminalManager.CATEGORY_OUTPUT);
+                        }
+                        return;
+                    }
+
                     String currentText = r.text.trim();
                     if (TOOL_CALL_PATTERN.matcher(currentText).matches()) {
                         return;

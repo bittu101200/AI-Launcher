@@ -411,7 +411,7 @@ public class AISubsystem {
 
                 conversationManager.append(ConversationTurn.tool(toolCall.callId, output != null ? output : "[done]"));
                 if (output != null && !output.isEmpty()) {
-                    callback.onResponse(AIResponse.toolOutput(requestId, output));
+                    callback.onResponse(AIResponse.toolOutput(requestId, output, toolCall));
                 }
                 executeToolAtIndex(requestId, toolCalls, index + 1, callback);
             } catch (Exception e) {
