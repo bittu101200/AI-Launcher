@@ -5,6 +5,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.service.notification.StatusBarNotification;
+import android.util.Log;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
 import org.json.JSONArray;
@@ -13,7 +14,9 @@ import org.json.JSONObject;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.regex.Pattern;
 
 import bhupendra.ai.launcher.managers.FileSystemManager;
@@ -26,10 +29,16 @@ import bhupendra.ai.launcher.ai.AIRequestState;
 
 public class NotificationHookManager {
 
+    private static final String TAG = "NotificationHook";
     private static final String FILENAME = "notification_hooks.json";
     private static NotificationHookManager instance;
     private final List<Hook> hooks = new ArrayList<>();
     private final Context context;
+
+    // Debouncing / Spam prevention
+    private final Map<String, String> lastProcessedContent = new HashMap<>();
+    private final Map<String, Long> lastTriggerTime = new HashMap<>();
+    private static final long COOLDOWN_MS = 10000; // 10 seconds per hook/sender
 
     public static class Hook {
         public String id;
@@ -38,12 +47,10 @@ public class NotificationHookManager {
         public String contentRegex;
         public String replyText;
         public boolean enabled = true;
-        
-        // New powerful fields
         public boolean useAI = false;
         public String aiInstruction;
         public boolean logUpdate = false;
-        public String timeWindow; // Format: "HH:mm-HH:mm"
+        public String timeWindow; 
 
         public JSONObject toJson() throws Exception {
             JSONObject json = new JSONObject();
@@ -135,13 +142,18 @@ public class NotificationHookManager {
         final String text = extras != null ? String.valueOf(extras.getCharSequence(Notification.EXTRA_TEXT)) : "";
         final String pkg = sbn.getPackageName();
 
+        // 1. Ignore generic "X new messages" notifications from WhatsApp
+        if (text.matches("\\d+ new messages")) {
+            return;
+        }
+
         for (final Hook h : hooks) {
             if (!h.enabled) continue;
 
-            // 1. Time Check
+            // 2. Time Check
             if (!isWithinTimeWindow(h.timeWindow)) continue;
 
-            // 2. Matching Logic
+            // 3. Matching Logic
             if (h.packageName != null && !h.packageName.isEmpty() && !h.packageName.equals(pkg)) continue;
             if (h.senderRegex != null && !h.senderRegex.isEmpty()) {
                 if (!Pattern.compile(h.senderRegex, Pattern.CASE_INSENSITIVE).matcher(title).find()) continue;
@@ -150,19 +162,34 @@ public class NotificationHookManager {
                 if (!Pattern.compile(h.contentRegex, Pattern.CASE_INSENSITIVE).matcher(text).find()) continue;
             }
 
-            // 3. Log Update if requested
+            // 4. Debounce - Don't reply to the exact same text twice in a row, or within cooldown
+            String stateKey = h.id + "_" + title;
+            String lastText = lastProcessedContent.get(stateKey);
+            long now = System.currentTimeMillis();
+            long lastTime = lastTriggerTime.getOrDefault(stateKey, 0L);
+
+            if (text.equals(lastText) || (now - lastTime < COOLDOWN_MS)) {
+                continue;
+            }
+
+            lastProcessedContent.put(stateKey, text);
+            lastTriggerTime.put(stateKey, now);
+
+            Log.d(TAG, "Hook " + h.id + " matched for unique content: " + text);
+
+            // 5. Log Update if requested
             if (h.logUpdate) {
                 NotificationUpdateManager.getInstance().logUpdate(title, text, pkg);
             }
 
-            // 4. Trigger Reply (AI or Static)
+            // 6. Trigger Reply (AI or Static)
             if (h.useAI) {
                 triggerAIReply(sbn, title, text, h.aiInstruction);
             } else if (h.replyText != null && !h.replyText.isEmpty()) {
                 triggerReply(sbn, h.replyText);
             }
             
-            Tuils.sendOutput(context, "[Hook triggered] " + title + " (" + pkg + ")", 0);
+            Tuils.sendOutput(context, "[Hook triggered] " + title, 0);
             break; 
         }
     }
@@ -173,39 +200,36 @@ public class NotificationHookManager {
             String[] parts = window.split("-");
             String[] start = parts[0].split(":");
             String[] end = parts[1].split(":");
-
             Calendar now = Calendar.getInstance();
-            int nowHour = now.get(Calendar.HOUR_OF_DAY);
-            int nowMin = now.get(Calendar.MINUTE);
-            int nowTotal = nowHour * 60 + nowMin;
-
+            int nowTotal = now.get(Calendar.HOUR_OF_DAY) * 60 + now.get(Calendar.MINUTE);
             int startTotal = Integer.parseInt(start[0]) * 60 + Integer.parseInt(start[1]);
             int endTotal = Integer.parseInt(end[0]) * 60 + Integer.parseInt(end[1]);
-
-            if (startTotal <= endTotal) {
-                return nowTotal >= startTotal && nowTotal <= endTotal;
-            } else {
-                // Window crosses midnight
-                return nowTotal >= startTotal || nowTotal <= endTotal;
-            }
-        } catch (Exception e) {
-            return true;
-        }
+            return (startTotal <= endTotal) ? (nowTotal >= startTotal && nowTotal <= endTotal) : (nowTotal >= startTotal || nowTotal <= endTotal);
+        } catch (Exception e) { return true; }
     }
 
     private void triggerAIReply(final StatusBarNotification sbn, String sender, String message, String instruction) {
         AISubsystem ai = AISubsystem.getInstance();
         if (ai == null || !ai.isAvailable()) return;
 
-        String query = String.format("Notification from: %s\nMessage: %s\nInstruction: %s\n" +
-                "Generate a short, natural reply (max 15 words). Output the reply text only.",
+        // Use a more distinct instruction to keep the AI in "background reply mode"
+        String query = String.format("BACKGROUND AUTOMATION: Generate a short, natural reply to a notification.\\n" +
+                "From: %s\\nMessage: %s\\nGoal: %s\\n\\n" +
+                "CRITICAL: Output ONLY the reply text. Do NOT use tools. Do NOT add meta-commentary. " +
+                "Reply in the same language as the incoming message (e.g. if message is in Hindi, reply in Hindi).",
                 sender, message, instruction);
 
         ai.submit(query, new AICallback() {
             @Override public void onToken(String rid, String t) {}
             @Override public void onResponse(AIResponse r) {
                 if (r.type == AIResponse.Type.TEXT && r.text != null && !r.text.isEmpty()) {
-                    triggerReply(sbn, r.text.trim());
+                    String cleanReply = r.text.trim().replaceAll("^\"|\"$", "");
+                    // Skip if AI just returned JSON or tool calls despite instructions
+                    if (cleanReply.startsWith("{") || cleanReply.startsWith("[") || cleanReply.contains("tool_")) {
+                        Log.d(TAG, "AI returned invalid background response: " + cleanReply);
+                        return;
+                    }
+                    triggerReply(sbn, cleanReply);
                 }
             }
             @Override public void onStateChange(String rid, AIRequestState s) {}

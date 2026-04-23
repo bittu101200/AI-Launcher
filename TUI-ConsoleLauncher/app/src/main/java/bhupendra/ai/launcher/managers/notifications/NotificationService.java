@@ -19,6 +19,7 @@ import android.os.Parcel;
 import android.os.Parcelable;
 import android.service.notification.NotificationListenerService;
 import android.service.notification.StatusBarNotification;
+import android.util.Log;
 import androidx.core.app.NotificationCompat;
 import android.text.TextUtils;
 
@@ -46,6 +47,7 @@ import bhupendra.ai.launcher.tuils.Tuils;
 @TargetApi(Build.VERSION_CODES.JELLY_BEAN_MR2)
 public class NotificationService extends NotificationListenerService {
 
+    private static final String TAG = "NotificationService";
     public static NotificationService instance;
     public static final String DESTROY = "destroy";
 
@@ -303,6 +305,7 @@ public class NotificationService extends NotificationListenerService {
 
         manager = getPackageManager();
         enabled = XMLPrefsManager.getBoolean(Notifications.show_notifications) || XMLPrefsManager.get(Notifications.show_notifications).equalsIgnoreCase("enabled");
+        Log.d(TAG, "NotificationService enabled: " + enabled);
 
         pastNotifications = new HashMap<>();
 
@@ -386,6 +389,7 @@ public class NotificationService extends NotificationListenerService {
 
     @Override
     public void onNotificationPosted(StatusBarNotification sbn) {
+        Log.d(TAG, "onNotificationPosted: " + (sbn != null ? sbn.getPackageName() : "null"));
         if(!enabled) return;
 
         queue.offer(sbn);
