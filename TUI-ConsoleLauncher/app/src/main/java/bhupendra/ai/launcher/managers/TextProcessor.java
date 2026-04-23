@@ -36,17 +36,24 @@ public class TextProcessor {
     }
 
     private static void applyRegex(SpannableStringBuilder builder, String regex, RegexAction action) {
-        Pattern pattern = Pattern.compile(regex);
-        Matcher matcher = pattern.matcher(builder);
-        int offset = 0;
-        while (matcher.find()) {
-            int start = matcher.start() + offset;
-            int end = matcher.end() + offset;
-            int oldLen = builder.length();
-            action.apply(builder, start, end);
-            offset += builder.length() - oldLen;
-            matcher = pattern.matcher(builder);
-            matcher.region(start + (builder.length() - oldLen), builder.length());
+        try {
+            Pattern pattern = Pattern.compile(regex);
+            Matcher matcher = pattern.matcher(builder);
+            
+            // Extract all matches first to avoid index shifting issues while iterating
+            List<int[]> matches = new ArrayList<>();
+            while (matcher.find()) {
+                matches.add(new int[]{matcher.start(), matcher.end()});
+            }
+            
+            // Process from back to front so that modifications (deletions/replacements) 
+            // don't invalidate the indices of earlier matches
+            for (int i = matches.size() - 1; i >= 0; i--) {
+                int[] m = matches.get(i);
+                action.apply(builder, m[0], m[1]);
+            }
+        } catch (Exception e) {
+            android.util.Log.e("TextProcessor", "applyRegex error: " + e.getMessage());
         }
     }
     public static void addSeparator(List<String> list, String separator) {

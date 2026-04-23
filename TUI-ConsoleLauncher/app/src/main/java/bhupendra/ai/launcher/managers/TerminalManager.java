@@ -376,7 +376,7 @@ public class TerminalManager {
         // Use standard category output but override the color if specified
         CharSequence finalOut = getFinalText(output, CATEGORY_OUTPUT);
         if (color != TerminalManager.NO_COLOR && finalOut instanceof Spannable) {
-            ((Spannable) finalOut).setSpan(new ForegroundColorSpan(color), 0, finalOut.length(), Spanned.SPAN_MARK_MARK);
+            ((Spannable) finalOut).setSpan(new ForegroundColorSpan(color), 0, finalOut.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
         }
         
         writeToView(TextUtils.concat(Tuils.NEWLINE, finalOut));
@@ -434,65 +434,78 @@ public class TerminalManager {
     }
 
     private CharSequence getFinalText(CharSequence t, int type) {
-        SpannableStringBuilder finalSsb = new SpannableStringBuilder();
-        switch (type) {
-            case CATEGORY_INPUT:
-                boolean su = t.toString().startsWith("su ") || suMode;
-                SpannableString si = TextProcessor.span(inputFormat, inputColor);
-                if(clickCommands || longClickCommands) si.setSpan(new LongClickableSpan(clickCommands ? t.toString() : null, longClickCommands ? t.toString() : null, PrivateIOReceiver.ACTION_INPUT), 0,
-                        si.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        try {
+            SpannableStringBuilder finalSsb = new SpannableStringBuilder();
+            switch (type) {
+                case CATEGORY_INPUT:
+                    boolean su = t.toString().startsWith("su ") || suMode;
+                    SpannableString si = TextProcessor.span(inputFormat, inputColor);
+                    if(clickCommands || longClickCommands) si.setSpan(new LongClickableSpan(clickCommands ? t.toString() : null, longClickCommands ? t.toString() : null, PrivateIOReceiver.ACTION_INPUT), 0,
+                            si.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
 
-                CharSequence processedInput = TimeManager.instance.replace(si);
-                processedInput = TextUtils.replace(processedInput,
-                        new String[] {FORMAT_INPUT, FORMAT_PREFIX, FORMAT_NEWLINE, FORMAT_INPUT.toUpperCase(), FORMAT_PREFIX.toUpperCase(), FORMAT_NEWLINE.toUpperCase()},
-                        new CharSequence[] {t, su ? suPrefix : prefix, Tuils.NEWLINE, t, su ? suPrefix : prefix, Tuils.NEWLINE});
-                finalSsb.append(processedInput);
-                break;
-            case CATEGORY_OUTPUT:
-                t = TextProcessor.parseMarkdown(t);
-                String outputTemplate = XMLPrefsManager.get(Behavior.output_format);
-                int outCol = XMLPrefsManager.getColor(Theme.output_color);
-                
-                int oIndex = outputTemplate.indexOf(FORMAT_OUTPUT);
-                if (oIndex != -1) {
-                    finalSsb.append(outputTemplate.substring(0, oIndex));
-                    finalSsb.append(t);
-                    finalSsb.append(outputTemplate.substring(oIndex + FORMAT_OUTPUT.length()));
-                } else {
-                    finalSsb.append(t);
-                }
-                finalSsb.setSpan(new ForegroundColorSpan(outCol), 0, finalSsb.length(), Spanned.SPAN_MARK_MARK);
-                break;
-            case CATEGORY_AI:
-                t = TextProcessor.parseMarkdown(t);
-                String aiTemplate = XMLPrefsManager.get(Behavior.output_format);
-                int aiCol = XMLPrefsManager.getColor(Theme.output_color);
+                    CharSequence processedInput = TimeManager.instance.replace(si);
+                    processedInput = TextUtils.replace(processedInput,
+                            new String[] {FORMAT_INPUT, FORMAT_PREFIX, FORMAT_NEWLINE, FORMAT_INPUT.toUpperCase(), FORMAT_PREFIX.toUpperCase(), FORMAT_NEWLINE.toUpperCase()},
+                            new CharSequence[] {t, su ? suPrefix : prefix, Tuils.NEWLINE, t, su ? suPrefix : prefix, Tuils.NEWLINE});
+                    finalSsb.append(processedInput);
+                    break;
+                case CATEGORY_OUTPUT:
+                    t = TextProcessor.parseMarkdown(t);
+                    String outputTemplate = XMLPrefsManager.get(Behavior.output_format);
+                    int outCol = XMLPrefsManager.getColor(Theme.output_color);
+                    
+                    if (outputTemplate != null) {
+                        int oIndex = outputTemplate.indexOf(FORMAT_OUTPUT);
+                        if (oIndex != -1) {
+                            finalSsb.append(outputTemplate.substring(0, oIndex));
+                            finalSsb.append(t);
+                            finalSsb.append(outputTemplate.substring(oIndex + FORMAT_OUTPUT.length()));
+                        } else {
+                            finalSsb.append(t);
+                        }
+                    } else {
+                        finalSsb.append(t);
+                    }
+                    finalSsb.setSpan(new ForegroundColorSpan(outCol), 0, finalSsb.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                    break;
+                case CATEGORY_AI:
+                    t = TextProcessor.parseMarkdown(t);
+                    String aiTemplate = XMLPrefsManager.get(Behavior.output_format);
+                    int aiCol = XMLPrefsManager.getColor(Theme.output_color);
 
-                int aiIndex = aiTemplate.indexOf(FORMAT_OUTPUT);
-                if (aiIndex != -1) {
-                    finalSsb.append(aiTemplate.substring(0, aiIndex));
+                    if (aiTemplate != null) {
+                        int aiIndex = aiTemplate.indexOf(FORMAT_OUTPUT);
+                        if (aiIndex != -1) {
+                            finalSsb.append(aiTemplate.substring(0, aiIndex));
+                            finalSsb.append(t);
+                            finalSsb.append(aiTemplate.substring(aiIndex + FORMAT_OUTPUT.length()));
+                        } else {
+                            finalSsb.append(t);
+                        }
+                    } else {
+                        finalSsb.append(t);
+                    }
+                    finalSsb.setSpan(new ForegroundColorSpan(aiCol), 0, finalSsb.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                    break;
+                case CATEGORY_ERROR:
+                    SpannableString ser = TextProcessor.span(outputFormat, Color.RED);
+                    CharSequence err = TextUtils.replace(ser,
+                            new String[] {FORMAT_OUTPUT, FORMAT_NEWLINE, FORMAT_OUTPUT.toUpperCase(), FORMAT_NEWLINE.toUpperCase()},
+                            new CharSequence[] {t, Tuils.NEWLINE, t, Tuils.NEWLINE});
+                    finalSsb.append(err);
+                    break;
+                case CATEGORY_NO_COLOR:
                     finalSsb.append(t);
-                    finalSsb.append(aiTemplate.substring(aiIndex + FORMAT_OUTPUT.length()));
-                } else {
-                    finalSsb.append(t);
-                }
-                finalSsb.setSpan(new ForegroundColorSpan(aiCol), 0, finalSsb.length(), Spanned.SPAN_MARK_MARK);
-                break;
-            case CATEGORY_ERROR:
-                SpannableString ser = TextProcessor.span(outputFormat, Color.RED);
-                CharSequence err = TextUtils.replace(ser,
-                        new String[] {FORMAT_OUTPUT, FORMAT_NEWLINE, FORMAT_OUTPUT.toUpperCase(), FORMAT_NEWLINE.toUpperCase()},
-                        new CharSequence[] {t, Tuils.NEWLINE, t, Tuils.NEWLINE});
-                finalSsb.append(err);
-                break;
-            case CATEGORY_NO_COLOR:
-                finalSsb.append(t);
-                break;
-            default:
-                return null;
+                    break;
+                default:
+                    return null;
+            }
+
+            return finalSsb;
+        } catch (Exception e) {
+            android.util.Log.e("TerminalManager", "getFinalText error: " + e.getMessage(), e);
+            return t; // Fallback to raw text
         }
-
-        return finalSsb;
     }
 
     public void simulateEnter() {
