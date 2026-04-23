@@ -282,4 +282,68 @@ public class DeviceStateManager {
             }
         }
 
+
+    public static boolean isWifiConnected(Context context) {
+        android.net.ConnectivityManager connManager = (android.net.ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
+        if (connManager == null) return false;
+        android.net.NetworkInfo mWifi = connManager.getNetworkInfo(android.net.ConnectivityManager.TYPE_WIFI);
+        return mWifi != null && mWifi.isConnected();
+    }
+
+    public static int getBatteryLevel(Context context) {
+        android.content.Intent batteryIntent = context.getApplicationContext().registerReceiver(null, new android.content.IntentFilter(android.content.Intent.ACTION_BATTERY_CHANGED));
+        if (batteryIntent == null) return -1;
+        int rawlevel = batteryIntent.getIntExtra("level", -1);
+        int scale = batteryIntent.getIntExtra("scale", -1);
+        if (rawlevel >= 0 && scale > 0) {
+            return (int) (rawlevel * 100.0 / scale);
+        }
+        return -1;
+    }
+
+    public static boolean isMobileDataEnabled(Context context) {
+        android.net.ConnectivityManager connManager = (android.net.ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
+        if (connManager == null) return false;
+        try {
+            java.lang.reflect.Method method = connManager.getClass().getDeclaredMethod("getMobileDataEnabled");
+            method.setAccessible(true);
+            return (Boolean) method.invoke(connManager);
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    public static int getBrightnessPercentage(Context context) {
+        try {
+            int b = android.provider.Settings.System.getInt(context.getContentResolver(), android.provider.Settings.System.SCREEN_BRIGHTNESS);
+            return b * 100 / 255;
+        } catch (Exception e) {
+            return 0;
+        }
+    }
+
+    public static boolean isAutoBrightnessEnabled(Context context) {
+        try {
+            int mode = android.provider.Settings.System.getInt(context.getContentResolver(), android.provider.Settings.System.SCREEN_BRIGHTNESS_MODE);
+            return mode == android.provider.Settings.System.SCREEN_BRIGHTNESS_MODE_AUTOMATIC;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    public static boolean isLocationEnabled(Context context) {
+        android.location.LocationManager lm = (android.location.LocationManager) context.getSystemService(Context.LOCATION_SERVICE);
+        if (lm == null) return false;
+        boolean gps_enabled = false;
+        boolean network_enabled = false;
+        try { gps_enabled = lm.isProviderEnabled(android.location.LocationManager.GPS_PROVIDER); } catch(Exception ex) {}
+        try { network_enabled = lm.isProviderEnabled(android.location.LocationManager.NETWORK_PROVIDER); } catch(Exception ex) {}
+        return gps_enabled || network_enabled;
+    }
+
+    public static boolean isBluetoothEnabled() {
+        android.bluetooth.BluetoothAdapter adapter = android.bluetooth.BluetoothAdapter.getDefaultAdapter();
+        return adapter != null && adapter.isEnabled();
+    }
+
 }

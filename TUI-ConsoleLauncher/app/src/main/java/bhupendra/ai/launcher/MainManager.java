@@ -581,8 +581,9 @@ public class MainManager {
                 String[] common = {"ping", "echo", "ls", "grep", "cat", "vi", "top", "ps", "ip", "pkg", "git", "python", "node", "vim", "sed", "awk", "find"};
                 for (String c : common) {
                     if (cmd.equalsIgnoreCase(c)) {
-                        String args = input.length() > cmd.length() ? input.substring(cmd.length()).trim() : "";
-                        bhupendra.ai.launcher.tuils.TermuxManager.execute(mContext, cmd, args);
+                        String argsStr = input.length() > cmd.length() ? input.substring(cmd.length()).trim() : "";
+                        String[] finalArgs = argsStr.isEmpty() ? new String[0] : argsStr.split(" ");
+                        bhupendra.ai.launcher.tuils.TermuxManager.runCommand(mContext, cmd, finalArgs, null, false);
                         return true;
                     }
                 }
