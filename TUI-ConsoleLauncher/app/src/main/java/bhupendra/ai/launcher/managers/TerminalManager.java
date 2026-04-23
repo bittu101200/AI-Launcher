@@ -9,6 +9,7 @@ import android.text.InputType;
 import android.text.Layout;
 import android.text.Spannable;
 import android.text.SpannableString;
+import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.TextUtils;
 import android.text.style.ForegroundColorSpan;
@@ -450,20 +451,43 @@ public class TerminalManager {
                 break;
             case CATEGORY_OUTPUT:
                 t = Tuils.parseMarkdown(t);
-                SpannableString so = Tuils.span(outputFormat, outputColor);
-
-                s = TextUtils.replace(so,
-                        new String[] {FORMAT_OUTPUT, FORMAT_NEWLINE, FORMAT_OUTPUT.toUpperCase(), FORMAT_NEWLINE.toUpperCase()},
-                        new CharSequence[] {t, Tuils.NEWLINE, t, Tuils.NEWLINE});
-
+                // Template handling for output
+                String outputTemplate = XMLPrefsManager.get(Behavior.output_format);
+                int outCol = XMLPrefsManager.getColor(Theme.output_color);
+                
+                SpannableStringBuilder builderOut = new SpannableStringBuilder();
+                int oIndex = outputTemplate.indexOf(FORMAT_OUTPUT);
+                if (oIndex != -1) {
+                    builderOut.append(outputTemplate.substring(0, oIndex));
+                    builderOut.append(t);
+                    builderOut.append(outputTemplate.substring(oIndex + FORMAT_OUTPUT.length()));
+                } else {
+                    builderOut.append(t);
+                }
+                
+                // Wrap in output color IF no spans were already set in markdown
+                builderOut.setSpan(new ForegroundColorSpan(outCol), 0, builderOut.length(), Spanned.SPAN_MARK_MARK);
+                s = builderOut;
                 break;
             case CATEGORY_AI:
                 t = Tuils.parseMarkdown(t);
-                // AI Styling: Output format with output color, but distinct
-                SpannableString sai = Tuils.span(outputFormat, outputColor);
-                s = TextUtils.replace(sai,
-                        new String[] {FORMAT_OUTPUT, FORMAT_NEWLINE, FORMAT_OUTPUT.toUpperCase(), FORMAT_NEWLINE.toUpperCase()},
-                        new CharSequence[] {t, Tuils.NEWLINE, t, Tuils.NEWLINE});
+                // Template handling for AI
+                String aiTemplate = XMLPrefsManager.get(Behavior.output_format);
+                int aiCol = XMLPrefsManager.getColor(Theme.output_color);
+
+                SpannableStringBuilder builderAi = new SpannableStringBuilder();
+                int aiIndex = aiTemplate.indexOf(FORMAT_OUTPUT);
+                if (aiIndex != -1) {
+                    builderAi.append(aiTemplate.substring(0, aiIndex));
+                    builderAi.append(t);
+                    builderAi.append(aiTemplate.substring(aiIndex + FORMAT_OUTPUT.length()));
+                } else {
+                    builderAi.append(t);
+                }
+                
+                // Wrap in AI color
+                builderAi.setSpan(new ForegroundColorSpan(aiCol), 0, builderAi.length(), Spanned.SPAN_MARK_MARK);
+                s = builderAi;
                 break;
             case CATEGORY_ERROR:
                 // Error Styling: Red color

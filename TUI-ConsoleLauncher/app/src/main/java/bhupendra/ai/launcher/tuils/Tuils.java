@@ -1659,6 +1659,11 @@ public class Tuils {
             builder.delete(start, hashEnd);
         });
 
+        // 6. Lists (* text or - text)
+        applyRegex(ssb, "(?m)^\\s*[\\*\\-]\\s+", (builder, start, end) -> {
+            builder.replace(start, end, " • ");
+        });
+
         return ssb;
     }
 
