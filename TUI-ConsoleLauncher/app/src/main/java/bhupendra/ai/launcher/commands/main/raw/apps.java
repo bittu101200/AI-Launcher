@@ -1,5 +1,14 @@
 package bhupendra.ai.launcher.commands.main.raw;
 
+import bhupendra.ai.launcher.managers.DeviceStateManager;
+
+
+import bhupendra.ai.launcher.managers.TextProcessor;
+
+
+import bhupendra.ai.launcher.managers.FileSystemManager;
+
+
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageInfo;
@@ -182,7 +191,7 @@ public class apps extends ParamCommand {
 
             @Override
             public String exec(ExecutePack pack) {
-                pack.context.startActivity(Tuils.openFile(pack.context, new File(Tuils.getFolder(), AppsManager.PATH)));
+                pack.context.startActivity(FileSystemManager.openFile(pack.context, new File(FileSystemManager.getFolder(), AppsManager.PATH)));
                 return null;
             }
         },
@@ -209,7 +218,7 @@ public class apps extends ParamCommand {
 //
 //                if(services.size() == 0) return "[]";
 //                Collections.sort(services);
-//                return Tuils.toPlanString(services, Tuils.NEWLINE);
+//                return TextProcessor.toPlanString(services, Tuils.NEWLINE);
 //            }
 //
 //            @Override
@@ -462,7 +471,7 @@ public class apps extends ParamCommand {
     }
 
     private static void openSettings(Context context, String packageName) {
-        Tuils.openSettingsPage(context, packageName);
+        DeviceStateManager.openSettingsPage(context, packageName);
     }
 
     private static void openPlaystore(Context context, String packageName) {

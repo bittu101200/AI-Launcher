@@ -1,5 +1,8 @@
 package bhupendra.ai.launcher.commands.main.raw;
 
+import bhupendra.ai.launcher.managers.FileSystemManager;
+
+
 import android.content.Intent;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
@@ -170,8 +173,8 @@ public class htmlextract extends ParamCommand {
 
             @Override
             public String exec(ExecutePack pack) {
-                File file = new File(Tuils.getFolder(), HTMLExtractManager.PATH);
-                pack.context.startActivity(Tuils.openFile(pack.context, file));
+                File file = new File(FileSystemManager.getFolder(), HTMLExtractManager.PATH);
+                pack.context.startActivity(FileSystemManager.openFile(pack.context, file));
                 return null;
             }
         };

@@ -1,5 +1,8 @@
 package bhupendra.ai.launcher.managers.notifications.reply;
 
+import bhupendra.ai.launcher.managers.FileSystemManager;
+
+
 import android.annotation.TargetApi;
 import android.app.Notification;
 import android.app.RemoteInput;
@@ -142,7 +145,7 @@ public class ReplyManager implements XMLPrefsElement {
 
         List<Reply> enums = new ArrayList<>(Arrays.asList(Reply.values()));
 
-        File file = new File(Tuils.getFolder(), PATH);
+        File file = new File(FileSystemManager.getFolder(), PATH);
 
         Object[] o;
         try {
@@ -353,7 +356,7 @@ public class ReplyManager implements XMLPrefsElement {
 
     @Override
     public void write(XMLPrefsSave save, String value) {
-        set(new File(Tuils.getFolder(), PATH), save.label(), new String[] {VALUE_ATTRIBUTE}, new String[] {value});
+        set(new File(FileSystemManager.getFolder(), PATH), save.label(), new String[] {VALUE_ATTRIBUTE}, new String[] {value});
     }
 
     @Override
@@ -380,11 +383,11 @@ public class ReplyManager implements XMLPrefsElement {
     }
 
     public static String bind(String pkg) {
-        return XMLPrefsManager.set(new File(Tuils.getFolder(), PATH), pkg, new String[] {ID_ATTRIBUTE}, new String[] {String.valueOf(nextUsableId)});
+        return XMLPrefsManager.set(new File(FileSystemManager.getFolder(), PATH), pkg, new String[] {ID_ATTRIBUTE}, new String[] {String.valueOf(nextUsableId)});
     }
 
     public static String unbind(String pkg) {
-        return XMLPrefsManager.removeNode(new File(Tuils.getFolder(), PATH), pkg);
+        return XMLPrefsManager.removeNode(new File(FileSystemManager.getFolder(), PATH), pkg);
     }
 
     private int nextUsableId() {

@@ -1,5 +1,11 @@
 package bhupendra.ai.launcher.managers;
 
+import bhupendra.ai.launcher.managers.DeviceStateManager;
+
+
+import bhupendra.ai.launcher.managers.FileSystemManager;
+
+
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -81,7 +87,7 @@ public class ThemeManager {
             public void run() {
                 super.run();
 
-                if(!Tuils.hasInternetAccess()) {
+                if(!DeviceStateManager.hasInternetAccess()) {
                     Tuils.sendOutput(Color.RED, context, R.string.no_internet);
                     return;
                 }
@@ -138,11 +144,11 @@ public class ThemeManager {
             return;
         }
 
-        File oldTheme = new File(Tuils.getFolder(), XMLPrefsManager.XMLPrefsRoot.THEME.path);
-        File oldSuggestions = new File(Tuils.getFolder(), XMLPrefsManager.XMLPrefsRoot.SUGGESTIONS.path);
+        File oldTheme = new File(FileSystemManager.getFolder(), XMLPrefsManager.XMLPrefsRoot.THEME.path);
+        File oldSuggestions = new File(FileSystemManager.getFolder(), XMLPrefsManager.XMLPrefsRoot.SUGGESTIONS.path);
         if(keepOld) {
-            Tuils.insertOld(oldTheme);
-            Tuils.insertOld(oldSuggestions);
+            FileSystemManager.insertOld(oldTheme);
+            FileSystemManager.insertOld(oldSuggestions);
         }
 
         theme.renameTo(oldTheme);
@@ -167,11 +173,11 @@ public class ThemeManager {
             suggestions = Pattern.compile(Pattern.quote(colorMatcher.group())).matcher(suggestions).replaceAll(toHexColor(colorMatcher.group()));
         }
 
-        File oldTheme = new File(Tuils.getFolder(), XMLPrefsManager.XMLPrefsRoot.THEME.path);
-        File oldSuggestions = new File(Tuils.getFolder(), XMLPrefsManager.XMLPrefsRoot.SUGGESTIONS.path);
+        File oldTheme = new File(FileSystemManager.getFolder(), XMLPrefsManager.XMLPrefsRoot.THEME.path);
+        File oldSuggestions = new File(FileSystemManager.getFolder(), XMLPrefsManager.XMLPrefsRoot.SUGGESTIONS.path);
         if(keepOld) {
-            Tuils.insertOld(oldTheme);
-            Tuils.insertOld(oldSuggestions);
+            FileSystemManager.insertOld(oldTheme);
+            FileSystemManager.insertOld(oldSuggestions);
         }
         oldTheme.delete();
         oldSuggestions.delete();
@@ -195,14 +201,14 @@ public class ThemeManager {
     }
 
     private void revert() {
-        applyTheme(Tuils.getOld(XMLPrefsManager.XMLPrefsRoot.THEME.path), Tuils.getOld(XMLPrefsManager.XMLPrefsRoot.SUGGESTIONS.path), false);
+        applyTheme(FileSystemManager.getOld(XMLPrefsManager.XMLPrefsRoot.THEME.path), FileSystemManager.getOld(XMLPrefsManager.XMLPrefsRoot.SUGGESTIONS.path), false);
     }
 
     private void standard() {
-        File oldTheme = new File(Tuils.getFolder(), XMLPrefsManager.XMLPrefsRoot.THEME.path);
-        File oldSuggestions = new File(Tuils.getFolder(), XMLPrefsManager.XMLPrefsRoot.SUGGESTIONS.path);
-        Tuils.insertOld(oldTheme);
-        Tuils.insertOld(oldSuggestions);
+        File oldTheme = new File(FileSystemManager.getFolder(), XMLPrefsManager.XMLPrefsRoot.THEME.path);
+        File oldSuggestions = new File(FileSystemManager.getFolder(), XMLPrefsManager.XMLPrefsRoot.SUGGESTIONS.path);
+        FileSystemManager.insertOld(oldTheme);
+        FileSystemManager.insertOld(oldSuggestions);
 
         oldTheme.delete();
         oldSuggestions.delete();

@@ -1,5 +1,11 @@
 package bhupendra.ai.launcher.commands.main.raw;
 
+import bhupendra.ai.launcher.managers.TextProcessor;
+
+
+import bhupendra.ai.launcher.managers.FileSystemManager;
+
+
 import java.io.File;
 import java.util.ArrayList;
 
@@ -24,7 +30,7 @@ public class alias extends ParamCommand {
                 ArrayList<String> args = pack.getList();
                 if(args.size() < 2) return pack.context.getString(R.string.output_lessarg);
 
-                ((MainPack) pack).aliasManager.add(pack.context, args.remove(0), Tuils.toPlanString(args, Tuils.SPACE));
+                ((MainPack) pack).aliasManager.add(pack.context, args.remove(0), TextProcessor.toPlanString(args, Tuils.SPACE));
                 return null;
             }
 
@@ -50,7 +56,7 @@ public class alias extends ParamCommand {
         file {
             @Override
             public String exec(ExecutePack pack) {
-                pack.context.startActivity(Tuils.openFile(pack.context, new File(Tuils.getFolder(), AliasManager.PATH)));
+                pack.context.startActivity(FileSystemManager.openFile(pack.context, new File(FileSystemManager.getFolder(), AliasManager.PATH)));
                 return null;
             }
 

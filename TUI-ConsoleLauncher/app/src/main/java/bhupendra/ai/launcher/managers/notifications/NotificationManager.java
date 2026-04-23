@@ -1,5 +1,8 @@
 package bhupendra.ai.launcher.managers.notifications;
 
+import bhupendra.ai.launcher.managers.FileSystemManager;
+
+
 import android.annotation.TargetApi;
 import android.content.Context;
 import android.graphics.Color;
@@ -63,7 +66,7 @@ public class NotificationManager implements XMLPrefsElement {
 
     @Override
     public void write(XMLPrefsSave save, String value) {
-        set(new File(Tuils.getFolder(), PATH), save.label(), new String[] {VALUE_ATTRIBUTE}, new String[] {value});
+        set(new File(FileSystemManager.getFolder(), PATH), save.label(), new String[] {VALUE_ATTRIBUTE}, new String[] {value});
     }
 
     @Override
@@ -91,7 +94,7 @@ public class NotificationManager implements XMLPrefsElement {
         values = new XMLPrefsList();
 
         try {
-            File r = Tuils.getFolder();
+            File r = FileSystemManager.getFolder();
             if(r == null) {
                 Tuils.sendOutput(Color.RED, context, R.string.tuinotfound_notifications);
                 return;
@@ -218,7 +221,7 @@ public class NotificationManager implements XMLPrefsElement {
             }
         } catch (Exception e) {
             Tuils.log(e);
-            Tuils.toFile(e);
+            FileSystemManager.toFile(e);
         }
 
         for(NotificatedApp app : apps) {
@@ -264,31 +267,31 @@ public class NotificationManager implements XMLPrefsElement {
     }
 
     public static String setState(String pkg, boolean state) {
-        return XMLPrefsManager.set(new File(Tuils.getFolder(), PATH), pkg, new String[] {ENABLED_ATTRIBUTE}, new String[] {String.valueOf(state)});
+        return XMLPrefsManager.set(new File(FileSystemManager.getFolder(), PATH), pkg, new String[] {ENABLED_ATTRIBUTE}, new String[] {String.valueOf(state)});
     }
 
     public static String setColor(String pkg, String color) {
-        return XMLPrefsManager.set(new File(Tuils.getFolder(), PATH), pkg, new String[] {ENABLED_ATTRIBUTE, COLOR_ATTRIBUTE}, new String[] {String.valueOf(true), color});
+        return XMLPrefsManager.set(new File(FileSystemManager.getFolder(), PATH), pkg, new String[] {ENABLED_ATTRIBUTE, COLOR_ATTRIBUTE}, new String[] {String.valueOf(true), color});
     }
 
     public static String setFormat(String pkg, String format) {
-        return XMLPrefsManager.set(new File(Tuils.getFolder(), PATH), pkg, new String[] {FORMAT_ATTRIBUTE}, new String[] {format});
+        return XMLPrefsManager.set(new File(FileSystemManager.getFolder(), PATH), pkg, new String[] {FORMAT_ATTRIBUTE}, new String[] {format});
     }
 
     public static String addFilter(String pattern, int id) {
-        return XMLPrefsManager.add(new File(Tuils.getFolder(), PATH), FILTER_ATTRIBUTE, new String[] {ID_ATTRIBUTE, VALUE_ATTRIBUTE}, new String[] {String.valueOf(id), pattern});
+        return XMLPrefsManager.add(new File(FileSystemManager.getFolder(), PATH), FILTER_ATTRIBUTE, new String[] {ID_ATTRIBUTE, VALUE_ATTRIBUTE}, new String[] {String.valueOf(id), pattern});
     }
 
     public static String addFormat(String format, int id) {
-        return XMLPrefsManager.add(new File(Tuils.getFolder(), PATH), FORMAT_ATTRIBUTE, new String[] {ID_ATTRIBUTE, VALUE_ATTRIBUTE}, new String[] {String.valueOf(id), format});
+        return XMLPrefsManager.add(new File(FileSystemManager.getFolder(), PATH), FORMAT_ATTRIBUTE, new String[] {ID_ATTRIBUTE, VALUE_ATTRIBUTE}, new String[] {String.valueOf(id), format});
     }
 
     public static String rmFilter(int id) {
-        return XMLPrefsManager.removeNode(new File(Tuils.getFolder(), PATH), FILTER_ATTRIBUTE, new String[] {ID_ATTRIBUTE}, new String[] {String.valueOf(id)});
+        return XMLPrefsManager.removeNode(new File(FileSystemManager.getFolder(), PATH), FILTER_ATTRIBUTE, new String[] {ID_ATTRIBUTE}, new String[] {String.valueOf(id)});
     }
 
     public static String rmFormat(int id) {
-        return XMLPrefsManager.removeNode(new File(Tuils.getFolder(), PATH), FORMAT_ATTRIBUTE, new String[] {ID_ATTRIBUTE}, new String[] {String.valueOf(id)});
+        return XMLPrefsManager.removeNode(new File(FileSystemManager.getFolder(), PATH), FORMAT_ATTRIBUTE, new String[] {ID_ATTRIBUTE}, new String[] {String.valueOf(id)});
     }
 
     public boolean match(String text) {

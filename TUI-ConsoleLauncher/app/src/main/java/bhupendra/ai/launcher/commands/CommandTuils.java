@@ -1,5 +1,11 @@
 package bhupendra.ai.launcher.commands;
 
+import bhupendra.ai.launcher.managers.TextProcessor;
+
+
+import bhupendra.ai.launcher.managers.FileSystemManager;
+
+
 import android.annotation.SuppressLint;
 import android.graphics.Color;
 
@@ -42,7 +48,7 @@ public class CommandTuils {
         Command command = new Command();
 
         String name = CommandTuils.findName(input);
-        if (!Tuils.isAlpha(name))
+        if (!TextProcessor.isAlpha(name))
             return null;
 
         CommandAbstraction cmd = info.commandGroup.getCommandByName(name);
@@ -277,7 +283,7 @@ public class CommandTuils {
             abstraction = active.getCommandByName(string);
         } catch (Exception e) {
             Tuils.log(e);
-            Tuils.toFile(e);
+            FileSystemManager.toFile(e);
         }
 
         return new ArgInfo(abstraction, i.residualString, abstraction != null, 1);
@@ -315,7 +321,7 @@ public class CommandTuils {
                 while (count-- >= 0)
                     strings.remove(0);
 
-                String residual = Tuils.toPlanString(strings, Tuils.SPACE);
+                String residual = TextProcessor.toPlanString(strings, Tuils.SPACE);
                 return new ArgInfo(info.file, residual, true, 1);
             }
 
@@ -444,7 +450,7 @@ public class CommandTuils {
     private static ArgInfo contactNumber(String input, ContactManager contacts) {
         String number;
 
-        if (Tuils.isPhoneNumber(input))
+        if (TextProcessor.isPhoneNumber(input))
             number = input;
         else
             number = contacts.findNumber(input);

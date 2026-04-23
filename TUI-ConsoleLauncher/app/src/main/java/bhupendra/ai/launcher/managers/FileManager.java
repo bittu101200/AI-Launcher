@@ -1,5 +1,8 @@
 package bhupendra.ai.launcher.managers;
 
+import bhupendra.ai.launcher.managers.FileSystemManager;
+
+
 import android.content.Context;
 import android.content.Intent;
 
@@ -42,7 +45,7 @@ public class FileManager {
             return FileManager.ISDIRECTORY;
         }
 
-        Intent intent = Tuils.openFile(c, file);
+        Intent intent = FileSystemManager.openFile(c, file);
 
         c.startActivity(intent);
         return 0;

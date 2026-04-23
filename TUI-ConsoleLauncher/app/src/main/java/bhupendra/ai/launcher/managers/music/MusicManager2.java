@@ -1,5 +1,11 @@
 package bhupendra.ai.launcher.managers.music;
 
+import bhupendra.ai.launcher.managers.TextProcessor;
+
+
+import bhupendra.ai.launcher.managers.FileSystemManager;
+
+
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.ContentResolver;
@@ -170,10 +176,10 @@ public class MusicManager2 implements MediaController.MediaPlayerControl {
         }
 
         Collections.sort(ss);
-        Tuils.addPrefix(ss, Tuils.DOUBLE_SPACE);
+        TextProcessor.addPrefix(ss, Tuils.DOUBLE_SPACE);
         Tuils.insertHeaders(ss, false);
 
-        return Tuils.toPlanString(ss, Tuils.NEWLINE);
+        return TextProcessor.toPlanString(ss, Tuils.NEWLINE);
     }
 
     public void updateSongs() {
@@ -210,10 +216,10 @@ public class MusicManager2 implements MediaController.MediaPlayerControl {
                             file = new File(XMLPrefsManager.get(Behavior.home_path), path);
                         }
 
-                        if(file.exists() && file.isDirectory()) songs.addAll(Tuils.getSongsInFolder(file));
+                        if(file.exists() && file.isDirectory()) songs.addAll(FileSystemManager.getSongsInFolder(file));
                     }
                 } catch (Exception e) {
-                    Tuils.toFile(e);
+                    FileSystemManager.toFile(e);
                 }
 
                 synchronized (songs) {

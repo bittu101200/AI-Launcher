@@ -1,5 +1,8 @@
 package bhupendra.ai.launcher.commands.main.raw;
 
+import bhupendra.ai.launcher.managers.FileSystemManager;
+
+
 import android.content.Intent;
 
 import java.io.File;
@@ -19,7 +22,7 @@ public class share implements CommandAbstraction {
         if (f.isDirectory())
             return info.res.getString(R.string.output_isdirectory);
 
-        Intent sharingIntent = Tuils.shareFile(pack.context, f);
+        Intent sharingIntent = FileSystemManager.shareFile(pack.context, f);
         info.context.startActivity(Intent.createChooser(sharingIntent, info.res.getString(R.string.share_label)));
 
         return Tuils.EMPTYSTRING;

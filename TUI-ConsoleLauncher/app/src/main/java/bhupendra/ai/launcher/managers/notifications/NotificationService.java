@@ -1,5 +1,8 @@
 package bhupendra.ai.launcher.managers.notifications;
 
+import bhupendra.ai.launcher.managers.TextProcessor;
+
+
 /**
  * Created by francescoandreuzzi on 27/04/2017.
  */
@@ -163,7 +166,7 @@ public class NotificationService extends NotificationListenerService {
                             if(nApp != null && nApp.color != null) textColor = Color.parseColor(nApp.color);
                             else textColor = color;
 
-                            CharSequence s = Tuils.span(f, textColor);
+                            CharSequence s = TextProcessor.span(f, textColor);
 
                             Bundle bundle = NotificationCompat.getExtras(notification);
 
@@ -228,7 +231,7 @@ public class NotificationService extends NotificationListenerService {
                                         } catch (Exception e) {}
 
                                         try {
-                                            text = Tuils.span(stringed, Color.parseColor(color));
+                                            text = TextProcessor.span(stringed, Color.parseColor(color));
                                         } catch (Exception e) {
                                             text = stringed;
                                         }

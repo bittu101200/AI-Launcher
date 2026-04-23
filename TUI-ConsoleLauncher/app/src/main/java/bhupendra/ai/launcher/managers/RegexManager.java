@@ -1,5 +1,11 @@
 package bhupendra.ai.launcher.managers;
 
+import bhupendra.ai.launcher.managers.TextProcessor;
+
+
+import bhupendra.ai.launcher.managers.FileSystemManager;
+
+
 import android.content.Context;
 import android.graphics.Color;
 import android.text.SpannableString;
@@ -46,7 +52,7 @@ public class RegexManager {
                 super.run();
 
                 try {
-                    File root = Tuils.getFolder();
+                    File root = FileSystemManager.getFolder();
                     if(root == null) {
                         Tuils.sendOutput(Color.RED, context, R.string.tuinotfound_rss);
                         return;
@@ -105,7 +111,7 @@ public class RegexManager {
                     }
                 } catch (Exception e) {
                     Tuils.log(e);
-                    Tuils.toFile(e);
+                    FileSystemManager.toFile(e);
                     return;
                 }
             }
@@ -141,7 +147,7 @@ public class RegexManager {
 
         regexes.add(new Regex(value, id));
 
-        File file = new File(Tuils.getFolder(), PATH);
+        File file = new File(FileSystemManager.getFolder(), PATH);
 
         return XMLPrefsManager.add(file, REGEX_LABEL, new String[] {ID_ATTRIBUTE, XMLPrefsManager.VALUE_ATTRIBUTE}, new String[] {String.valueOf(id), value});
     }
@@ -150,7 +156,7 @@ public class RegexManager {
 //    "": not found
     public String rm(int id) {
         try {
-            File file = new File(Tuils.getFolder(), PATH);
+            File file = new File(FileSystemManager.getFolder(), PATH);
 
             Object[] o = XMLPrefsManager.buildDocument(file, null);
             if(o == null) {
@@ -201,14 +207,14 @@ public class RegexManager {
         int outputColor = XMLPrefsManager.getColor(Theme.output_color);
 
         if(m.matches()) {
-            return Tuils.span(color, outputColor, test);
+            return TextProcessor.span(color, outputColor, test);
         }
 
         int last = 0;
-        SpannableString s = Tuils.span(test, outputColor);
+        SpannableString s = TextProcessor.span(test, outputColor);
         while(m.find()) {
             String g0 = m.group(0);
-            last = Tuils.span(color, s, g0, last);
+            last = TextProcessor.span(color, s, g0, last);
         }
 
         return s;

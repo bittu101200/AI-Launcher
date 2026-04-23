@@ -1,5 +1,8 @@
 package bhupendra.ai.launcher.managers;
 
+import bhupendra.ai.launcher.managers.TextProcessor;
+
+
 import android.app.Activity;
 import android.content.Context;
 import android.content.res.ColorStateList;
@@ -435,7 +438,7 @@ public class TerminalManager {
         switch (type) {
             case CATEGORY_INPUT:
                 boolean su = t.toString().startsWith("su ") || suMode;
-                SpannableString si = Tuils.span(inputFormat, inputColor);
+                SpannableString si = TextProcessor.span(inputFormat, inputColor);
                 if(clickCommands || longClickCommands) si.setSpan(new LongClickableSpan(clickCommands ? t.toString() : null, longClickCommands ? t.toString() : null, PrivateIOReceiver.ACTION_INPUT), 0,
                         si.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
 
@@ -446,7 +449,7 @@ public class TerminalManager {
                 finalSsb.append(processedInput);
                 break;
             case CATEGORY_OUTPUT:
-                t = Tuils.parseMarkdown(t);
+                t = TextProcessor.parseMarkdown(t);
                 String outputTemplate = XMLPrefsManager.get(Behavior.output_format);
                 int outCol = XMLPrefsManager.getColor(Theme.output_color);
                 
@@ -461,7 +464,7 @@ public class TerminalManager {
                 finalSsb.setSpan(new ForegroundColorSpan(outCol), 0, finalSsb.length(), Spanned.SPAN_MARK_MARK);
                 break;
             case CATEGORY_AI:
-                t = Tuils.parseMarkdown(t);
+                t = TextProcessor.parseMarkdown(t);
                 String aiTemplate = XMLPrefsManager.get(Behavior.output_format);
                 int aiCol = XMLPrefsManager.getColor(Theme.output_color);
 
@@ -476,7 +479,7 @@ public class TerminalManager {
                 finalSsb.setSpan(new ForegroundColorSpan(aiCol), 0, finalSsb.length(), Spanned.SPAN_MARK_MARK);
                 break;
             case CATEGORY_ERROR:
-                SpannableString ser = Tuils.span(outputFormat, Color.RED);
+                SpannableString ser = TextProcessor.span(outputFormat, Color.RED);
                 CharSequence err = TextUtils.replace(ser,
                         new String[] {FORMAT_OUTPUT, FORMAT_NEWLINE, FORMAT_OUTPUT.toUpperCase(), FORMAT_NEWLINE.toUpperCase()},
                         new CharSequence[] {t, Tuils.NEWLINE, t, Tuils.NEWLINE});

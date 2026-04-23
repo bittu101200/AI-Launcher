@@ -1,5 +1,8 @@
 package bhupendra.ai.launcher.commands.main.raw;
 
+import bhupendra.ai.launcher.managers.FileSystemManager;
+
+
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 
@@ -181,7 +184,7 @@ public class rss extends ParamCommand {
 
             @Override
             public String exec(ExecutePack pack) {
-                Node n = XMLPrefsManager.findNode(new File(Tuils.getFolder(), RssManager.PATH), RssManager.RSS_LABEL, new String[] {RssManager.ID_ATTRIBUTE}, new String[] {String.valueOf(pack.getInt())});
+                Node n = XMLPrefsManager.findNode(new File(FileSystemManager.getFolder(), RssManager.PATH), RssManager.RSS_LABEL, new String[] {RssManager.ID_ATTRIBUTE}, new String[] {String.valueOf(pack.getInt())});
                 if(n == null) return pack.context.getString(R.string.id_notfound);
 
                 Element el = (Element) n;
@@ -325,7 +328,7 @@ public class rss extends ParamCommand {
         file {
             @Override
             public String exec(ExecutePack pack) {
-                pack.context.startActivity(Tuils.openFile(pack.context, new File(Tuils.getFolder(), RssManager.PATH)));
+                pack.context.startActivity(FileSystemManager.openFile(pack.context, new File(FileSystemManager.getFolder(), RssManager.PATH)));
                 return null;
             }
 

@@ -1,5 +1,8 @@
 package bhupendra.ai.launcher.ai;
 
+import bhupendra.ai.launcher.managers.FileSystemManager;
+
+
 import android.content.Context;
 
 import java.util.List;
@@ -294,7 +297,7 @@ public class AISubsystem {
     }
 
     private String getSystemPrompt() {
-        java.io.File promptFile = new java.io.File(bhupendra.ai.launcher.tuils.Tuils.getFolder(), "ai_system_prompt.md");
+        java.io.File promptFile = new java.io.File(bhupendra.ai.launcher.managers.FileSystemManager.getFolder(), "ai_system_prompt.md");
         if (!promptFile.exists()) {
             try {
                 java.io.InputStream is = appContext.getAssets().open("ai_system_prompt.md");

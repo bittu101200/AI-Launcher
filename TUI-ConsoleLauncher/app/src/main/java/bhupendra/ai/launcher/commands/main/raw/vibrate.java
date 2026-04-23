@@ -1,5 +1,8 @@
 package bhupendra.ai.launcher.commands.main.raw;
 
+import bhupendra.ai.launcher.managers.TextProcessor;
+
+
 import android.content.Context;
 import android.os.Vibrator;
 
@@ -20,7 +23,7 @@ public class vibrate implements CommandAbstraction {
         String text = pack.getString();
         Context context = ((MainPack) pack).context;
 
-        char separator = Tuils.firstNonDigit(text);
+        char separator = TextProcessor.firstNonDigit(text);
 
         if(separator == 0) {
             int ms;
@@ -35,9 +38,9 @@ public class vibrate implements CommandAbstraction {
             }
         } else {
             if(separator == ' ') {
-                char s2 = Tuils.firstNonDigit(Tuils.removeSpaces(text));
+                char s2 = TextProcessor.firstNonDigit(TextProcessor.removeSpaces(text));
                 if(s2 != 0) {
-                    text = Tuils.removeSpaces(text);
+                    text = TextProcessor.removeSpaces(text);
                     separator = s2;
                 }
             }

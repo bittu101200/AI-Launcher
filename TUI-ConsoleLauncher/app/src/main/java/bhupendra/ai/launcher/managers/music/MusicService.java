@@ -1,5 +1,8 @@
 package bhupendra.ai.launcher.managers.music;
 
+import bhupendra.ai.launcher.managers.FileSystemManager;
+
+
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
@@ -129,7 +132,7 @@ public class MusicService extends Service implements
                 player.setDataSource(path);
             } catch (IOException e) {
                 Tuils.log(e);
-                Tuils.toFile(e);
+                FileSystemManager.toFile(e);
                 return null;
             }
         } else {
@@ -141,7 +144,7 @@ public class MusicService extends Service implements
             }
             catch(Exception e) {
                 Tuils.log(e);
-                Tuils.toFile(e);
+                FileSystemManager.toFile(e);
                 return null;
             }
         }

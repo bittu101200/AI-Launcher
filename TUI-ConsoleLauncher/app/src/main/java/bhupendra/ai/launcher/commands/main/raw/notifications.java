@@ -1,5 +1,8 @@
 package bhupendra.ai.launcher.commands.main.raw;
 
+import bhupendra.ai.launcher.managers.FileSystemManager;
+
+
 import android.content.Intent;
 
 import java.io.File;
@@ -188,7 +191,7 @@ public class notifications extends ParamCommand implements APICommand {
 
             @Override
             public String exec(ExecutePack pack) {
-                pack.context.startActivity(Tuils.openFile(pack.context, new File(Tuils.getFolder(), NotificationManager.PATH)));
+                pack.context.startActivity(FileSystemManager.openFile(pack.context, new File(FileSystemManager.getFolder(), NotificationManager.PATH)));
                 return null;
             }
         },

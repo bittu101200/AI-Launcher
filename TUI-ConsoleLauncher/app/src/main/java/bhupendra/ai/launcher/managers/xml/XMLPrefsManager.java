@@ -1,5 +1,8 @@
 package bhupendra.ai.launcher.managers.xml;
 
+import bhupendra.ai.launcher.managers.FileSystemManager;
+
+
 import android.content.Context;
 import android.graphics.Color;
 
@@ -115,7 +118,7 @@ public class XMLPrefsManager {
 
         @Override
         public void write(XMLPrefsSave save, String value) {
-            set(new File(Tuils.getFolder(), path), save.label(), new String[] {VALUE_ATTRIBUTE}, new String[] {value});
+            set(new File(FileSystemManager.getFolder(), path), save.label(), new String[] {VALUE_ATTRIBUTE}, new String[] {value});
         }
 
         public XMLPrefsList getValues() {
@@ -140,12 +143,12 @@ public class XMLPrefsManager {
 
     static boolean commonsLoaded = false;
     public static void loadCommons(Context context) {
-        Tuils.init(context);
+        bhupendra.ai.launcher.managers.FileSystemManager.init(context);
 
         if(commonsLoaded) return;
         commonsLoaded = true;
 
-        File folder = Tuils.getFolder();
+        File folder = FileSystemManager.getFolder();
         if(folder == null) {
             Tuils.sendOutput(Color.RED, context, R.string.tuinotfound_xmlprefs);
             return;
@@ -395,7 +398,7 @@ public class XMLPrefsManager {
         } catch (Exception e) {
             Tuils.log(e);
 
-            int nOfBytes = Tuils.nOfBytes(file);
+            int nOfBytes = FileSystemManager.nOfBytes(file);
             if(nOfBytes == 0 && rootName != null) {
                 XMLPrefsManager.resetFile(file, rootName);
                 d = builder.parse(file);
@@ -541,7 +544,7 @@ public class XMLPrefsManager {
             return null;
         } catch (Exception e) {
             Tuils.log(e);
-            Tuils.toFile(e);
+            FileSystemManager.toFile(e);
             return e.toString();
         }
     }

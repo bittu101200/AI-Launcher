@@ -1,5 +1,8 @@
 package bhupendra.ai.launcher.managers;
 
+import bhupendra.ai.launcher.managers.FileSystemManager;
+
+
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -172,7 +175,7 @@ public class AliasManager {
         if(aliases != null) aliases.clear();
         else aliases = new ArrayList<>();
 
-        File root = Tuils.getFolder();
+        File root = FileSystemManager.getFolder();
         if(root == null) return;
 
         File file = new File(root, PATH);
@@ -227,7 +230,7 @@ public class AliasManager {
 
         FileOutputStream fos;
         try {
-            fos = new FileOutputStream(new File(Tuils.getFolder(), PATH), true);
+            fos = new FileOutputStream(new File(FileSystemManager.getFolder(), PATH), true);
             fos.write((Tuils.NEWLINE + name + "=" + value).getBytes());
             fos.close();
 
@@ -247,8 +250,8 @@ public class AliasManager {
         }
 
         try {
-            File inputFile = new File(Tuils.getFolder(), PATH);
-            File tempFile = new File(Tuils.getFolder(), PATH + "2");
+            File inputFile = new File(FileSystemManager.getFolder(), PATH);
+            File tempFile = new File(FileSystemManager.getFolder(), PATH + "2");
 
             BufferedReader reader = new BufferedReader(new FileReader(inputFile));
             BufferedWriter writer = new BufferedWriter(new FileWriter(tempFile));

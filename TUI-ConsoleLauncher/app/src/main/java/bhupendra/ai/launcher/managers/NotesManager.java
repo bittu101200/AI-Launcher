@@ -1,5 +1,11 @@
 package bhupendra.ai.launcher.managers;
 
+import bhupendra.ai.launcher.managers.TextProcessor;
+
+
+import bhupendra.ai.launcher.managers.FileSystemManager;
+
+
 import android.annotation.TargetApi;
 import android.app.Activity;
 import android.content.BroadcastReceiver;
@@ -155,7 +161,7 @@ public class NotesManager {
 
                         String[] ar = new String[split.length - startAt];
                         System.arraycopy(split, startAt, ar, 0, ar.length);
-                        text = Tuils.toPlanString(ar, Tuils.SPACE);
+                        text = TextProcessor.toPlanString(ar, Tuils.SPACE);
                     }
 
                     addNote(text, lock);
@@ -189,7 +195,7 @@ public class NotesManager {
         if(loadClasses) classes.clear();
         notes.clear();
 
-        File file = new File(Tuils.getFolder(), PATH);
+        File file = new File(FileSystemManager.getFolder(), PATH);
         if(!file.exists()) {
             resetFile(file, NAME);
         }
@@ -267,7 +273,7 @@ public class NotesManager {
         if(header.length() > 0) {
             String h = countPattern.matcher(header).replaceAll(String.valueOf(notes.size()));
             h = Tuils.patternNewline.matcher(h).replaceAll(Tuils.NEWLINE);
-            oldNotes = Tuils.span(h, this.color);
+            oldNotes = TextProcessor.span(h, this.color);
         } else {
             oldNotes = Tuils.EMPTYSTRING;
         }
@@ -281,7 +287,7 @@ public class NotesManager {
             t = rowPattern.matcher(t).replaceAll(String.valueOf(j + 1));
             t = countPattern.matcher(t).replaceAll(String.valueOf(notes.size()));
 
-            t = Tuils.span(t, n.lock ? lockedColor : this.color);
+            t = TextProcessor.span(t, n.lock ? lockedColor : this.color);
 
             t = TimeManager.instance.replace(t, n.creationTime);
 
@@ -320,7 +326,7 @@ public class NotesManager {
         if(footer.length() > 0) {
             String h = countPattern.matcher(footer).replaceAll(String.valueOf(notes.size()));
             h = Tuils.patternNewline.matcher(h).replaceAll(Tuils.NEWLINE);
-            oldNotes = TextUtils.concat(oldNotes, Tuils.span(h, this.color));
+            oldNotes = TextUtils.concat(oldNotes, TextProcessor.span(h, this.color));
         } else {}
 
         Matcher m = colorPattern.matcher(oldNotes);
@@ -348,7 +354,7 @@ public class NotesManager {
                 }
             }
 
-            t = Tuils.span(t.toString(), color);
+            t = TextProcessor.span(t.toString(), color);
             oldNotes = TextUtils.replace(oldNotes, new String[] {match}, new CharSequence[] {t});
         }
 
@@ -366,7 +372,7 @@ public class NotesManager {
         notes.add(new Note(t, s, lock));
         Collections.sort(notes);
 
-        File file = new File(Tuils.getFolder(), PATH);
+        File file = new File(FileSystemManager.getFolder(), PATH);
         if(!file.exists()) {
             resetFile(file, NAME);
         }
@@ -389,7 +395,7 @@ public class NotesManager {
 
         long time = notes.remove(index).creationTime;
 
-        File file = new File(Tuils.getFolder(), PATH);
+        File file = new File(FileSystemManager.getFolder(), PATH);
         if(!file.exists()) {
             resetFile(file, NAME);
         }
@@ -431,7 +437,7 @@ public class NotesManager {
             if(!n.lock) iterator.remove();
         }
 
-        File file = new File(Tuils.getFolder(), PATH);
+        File file = new File(FileSystemManager.getFolder(), PATH);
         if(!file.exists()) resetFile(file, NAME);
 
         String output = XMLPrefsManager.removeNode(file, new String[] {LOCK}, new String[] {String.valueOf(false)}, true, true);
@@ -464,7 +470,7 @@ public class NotesManager {
 
         long time = n.creationTime;
 
-        File file = new File(Tuils.getFolder(), PATH);
+        File file = new File(FileSystemManager.getFolder(), PATH);
         if(!file.exists()) {
             resetFile(file, NAME);
         }
@@ -522,7 +528,7 @@ public class NotesManager {
                     }
                 }
 
-                t = Tuils.span(t.toString(), color);
+                t = TextProcessor.span(t.toString(), color);
                 note = TextUtils.replace(note, new String[] {match}, new CharSequence[] {t});
             }
 
@@ -587,9 +593,9 @@ public class NotesManager {
                 case SORTING_TIME_DOWNUP:
                     return (int) (o.creationTime - creationTime);
                 case SORTING_ALPHA_UPDOWN:
-                    return Tuils.alphabeticCompare(text, o.text);
+                    return TextProcessor.alphabeticCompare(text, o.text);
                 case SORTING_ALPHA_DOWNUP:
-                    return Tuils.alphabeticCompare(o.text, text);
+                    return TextProcessor.alphabeticCompare(o.text, text);
                 case SORTING_LOCK_BEFORE:
                     if(lock) {
                         if(o.lock) return 0;

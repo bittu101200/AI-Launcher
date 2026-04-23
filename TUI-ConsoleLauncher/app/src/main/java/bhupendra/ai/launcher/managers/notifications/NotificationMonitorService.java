@@ -1,5 +1,8 @@
 package bhupendra.ai.launcher.managers.notifications;
 
+import bhupendra.ai.launcher.managers.DeviceStateManager;
+
+
 /**
  * Created by francescoandreuzzi on 03/09/2017.
  */
@@ -27,7 +30,7 @@ public class NotificationMonitorService extends Service {
     }
 
     private void ensureCollectorRunning() {
-        if(Tuils.notificationServiceIsRunning(this)) toggleNotificationListenerService();
+        if(DeviceStateManager.notificationServiceIsRunning(this)) toggleNotificationListenerService();
     }
 
     private void toggleNotificationListenerService() {

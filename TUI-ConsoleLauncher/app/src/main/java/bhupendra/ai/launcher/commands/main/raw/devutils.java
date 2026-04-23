@@ -1,5 +1,11 @@
 package bhupendra.ai.launcher.commands.main.raw;
 
+import bhupendra.ai.launcher.managers.DeviceStateManager;
+
+
+import bhupendra.ai.launcher.managers.TextProcessor;
+
+
 import androidx.core.app.NotificationCompat;
 import androidx.core.app.NotificationManagerCompat;
 
@@ -29,7 +35,7 @@ public class devutils extends ParamCommand {
                 if(text.size() == 0) return null;
                 else {
                     title = text.remove(0);
-                    if(text.size() >= 2) txt = Tuils.toPlanString(text, Tuils.SPACE);
+                    if(text.size() >= 2) txt = TextProcessor.toPlanString(text, Tuils.SPACE);
                 }
 
                 NotificationManagerCompat.from(pack.context).notify(200,
@@ -55,7 +61,7 @@ public class devutils extends ParamCommand {
 
             @Override
             public String exec(ExecutePack pack) {
-                return "Notification access: " + NotificationManagerCompat.getEnabledListenerPackages(pack.context).contains(BuildConfig.APPLICATION_ID) + Tuils.NEWLINE + "Notification service running: " + Tuils.notificationServiceIsRunning(pack.context);
+                return "Notification access: " + NotificationManagerCompat.getEnabledListenerPackages(pack.context).contains(BuildConfig.APPLICATION_ID) + Tuils.NEWLINE + "Notification service running: " + DeviceStateManager.notificationServiceIsRunning(pack.context);
             }
         };
 

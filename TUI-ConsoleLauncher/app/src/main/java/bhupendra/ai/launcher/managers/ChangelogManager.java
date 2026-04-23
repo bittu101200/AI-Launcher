@@ -1,5 +1,8 @@
 package bhupendra.ai.launcher.managers;
 
+import bhupendra.ai.launcher.managers.DeviceStateManager;
+
+
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.net.Uri;
@@ -50,7 +53,7 @@ public class ChangelogManager {
                 public void run() {
                     super.run();
 
-                    if (!Tuils.hasInternetAccess()) {
+                    if (!DeviceStateManager.hasInternetAccess()) {
                         if(force) Tuils.sendOutput(context, R.string.no_internet);
                         return;
                     }

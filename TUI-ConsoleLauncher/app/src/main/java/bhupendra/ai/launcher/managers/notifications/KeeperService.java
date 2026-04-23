@@ -1,5 +1,11 @@
 package bhupendra.ai.launcher.managers.notifications;
 
+import bhupendra.ai.launcher.managers.TextProcessor;
+
+
+import bhupendra.ai.launcher.managers.FileSystemManager;
+
+
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
@@ -68,7 +74,7 @@ public class KeeperService extends Service {
             if(priority > 2) priority = 2;
             if(priority < -2) priority = -2;
 
-            String path = intent != null ? intent.getStringExtra(PATH_KEY) : Tuils.getFolder().getAbsolutePath();
+            String path = intent != null ? intent.getStringExtra(PATH_KEY) : FileSystemManager.getFolder().getAbsolutePath();
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
                 startForeground(ONGOING_NOTIFICATION_ID, buildNotification(getApplicationContext(), title, subtitle, Tuils.getHint(path),
@@ -89,7 +95,7 @@ public class KeeperService extends Service {
 
             if(lastCommands != null) updateCmds(intent.getStringExtra(CMD_KEY));
 
-            String path = intent != null ? intent.getStringExtra(PATH_KEY) : Tuils.getFolder().getAbsolutePath();
+            String path = intent != null ? intent.getStringExtra(PATH_KEY) : FileSystemManager.getFolder().getAbsolutePath();
 
             NotificationManagerCompat.from(getApplicationContext()).notify(KeeperService.ONGOING_NOTIFICATION_ID,
                     KeeperService.buildNotification(getApplicationContext(), title, subtitle, Tuils.getHint(path),
@@ -122,7 +128,7 @@ public class KeeperService extends Service {
         if(cmd == null) return null;
         boolean su = cmd.startsWith("su ");
 
-        SpannableString si = Tuils.span(inputFormat, inputColor);
+        SpannableString si = TextProcessor.span(inputFormat, inputColor);
 
         CharSequence s = TimeManager.instance.replace(si, timeColor);
         s = TextUtils.replace(s,

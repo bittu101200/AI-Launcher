@@ -1,5 +1,8 @@
 package bhupendra.ai.launcher.commands.tuixt.raw;
 
+import bhupendra.ai.launcher.managers.TextProcessor;
+
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -52,12 +55,12 @@ public class help implements CommandAbstraction {
         TuixtPack info = (TuixtPack) pack;
         List<String> toPrint = new ArrayList<>(Arrays.asList(info.commandGroup.getCommandNames()));
 
-        Collections.sort(toPrint, Tuils::alphabeticCompare);
+        Collections.sort(toPrint, TextProcessor::alphabeticCompare);
 
-        Tuils.addPrefix(toPrint, Tuils.DOUBLE_SPACE);
-        Tuils.addSeparator(toPrint, Tuils.TRIBLE_SPACE);
+        TextProcessor.addPrefix(toPrint, Tuils.DOUBLE_SPACE);
+        TextProcessor.addSeparator(toPrint, Tuils.TRIBLE_SPACE);
         Tuils.insertHeaders(toPrint, true);
 
-        return Tuils.toPlanString(toPrint, Tuils.EMPTYSTRING);
+        return TextProcessor.toPlanString(toPrint, Tuils.EMPTYSTRING);
     }
 }

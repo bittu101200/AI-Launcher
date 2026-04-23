@@ -1,5 +1,14 @@
 package bhupendra.ai.launcher.managers;
 
+import bhupendra.ai.launcher.managers.DeviceStateManager;
+
+
+import bhupendra.ai.launcher.managers.TextProcessor;
+
+
+import bhupendra.ai.launcher.managers.FileSystemManager;
+
+
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
@@ -96,7 +105,7 @@ public class AppsManager implements XMLPrefsElement {
 
     @Override
     public void write(XMLPrefsSave save, String value) {
-        set(new File(Tuils.getFolder(), PATH), save.label(), new String[] {VALUE_ATTRIBUTE}, new String[] {value});
+        set(new File(FileSystemManager.getFolder(), PATH), save.label(), new String[] {VALUE_ATTRIBUTE}, new String[] {value});
     }
 
     @Override
@@ -142,7 +151,7 @@ public class AppsManager implements XMLPrefsElement {
             pl = null;
         }
 
-        File root = Tuils.getFolder();
+        File root = FileSystemManager.getFolder();
         if(root == null) this.file = null;
         else this.file = new File(root, PATH);
 
@@ -370,7 +379,7 @@ public class AppsManager implements XMLPrefsElement {
             }
 
         } catch (Exception e1) {
-            Tuils.toFile(e1);
+            FileSystemManager.toFile(e1);
         }
 
         appsHolder = new AppsHolder(allApps, prefsList);
@@ -378,7 +387,7 @@ public class AppsManager implements XMLPrefsElement {
 
         Group.sorting = XMLPrefsManager.getInt(Apps.app_groups_sorting);
         for(Group g : groups) g.sort();
-        Collections.sort(groups, (o1, o2) -> Tuils.alphabeticCompare(o1.name(), o2.name()));
+        Collections.sort(groups, (o1, o2) -> TextProcessor.alphabeticCompare(o1.name(), o2.name()));
     }
 
     private List<LaunchInfo> createAppMap(PackageManager mgr) {
@@ -404,7 +413,7 @@ public class AppsManager implements XMLPrefsElement {
             }
 //        }
 
-        if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.N_MR1 && Tuils.isMyLauncherDefault(context.getPackageManager())) {
+        if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.N_MR1 && DeviceStateManager.isMyLauncherDefault(context.getPackageManager())) {
             LauncherApps launcherApps = (LauncherApps) context.getSystemService(Context.LAUNCHER_APPS_SERVICE);
             for (ResolveInfo ri : main) {
                 LaunchInfo li = new LaunchInfo(ri.activityInfo.packageName, ri.activityInfo.name, ri.loadLabel(mgr).toString());
@@ -915,9 +924,9 @@ public class AppsManager implements XMLPrefsElement {
             public int compare(GroupLaunchInfo o1, GroupLaunchInfo o2) {
                 switch (sorting) {
                     case ALPHABETIC_UP_DOWN:
-                        return Tuils.alphabeticCompare(o1.publicLabel, o2.publicLabel);
+                        return TextProcessor.alphabeticCompare(o1.publicLabel, o2.publicLabel);
                     case ALPHABETIC_DOWN_UP:
-                        return Tuils.alphabeticCompare(o2.publicLabel, o1.publicLabel);
+                        return TextProcessor.alphabeticCompare(o2.publicLabel, o1.publicLabel);
                     case TIME_UP_DOWN:
                         return o1.initialIndex - o2.initialIndex;
                     case TIME_DOWN_UP:
@@ -1095,7 +1104,7 @@ public class AppsManager implements XMLPrefsElement {
         public void setLabel(String s) {
             this.publicLabel = s;
             this.lowercaseLabel = s.toLowerCase();
-            this.unspacedLowercaseLabel = Tuils.removeSpaces(lowercaseLabel);
+            this.unspacedLowercaseLabel = TextProcessor.removeSpaces(lowercaseLabel);
         }
 
         public boolean isInside(String apps) {
@@ -1450,7 +1459,7 @@ public class AppsManager implements XMLPrefsElement {
         }
 
         public static LaunchInfo findLaunchInfoWithLabel(List<? extends LaunchInfo> appList, String label) {
-            label = Tuils.removeSpaces(label);
+            label = TextProcessor.removeSpaces(label);
             for(LaunchInfo i : appList) if(i.unspacedLowercaseLabel.equalsIgnoreCase(label)) return i;
             return null;
         }
@@ -1557,28 +1566,28 @@ public class AppsManager implements XMLPrefsElement {
             if(a != null && a.length > 0) {
                 List<String> as = new ArrayList<>();
                 for(ActivityInfo i : a) as.add(i.name.replace(info.packageName, Tuils.EMPTYSTRING));
-                builder.append("Activities: ").append(Tuils.NEWLINE).append(Tuils.toPlanString(as, Tuils.NEWLINE)).append(Tuils.NEWLINE).append(Tuils.NEWLINE);
+                builder.append("Activities: ").append(Tuils.NEWLINE).append(TextProcessor.toPlanString(as, Tuils.NEWLINE)).append(Tuils.NEWLINE).append(Tuils.NEWLINE);
             }
 
             ServiceInfo[] s = info.services;
             if(s != null && s.length > 0) {
                 List<String> ss = new ArrayList<>();
                 for(ServiceInfo i : s) ss.add(i.name.replace(info.packageName, Tuils.EMPTYSTRING));
-                builder.append("Services: ").append(Tuils.NEWLINE).append(Tuils.toPlanString(ss, Tuils.NEWLINE)).append(Tuils.NEWLINE).append(Tuils.NEWLINE);
+                builder.append("Services: ").append(Tuils.NEWLINE).append(TextProcessor.toPlanString(ss, Tuils.NEWLINE)).append(Tuils.NEWLINE).append(Tuils.NEWLINE);
             }
 
             ActivityInfo[] r = info.receivers;
             if(r != null && r.length > 0) {
                 List<String> rs = new ArrayList<>();
                 for(ActivityInfo i : r) rs.add(i.name.replace(info.packageName, Tuils.EMPTYSTRING));
-                builder.append("Receivers: ").append(Tuils.NEWLINE).append(Tuils.toPlanString(rs, Tuils.NEWLINE)).append(Tuils.NEWLINE).append(Tuils.NEWLINE);
+                builder.append("Receivers: ").append(Tuils.NEWLINE).append(TextProcessor.toPlanString(rs, Tuils.NEWLINE)).append(Tuils.NEWLINE).append(Tuils.NEWLINE);
             }
 
             String[] p = info.requestedPermissions;
             if(p != null && p.length > 0) {
                 List<String> ps = new ArrayList<>();
                 for(String i : p) ps.add(i.substring(i.lastIndexOf(".") + 1));
-                builder.append("Permissions: ").append(Tuils.NEWLINE).append(Tuils.toPlanString(ps, ", "));
+                builder.append("Permissions: ").append(Tuils.NEWLINE).append(TextProcessor.toPlanString(ps, ", "));
             }
 
             return builder.toString();
@@ -1591,11 +1600,11 @@ public class AppsManager implements XMLPrefsElement {
 
             List<String> list = new ArrayList<>(apps);
 
-            Collections.sort(list, Tuils::alphabeticCompare);
+            Collections.sort(list, TextProcessor::alphabeticCompare);
 
-            Tuils.addPrefix(list, Tuils.DOUBLE_SPACE);
+            TextProcessor.addPrefix(list, Tuils.DOUBLE_SPACE);
             Tuils.insertHeaders(list, false);
-            return Tuils.toPlanString(list);
+            return TextProcessor.toPlanString(list);
         }
 
         public static List<String> labelList(List<LaunchInfo> infos, boolean sort) {

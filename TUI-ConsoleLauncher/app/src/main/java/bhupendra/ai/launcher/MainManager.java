@@ -1,5 +1,11 @@
 package bhupendra.ai.launcher;
 
+import bhupendra.ai.launcher.managers.TextProcessor;
+
+
+import bhupendra.ai.launcher.managers.FileSystemManager;
+
+
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -188,7 +194,7 @@ public class MainManager {
 //                        }
 //
 //                        InputStream inputStream = response.body().byteStream();
-//                        String json = Tuils.inputStreamToString(inputStream);
+//                        String json = FileSystemManager.inputStreamToString(inputStream);
 //                        Tuils.log(json);
 //                    } catch (Exception e) {
 //                        Tuils.log(e);
@@ -296,7 +302,7 @@ public class MainManager {
 
         updateServices(input, wasMusicService);
 
-        if(launchInfo.unspacedLowercaseLabel.equals(Tuils.removeSpaces(input.toLowerCase()))) {
+        if(launchInfo.unspacedLowercaseLabel.equals(TextProcessor.removeSpaces(input.toLowerCase()))) {
             performLaunch(mainPack, launchInfo, input);
         } else {
             onCommand(input, (String) null, wasMusicService);
@@ -333,7 +339,7 @@ public class MainManager {
             }
         }
 
-        input = Tuils.removeUnncesarySpaces(input);
+        input = TextProcessor.removeUnncesarySpaces(input);
 
         if(alias == null) updateServices(input, wasMusicService);
 
@@ -429,7 +435,7 @@ public class MainManager {
                     interactive.close();
                 } catch (Exception e) {
                     Tuils.log(e);
-                    Tuils.toFile(e);
+                    FileSystemManager.toFile(e);
                 }
             }
         }.start();

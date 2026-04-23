@@ -1,5 +1,8 @@
 package bhupendra.ai.launcher.commands.main.raw;
 
+import bhupendra.ai.launcher.managers.TextProcessor;
+
+
 import bhupendra.ai.launcher.R;
 import bhupendra.ai.launcher.commands.CommandAbstraction;
 import bhupendra.ai.launcher.commands.ExecutePack;
@@ -16,7 +19,7 @@ public class calc implements PermanentSuggestionCommand {
     @Override
     public String exec(ExecutePack pack) throws Exception {
         try {
-            return String.valueOf(Tuils.eval(pack.getString()));
+            return String.valueOf(TextProcessor.eval(pack.getString()));
         } catch (Exception e) {
             return e.toString();
         }

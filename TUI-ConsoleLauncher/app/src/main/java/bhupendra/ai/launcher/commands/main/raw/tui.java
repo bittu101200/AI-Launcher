@@ -1,5 +1,8 @@
 package bhupendra.ai.launcher.commands.main.raw;
 
+import bhupendra.ai.launcher.managers.FileSystemManager;
+
+
 import android.app.admin.DevicePolicyManager;
 import android.content.ComponentName;
 import android.content.Context;
@@ -84,7 +87,7 @@ public class tui extends ParamCommand {
 
             @Override
             public String exec(ExecutePack pack) {
-                File file = new File(Tuils.getFolder(), "cmd.xml");
+                File file = new File(FileSystemManager.getFolder(), "cmd.xml");
                 return XMLPrefsManager.set(file, pack.get().getClass().getSimpleName() + CommandsPreferences.PRIORITY_SUFFIX, new String[] {XMLPrefsManager.VALUE_ATTRIBUTE}, new String[] {String.valueOf(pack.getInt())});
             }
 
@@ -108,7 +111,7 @@ public class tui extends ParamCommand {
         reset {
             @Override
             public String exec(ExecutePack pack) {
-                Tuils.deleteContentOnly(Tuils.getFolder());
+                FileSystemManager.deleteContentOnly(FileSystemManager.getFolder());
 
                 ((LauncherActivity) pack.context).addMessage(pack.context.getString(R.string.tui_reset), null);
                 ((Reloadable) pack.context).reload();
@@ -119,14 +122,14 @@ public class tui extends ParamCommand {
             @Override
             public String exec(ExecutePack pack) {
 
-                Uri selectedUri = Uri.parse(Tuils.getFolder().getAbsolutePath());
+                Uri selectedUri = Uri.parse(FileSystemManager.getFolder().getAbsolutePath());
                 Intent intent = new Intent(Intent.ACTION_VIEW);
                 intent.setDataAndType(selectedUri, "resource/folder");
 
                 if (intent.resolveActivityInfo(pack.context.getPackageManager(), 0) != null) {
                     pack.context.startActivity(intent);
                 } else {
-                    return Tuils.getFolder().getAbsolutePath();
+                    return FileSystemManager.getFolder().getAbsolutePath();
                 }
 
                 return null;

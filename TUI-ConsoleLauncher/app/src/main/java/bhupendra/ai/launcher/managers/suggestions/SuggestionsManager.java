@@ -1,5 +1,8 @@
 package bhupendra.ai.launcher.managers.suggestions;
 
+import bhupendra.ai.launcher.managers.FileSystemManager;
+
+
 import android.app.Activity;
 import android.content.Context;
 import android.graphics.Color;
@@ -448,7 +451,7 @@ public class SuggestionsManager {
         } catch (Exception e) {
 //            this will trigger an error when there's a single space in the input field, but it's not a problem
             Tuils.log(e);
-            Tuils.toFile(e);
+            FileSystemManager.toFile(e);
         }
 
         lastSuggestionThread = new StoppableThread() {
@@ -481,7 +484,7 @@ public class SuggestionsManager {
                     suggestions = getSuggestions(before, lastWord);
                 } catch (Exception e) {
                     Tuils.log(e);
-                    Tuils.toFile(e);
+                    FileSystemManager.toFile(e);
                     return;
                 }
 
@@ -553,7 +556,7 @@ public class SuggestionsManager {
             lastSuggestionThread.start();
         } catch (InternalError e) {
             Tuils.log(e);
-            Tuils.toFile(e);
+            FileSystemManager.toFile(e);
         }
     }
 

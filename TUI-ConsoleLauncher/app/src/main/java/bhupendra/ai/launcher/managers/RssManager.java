@@ -1,5 +1,14 @@
 package bhupendra.ai.launcher.managers;
 
+import bhupendra.ai.launcher.managers.DeviceStateManager;
+
+
+import bhupendra.ai.launcher.managers.TextProcessor;
+
+
+import bhupendra.ai.launcher.managers.FileSystemManager;
+
+
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Color;
@@ -97,7 +106,7 @@ public class RssManager implements XMLPrefsElement {
 
     @Override
     public void write(XMLPrefsSave save, String value) {
-        set(new File(Tuils.getFolder(), PATH), save.label(), new String[] {VALUE_ATTRIBUTE}, new String[] {value});
+        set(new File(FileSystemManager.getFolder(), PATH), save.label(), new String[] {VALUE_ATTRIBUTE}, new String[] {value});
     }
 
     @Override
@@ -134,8 +143,8 @@ public class RssManager implements XMLPrefsElement {
 
         connectivityManager = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
 
-        root = new File(Tuils.getFolder(), RSS_FOLDER);
-        rssIndexFile = new File(Tuils.getFolder(), PATH);
+        root = new File(FileSystemManager.getFolder(), RSS_FOLDER);
+        rssIndexFile = new File(FileSystemManager.getFolder(), PATH);
 
         this.client = client;
 
@@ -281,7 +290,7 @@ public class RssManager implements XMLPrefsElement {
                     }
                 } catch (Exception e) {
                     Tuils.log(e);
-                    Tuils.toFile(e);
+                    FileSystemManager.toFile(e);
                 }
 
                 click = XMLPrefsManager.getBoolean(bhupendra.ai.launcher.managers.xml.options.Rss.click_rss);
@@ -430,7 +439,7 @@ public class RssManager implements XMLPrefsElement {
                     return null;
                 } catch (Exception e) {
                     Tuils.log(e);
-                    Tuils.toFile(e);
+                    FileSystemManager.toFile(e);
                     return e.toString();
                 }
             }
@@ -634,7 +643,7 @@ public class RssManager implements XMLPrefsElement {
             public void run() {
                 super.run();
 
-                if(!Tuils.hasInternetAccess()) {
+                if(!DeviceStateManager.hasInternetAccess()) {
                     if(force) Tuils.sendOutput(Color.RED, context, R.string.no_internet);
                     return;
                 }
@@ -655,10 +664,10 @@ public class RssManager implements XMLPrefsElement {
                         ResponseBody body = response.body();
 
                         long bytes = 0;
-                        if(body != null) bytes = Tuils.download(new BufferedInputStream(body.byteStream()), new File(root, RSS_LABEL + feed.id + ".xml"));
+                        if(body != null) bytes = FileSystemManager.download(new BufferedInputStream(body.byteStream()), new File(root, RSS_LABEL + feed.id + ".xml"));
 
                         if(showDownloadMessage) {
-                            CharSequence c = Tuils.span(downloadFormat, downloadMessageColor);
+                            CharSequence c = TextProcessor.span(downloadFormat, downloadMessageColor);
 
                             double kb = (double) bytes / (double) 1024;
                             double mb = kb / (double) 1024;
@@ -701,7 +710,7 @@ public class RssManager implements XMLPrefsElement {
 
                 } catch (Exception e) {
                     Tuils.log(e);
-                    Tuils.toFile(e);
+                    FileSystemManager.toFile(e);
                 }
             }
         }.start();
@@ -799,7 +808,7 @@ public class RssManager implements XMLPrefsElement {
         String cp = feed.format != null ? feed.format : defaultFormat;
         cp = Tuils.patternNewline.matcher(cp).replaceAll(Tuils.NEWLINE);
 
-        CharSequence s = Tuils.span(cp, feed.color);
+        CharSequence s = TextProcessor.span(cp, feed.color);
 
         String dateTag = feed.dateTag == null ? PUBDATE_CHILD : feed.dateTag;
 
@@ -856,7 +865,7 @@ public class RssManager implements XMLPrefsElement {
 
                 CharSequence replace;
                 if(cl != feed.color && value.length() > 0) {
-                    replace = Tuils.span(value, cl);
+                    replace = TextProcessor.span(value, cl);
                 } else {
                     replace = value;
                 }
@@ -1161,7 +1170,7 @@ public class RssManager implements XMLPrefsElement {
             this.literalPattern = regex;
             this.cmd = cmd;
 
-            char separator = Tuils.firstNonDigit(on);
+            char separator = TextProcessor.firstNonDigit(on);
             if(separator == 0) {
                 try {
                     this.on = new int[] {Integer.parseInt(on)};
@@ -1170,9 +1179,9 @@ public class RssManager implements XMLPrefsElement {
                 }
             } else {
                 if(separator == ' ') {
-                    char s2 = Tuils.firstNonDigit(Tuils.removeSpaces(on));
+                    char s2 = TextProcessor.firstNonDigit(TextProcessor.removeSpaces(on));
                     if(s2 != 0) {
-                        on = Tuils.removeSpaces(on);
+                        on = TextProcessor.removeSpaces(on);
                         separator = s2;
                     }
                 }

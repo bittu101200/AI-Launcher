@@ -1,5 +1,8 @@
 package bhupendra.ai.launcher.commands.main.raw;
 
+import bhupendra.ai.launcher.managers.TextProcessor;
+
+
 import android.app.SearchManager;
 import android.content.Context;
 import android.content.Intent;
@@ -64,7 +67,7 @@ public class search extends ParamCommand {
             @Override
             public String exec(ExecutePack pack) {
                 List<String> args = pack.getList();
-                return url(Tuils.toPlanString(args, Tuils.SPACE), pack.context);
+                return url(TextProcessor.toPlanString(args, Tuils.SPACE), pack.context);
             }
         },
         dd {
@@ -137,7 +140,7 @@ public class search extends ParamCommand {
     }
 
     private static String google(List<String> args, Context c) {
-        String toSearch = Tuils.toPlanString(args, "+");
+        String toSearch = TextProcessor.toPlanString(args, "+");
         Uri uri = Uri.parse("https://www.google.com/search?q=" + toSearch);
         Intent intent = new Intent(Intent.ACTION_VIEW, uri);
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
@@ -146,7 +149,7 @@ public class search extends ParamCommand {
     }
 
     private static String playstore(List<String> args, Context c) {
-        String toSearch = Tuils.toPlanString(args, "%20");
+        String toSearch = TextProcessor.toPlanString(args, "%20");
 
         try {
             c.startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(PLAYSTORE_PREFIX + toSearch)));
@@ -170,14 +173,14 @@ public class search extends ParamCommand {
 
     private static String duckDuck(List<String> args, Context c) {
         try {
-            String toSearch = Tuils.toPlanString(args, " ");
+            String toSearch = TextProcessor.toPlanString(args, " ");
 
             Intent intent = new Intent(Intent.ACTION_WEB_SEARCH);
             intent.setClassName(DUCKDUCKGO_PACKAGE, DUCKDUCKGO_PACKAGE + DUCKDUCKGO_ACTIVITY);
             intent.putExtra(SearchManager.QUERY, toSearch);
             c.startActivity(intent);
         } catch (Exception e) {
-            String toSearch = Tuils.toPlanString(args, "+");
+            String toSearch = TextProcessor.toPlanString(args, "+");
 
             Uri uri = Uri.parse(DUCKDUCKGO_PREFIX + toSearch);
             Intent intent = new Intent(Intent.ACTION_VIEW, uri);
@@ -192,12 +195,12 @@ public class search extends ParamCommand {
 //            public void run() {
 //                super.run();
 //
-//                String name = Tuils.toPlanString(args);
+//                String name = TextProcessor.toPlanString(args);
 //                List<String> paths = rightPaths(cd, name);
 //                if(paths.size() == 0) {
 //                    outputable.onOutput(res.getString(R.string.output_nothing_found));
 //                } else {
-//                    outputable.onOutput(Tuils.toPlanString(paths, Tuils.NEWLINE));
+//                    outputable.onOutput(TextProcessor.toPlanString(paths, Tuils.NEWLINE));
 //                }
 //            }
 //        };
@@ -230,14 +233,14 @@ public class search extends ParamCommand {
 
     private static String youTube(List<String> args, Context c) {
         try {
-            String toSearch = Tuils.toPlanString(args, " ");
+            String toSearch = TextProcessor.toPlanString(args, " ");
             Intent intent = new Intent(Intent.ACTION_SEARCH);
             intent.setPackage(YOUTUBE_PACKAGE);
             intent.putExtra("query", toSearch);
             intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             c.startActivity(intent);
         } catch (Exception e) {
-            String toSearch = Tuils.toPlanString(args, "+");
+            String toSearch = TextProcessor.toPlanString(args, "+");
             Uri uri = Uri.parse(YOUTUBE_PREFIX + toSearch);
             Intent intent = new Intent(Intent.ACTION_VIEW, uri);
             c.startActivity(intent);

@@ -1,5 +1,14 @@
 package bhupendra.ai.launcher;
 
+import bhupendra.ai.launcher.managers.DeviceStateManager;
+
+
+import bhupendra.ai.launcher.managers.TextProcessor;
+
+
+import bhupendra.ai.launcher.managers.FileSystemManager;
+
+
 import android.app.Activity;
 import android.app.ActivityManager;
 import android.app.KeyguardManager;
@@ -156,7 +165,7 @@ public class UIManager implements OnTouchListener {
         public void run() {
             if(notesManager != null) {
                 if(notesManager.hasChanged) {
-                    UIManager.this.updateText(Label.notes, Tuils.span(mContext, labelSizes[Label.notes.ordinal()], notesManager.getNotes()));
+                    UIManager.this.updateText(Label.notes, TextProcessor.span(mContext, labelSizes[Label.notes.ordinal()], notesManager.getNotes()));
                 }
 
                 handler.postDelayed(this, updateTime);
@@ -230,7 +239,7 @@ public class UIManager implements OnTouchListener {
             cp = value.matcher(cp).replaceAll(String.valueOf(percentage));
             cp = Tuils.patternNewline.matcher(cp).replaceAll(Tuils.NEWLINE);
 
-            UIManager.this.updateText(Label.battery, Tuils.span(mContext, cp, color, labelSizes[Label.battery.ordinal()]));
+            UIManager.this.updateText(Label.battery, TextProcessor.span(mContext, cp, color, labelSizes[Label.battery.ordinal()]));
         }
 
         @Override
@@ -303,10 +312,10 @@ public class UIManager implements OnTouchListener {
                 storagePatterns.add(Pattern.compile(EXT_TOT, Pattern.CASE_INSENSITIVE | Pattern.LITERAL));
             }
 
-            double iav = Tuils.getAvailableInternalMemorySize(Tuils.BYTE);
-            double itot = Tuils.getTotalInternalMemorySize(Tuils.BYTE);
-            double eav = Tuils.getAvailableExternalMemorySize(Tuils.BYTE);
-            double etot = Tuils.getTotalExternalMemorySize(Tuils.BYTE);
+            double iav = DeviceStateManager.getAvailableInternalMemorySize(Tuils.BYTE);
+            double itot = DeviceStateManager.getTotalInternalMemorySize(Tuils.BYTE);
+            double eav = DeviceStateManager.getAvailableExternalMemorySize(Tuils.BYTE);
+            double etot = DeviceStateManager.getTotalExternalMemorySize(Tuils.BYTE);
 
             String copy = storageFormat;
 
@@ -343,7 +352,7 @@ public class UIManager implements OnTouchListener {
             copy = storagePatterns.get(25).matcher(copy).replaceAll(Matcher.quoteReplacement(String.valueOf(Tuils.formatSize((long) eav, Tuils.GIGA))));
             copy = storagePatterns.get(26).matcher(copy).replaceAll(Matcher.quoteReplacement(String.valueOf(Tuils.formatSize((long) etot, Tuils.GIGA))));
 
-            updateText(Label.storage, Tuils.span(mContext, copy, color, labelSizes[Label.storage.ordinal()]));
+            updateText(Label.storage, TextProcessor.span(mContext, copy, color, labelSizes[Label.storage.ordinal()]));
 
             handler.postDelayed(this, STORAGE_DELAY);
         }
@@ -407,8 +416,8 @@ public class UIManager implements OnTouchListener {
 
             String copy = ramFormat;
 
-            double av = Tuils.freeRam(activityManager, memory);
-            double tot = Tuils.totalRam() * 1024L;
+            double av = DeviceStateManager.freeRam(activityManager, memory);
+            double tot = DeviceStateManager.totalRam() * 1024L;
 
             copy = ramPatterns.get(0).matcher(copy).replaceAll(Matcher.quoteReplacement(String.valueOf(Tuils.formatSize((long) av, Tuils.TERA))));
             copy = ramPatterns.get(1).matcher(copy).replaceAll(Matcher.quoteReplacement(String.valueOf(Tuils.formatSize((long) av, Tuils.GIGA))));
@@ -425,7 +434,7 @@ public class UIManager implements OnTouchListener {
 
             copy = ramPatterns.get(11).matcher(copy).replaceAll(Matcher.quoteReplacement(Tuils.NEWLINE));
 
-            updateText(Label.ram, Tuils.span(mContext, copy, color, labelSizes[Label.ram.ordinal()]));
+            updateText(Label.ram, TextProcessor.span(mContext, copy, color, labelSizes[Label.ram.ordinal()]));
 
             handler.postDelayed(this, RAM_DELAY);
         }
@@ -542,7 +551,7 @@ public class UIManager implements OnTouchListener {
 
             String mobileType = null;
             if (mobileOn) {
-                mobileType = Tuils.getNetworkType(mContext);
+                mobileType = DeviceStateManager.getNetworkType(mContext);
             } else {
                 mobileType = "unknown";
             }
@@ -579,7 +588,7 @@ public class UIManager implements OnTouchListener {
             copy = dt.matcher(copy).replaceAll(mobileType);
             copy = Tuils.patternNewline.matcher(copy).replaceAll(Tuils.NEWLINE);
 
-            updateText(Label.network, Tuils.span(mContext, copy, color, labelSizes[Label.network.ordinal()]));
+            updateText(Label.network, TextProcessor.span(mContext, copy, color, labelSizes[Label.network.ordinal()]));
             handler.postDelayed(this, updateTime);
         }
 
@@ -656,7 +665,7 @@ public class UIManager implements OnTouchListener {
             weatherDelay *= 1000;
 
             String where = XMLPrefsManager.get(Behavior.weather_location);
-            if(where == null || where.length() == 0 || (!Tuils.isNumber(where) && !where.contains(","))) {
+            if(where == null || where.length() == 0 || (!TextProcessor.isNumber(where) && !where.contains(","))) {
 //                Tuils.location(mContext, new Tuils.ArgsRunnable() {
 //                    @Override
 //                    public void run() {
@@ -669,7 +678,7 @@ public class UIManager implements OnTouchListener {
 //                }, new Runnable() {
 //                    @Override
 //                    public void run() {
-//                        updateText(Label.weather, Tuils.span(mContext, mContext.getString(R.string.location_error), XMLPrefsManager.getColor(Theme.weather_color), labelSizes[Label.weather.ordinal()]));
+//                        updateText(Label.weather, TextProcessor.span(mContext, mContext.getString(R.string.location_error), XMLPrefsManager.getColor(Theme.weather_color), labelSizes[Label.weather.ordinal()]));
 //                    }
 //                }, handler);
 
@@ -681,7 +690,7 @@ public class UIManager implements OnTouchListener {
 //                            XMLPrefsManager.get(Behavior.weather_temperature_measure));
 //                    WeatherRunnable.this.run();
 //                } else {
-//                    updateText(Label.weather, Tuils.span(mContext, mContext.getString(R.string.location_error), XMLPrefsManager.getColor(Theme.weather_color), labelSizes[Label.weather.ordinal()]));
+//                    updateText(Label.weather, TextProcessor.span(mContext, mContext.getString(R.string.location_error), XMLPrefsManager.getColor(Theme.weather_color), labelSizes[Label.weather.ordinal()]));
 //                }
 
                 TuiLocationManager l = TuiLocationManager.instance(mContext);
@@ -806,7 +815,7 @@ public class UIManager implements OnTouchListener {
                     String fileName = intent.getStringExtra(FILE_NAME);
                     if(fileName == null || fileName.contains(File.separator)) return;
 
-                    File file = new File(Tuils.getFolder(), fileName);
+                    File file = new File(FileSystemManager.getFolder(), fileName);
                     if(file.exists()) file.delete();
 
                     try {
@@ -830,7 +839,7 @@ public class UIManager implements OnTouchListener {
                     if(s == null) s = intent.getStringExtra(XMLPrefsManager.VALUE_ATTRIBUTE);
                     if(s == null) return;
 
-                    s = Tuils.span(context, s, weatherColor, labelSizes[Label.weather.ordinal()]);
+                    s = TextProcessor.span(context, s, weatherColor, labelSizes[Label.weather.ordinal()]);
 
                     updateText(Label.weather, s);
 
@@ -841,14 +850,14 @@ public class UIManager implements OnTouchListener {
                 } else if(action.equals(ACTION_WEATHER_GOT_LOCATION)) {
 //                    int result = intent.getIntExtra(XMLPrefsManager.VALUE_ATTRIBUTE, 0);
 //                    if(result == PackageManager.PERMISSION_DENIED) {
-//                        updateText(Label.weather, Tuils.span(context, context.getString(R.string.location_error), weatherColor, labelSizes[Label.weather.ordinal()]));
+//                        updateText(Label.weather, TextProcessor.span(context, context.getString(R.string.location_error), weatherColor, labelSizes[Label.weather.ordinal()]));
 //                    } else handler.post(weatherRunnable);
 
                     if(intent.getBooleanExtra(TuiLocationManager.FAIL, false)) {
                         handler.removeCallbacks(weatherRunnable);
                         weatherRunnable = null;
 
-                        CharSequence s = Tuils.span(context, context.getString(R.string.location_error), weatherColor, labelSizes[Label.weather.ordinal()]);
+                        CharSequence s = TextProcessor.span(context, context.getString(R.string.location_error), weatherColor, labelSizes[Label.weather.ordinal()]);
 
                         updateText(Label.weather, s);
                     } else {
@@ -972,7 +981,7 @@ public class UIManager implements OnTouchListener {
                         boolean admin = policy.isAdminActive(component);
 
                         if (!admin) {
-                            Intent i = Tuils.requestAdmin(component, mContext.getString(R.string.admin_permission));
+                            Intent i = DeviceStateManager.requestAdmin(component, mContext.getString(R.string.admin_permission));
                             mContext.startActivity(i);
                         } else {
                             policy.lockNow();
@@ -1166,7 +1175,7 @@ public class UIManager implements OnTouchListener {
             deviceFormat = DV.matcher(deviceFormat).replaceAll(Matcher.quoteReplacement(deviceName));
             deviceFormat = Tuils.patternNewline.matcher(deviceFormat).replaceAll(Matcher.quoteReplacement(Tuils.NEWLINE));
 
-            updateText(Label.device, Tuils.span(mContext, deviceFormat, XMLPrefsManager.getColor(Theme.device_color), labelSizes[Label.device.ordinal()]));
+            updateText(Label.device, TextProcessor.span(mContext, deviceFormat, XMLPrefsManager.getColor(Theme.device_color), labelSizes[Label.device.ordinal()]));
         }
 
         if(show[Label.time.ordinal()]) {
@@ -1180,7 +1189,7 @@ public class UIManager implements OnTouchListener {
             mediumPercentage = XMLPrefsManager.getInt(Behavior.battery_medium);
             lowPercentage = XMLPrefsManager.getInt(Behavior.battery_low);
 
-            Tuils.registerBatteryReceiver(context, batteryUpdate);
+            DeviceStateManager.registerBatteryReceiver(context, batteryUpdate);
         } else {
             batteryUpdate = null;
         }
@@ -1229,7 +1238,7 @@ public class UIManager implements OnTouchListener {
             weatherColor = XMLPrefsManager.getColor(Theme.weather_color);
 
             String where = XMLPrefsManager.get(Behavior.weather_location);
-            if(where.contains(",") || Tuils.isNumber(where)) handler.post(weatherRunnable);
+            if(where.contains(",") || TextProcessor.isNumber(where)) handler.post(weatherRunnable);
 
             showWeatherUpdate = XMLPrefsManager.getBoolean(Behavior.show_weather_updates);
         }
@@ -1426,7 +1435,7 @@ public class UIManager implements OnTouchListener {
             d.setColor(Color.parseColor(bgColor));
             v.setBackgroundDrawable(d);
         } catch (Exception e) {
-            Tuils.toFile(e);
+            FileSystemManager.toFile(e);
             Tuils.log(e);
         }
     }
@@ -1461,7 +1470,7 @@ public class UIManager implements OnTouchListener {
         if(suggestionsManager != null) suggestionsManager.dispose();
         if(notesManager != null) notesManager.dispose(mContext);
         LocalBroadcastManager.getInstance(mContext.getApplicationContext()).unregisterReceiver(receiver);
-        Tuils.unregisterBatteryReceiver(mContext);
+        DeviceStateManager.unregisterBatteryReceiver(mContext);
 
         Tuils.cancelFont();
 
@@ -1699,7 +1708,7 @@ public class UIManager implements OnTouchListener {
             cp = m.replaceAll(numerator + divider + denominator);
         }
 
-        CharSequence s = Tuils.span(mContext, cp, unlockColor, labelSizes[Label.unlock.ordinal()]);
+        CharSequence s = TextProcessor.span(mContext, cp, unlockColor, labelSizes[Label.unlock.ordinal()]);
 
         Matcher timeMatcher = timePattern.matcher(cp);
         if(timeMatcher.find()) {

@@ -1,5 +1,8 @@
 package bhupendra.ai.launcher.managers.xml.options;
 
+import bhupendra.ai.launcher.managers.FileSystemManager;
+
+
 import android.os.Environment;
 
 import java.io.File;
@@ -568,7 +571,7 @@ public enum Behavior implements XMLPrefsSave {
     home_path {
         @Override
         public String defaultValue() {
-            return Tuils.getFolder().getAbsolutePath();
+            return FileSystemManager.getFolder().getAbsolutePath();
         }
 
         @Override

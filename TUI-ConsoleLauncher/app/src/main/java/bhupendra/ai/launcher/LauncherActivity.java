@@ -1,5 +1,14 @@
 package bhupendra.ai.launcher;
 
+import bhupendra.ai.launcher.managers.DeviceStateManager;
+
+
+import bhupendra.ai.launcher.managers.TextProcessor;
+
+
+import bhupendra.ai.launcher.managers.FileSystemManager;
+
+
 import android.Manifest;
 import android.content.ComponentName;
 import android.content.Context;
@@ -340,7 +349,7 @@ public class LauncherActivity extends AppCompatActivity implements Reloadable {
         try {
             NotificationManager.create(this);
         } catch (Exception e) {
-            Tuils.toFile(e);
+            FileSystemManager.toFile(e);
         }
 
         boolean notifications = XMLPrefsManager.getBoolean(Notifications.show_notifications) || XMLPrefsManager.get(Notifications.show_notifications).equalsIgnoreCase("enabled");
@@ -351,7 +360,7 @@ public class LauncherActivity extends AppCompatActivity implements Reloadable {
                     PackageManager pm = getPackageManager();
                     pm.setComponentEnabledSetting(notificationComponent, PackageManager.COMPONENT_ENABLED_STATE_ENABLED, PackageManager.DONT_KILL_APP);
 
-                    if (!Tuils.hasNotificationAccess(this)) {
+                    if (!DeviceStateManager.hasNotificationAccess(this)) {
                         Intent i = new Intent("android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS");
                         if (i.resolveActivity(getPackageManager()) == null) {
                             Toast.makeText(this, R.string.no_notification_access, Toast.LENGTH_LONG).show();
@@ -385,7 +394,7 @@ public class LauncherActivity extends AppCompatActivity implements Reloadable {
 
         if(XMLPrefsManager.getBoolean(Ui.show_restart_message)) {
             CharSequence s = getIntent().getCharSequenceExtra(Reloadable.MESSAGE);
-            if(s != null) out.onOutput(Tuils.span(s, XMLPrefsManager.getColor(Theme.restart_message_color)));
+            if(s != null) out.onOutput(TextProcessor.span(s, XMLPrefsManager.getColor(Theme.restart_message_color)));
         }
 
         categories = new HashSet<>();

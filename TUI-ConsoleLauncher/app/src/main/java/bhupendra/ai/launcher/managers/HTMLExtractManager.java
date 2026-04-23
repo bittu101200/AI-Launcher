@@ -1,5 +1,14 @@
 package bhupendra.ai.launcher.managers;
 
+import bhupendra.ai.launcher.managers.DeviceStateManager;
+
+
+import bhupendra.ai.launcher.managers.TextProcessor;
+
+
+import bhupendra.ai.launcher.managers.FileSystemManager;
+
+
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -311,7 +320,7 @@ public class HTMLExtractManager {
         jsons = new ArrayList<>();
         formats = new ArrayList<>();
 
-        File file = new File(Tuils.getFolder(), PATH);
+        File file = new File(FileSystemManager.getFolder(), PATH);
         if(!file.exists()) {
             resetFile(file, NAME);
         }
@@ -366,7 +375,7 @@ public class HTMLExtractManager {
             public void run() {
                 super.run();
 
-                if (!Tuils.hasInternetAccess()) {
+                if (!DeviceStateManager.hasInternetAccess()) {
                     output(R.string.no_internet, context, weatherArea);
                     return;
                 }
@@ -401,13 +410,13 @@ public class HTMLExtractManager {
 
                     InputStream inputStream = response.body().byteStream();
 
-                    CharSequence output = Tuils.span(Tuils.EMPTYSTRING, outputColor);
+                    CharSequence output = TextProcessor.span(Tuils.EMPTYSTRING, outputColor);
 
                     if(weatherArea) {
-                        String json = Tuils.inputStreamToString(inputStream);
+                        String json = FileSystemManager.inputStreamToString(inputStream);
 //                        json = json.replaceAll("\"temp\":([\\d\\.]*)", "\"temp\":-4.3");
 
-                        CharSequence o = Tuils.span(weatherFormat, weatherColor);
+                        CharSequence o = TextProcessor.span(weatherFormat, weatherColor);
 
                         Matcher m = weatherFormatPattern.matcher(weatherFormat);
                         while(m.find()) {
@@ -429,7 +438,7 @@ public class HTMLExtractManager {
                                     if(converter != null && converter.length() > 0) {
                                         try {
                                             double d = Double.parseDouble(value);
-                                            d = Tuils.textCalculus(d, converter);
+                                            d = TextProcessor.textCalculus(d, converter);
                                             value = String.format("%.2f", d);
                                         } catch (Exception e) {
                                             Tuils.log(e);
@@ -465,7 +474,7 @@ public class HTMLExtractManager {
                             node = (TagNode) nodes[c];
 
                             String f = format == null ? defaultFormat : format;
-                            CharSequence copy = Tuils.span(f, outputColor);
+                            CharSequence copy = TextProcessor.span(f, outputColor);
 
                             copy = replaceAllAttributesString(copy, node.getAttributes().entrySet());
                             copy = replaceTagNameString(copy, node.getName(), node.getAttributes());
@@ -485,7 +494,7 @@ public class HTMLExtractManager {
 //                            this should be a single JSON object
 
                             String f = format == null ? defaultFormat : format;
-                            CharSequence copy = Tuils.span(f, outputColor);
+                            CharSequence copy = TextProcessor.span(f, outputColor);
 
                             copy = replaceAllAttributesObject(copy, ((Map) o).entrySet());
                             copy = replaceTagNameObject(copy, null, (Map<String, Object>) o);
@@ -502,7 +511,7 @@ public class HTMLExtractManager {
 
                             for(int c = 0; c < a.size(); c++) {
                                 String f = format == null ? defaultFormat : format;
-                                CharSequence copy = Tuils.span(f, outputColor);
+                                CharSequence copy = TextProcessor.span(f, outputColor);
 
                                 LinkedHashMap<String,Object> m = (LinkedHashMap<String, Object>) a.get(c);
 
@@ -517,7 +526,7 @@ public class HTMLExtractManager {
 
                             output(output, context, weatherArea, TerminalManager.CATEGORY_NO_COLOR);
                         } else if(o instanceof String) {
-                            output = Tuils.span(o.toString(), outputColor);
+                            output = TextProcessor.span(o.toString(), outputColor);
                             output(output, context, weatherArea, TerminalManager.CATEGORY_NO_COLOR);
                         } else {
                             Tuils.sendOutput(outputColor, context, o.toString());
@@ -525,7 +534,7 @@ public class HTMLExtractManager {
                     }
                 } catch (Exception e) {
                     output(e.toString(), context, weatherArea);
-                    Tuils.toFile(e);
+                    FileSystemManager.toFile(e);
                     Tuils.log(e);
                 }
             }
@@ -593,7 +602,7 @@ public class HTMLExtractManager {
 
                 String temp = first;
                 temp = attributeName.matcher(temp).replaceAll(e.getKey());
-                temp = attributeValue.matcher(temp).replaceAll(Tuils.removeUnncesarySpaces(e.getValue().toString().trim()));
+                temp = attributeValue.matcher(temp).replaceAll(TextProcessor.removeUnncesarySpaces(e.getValue().toString().trim()));
 
                 b.append(temp);
                 if(c != l.size() - 1) b.append(separator);
@@ -642,7 +651,7 @@ public class HTMLExtractManager {
 
                 String temp = first;
                 temp = attributeName.matcher(temp).replaceAll(e.getKey());
-                temp = attributeValue.matcher(temp).replaceAll(Tuils.removeUnncesarySpaces(e.getValue().trim()));
+                temp = attributeValue.matcher(temp).replaceAll(TextProcessor.removeUnncesarySpaces(e.getValue().trim()));
 
                 b.append(temp);
                 if(c != l.size() - 1) b.append(separator);
@@ -678,7 +687,7 @@ public class HTMLExtractManager {
 
     public static CharSequence replaceNodeValue(CharSequence original, String nodeValue) {
         nodeValue = Jsoup.parse(nodeValue).text();
-        return TextUtils.replace(original, new String[] {nodeValuePattern}, new CharSequence[] {delimiterStart + Tuils.removeUnncesarySpaces(nodeValue).trim() + delimiterEnd});
+        return TextUtils.replace(original, new String[] {nodeValuePattern}, new CharSequence[] {delimiterStart + TextProcessor.removeUnncesarySpaces(nodeValue).trim() + delimiterEnd});
     }
 
     public static CharSequence replaceNewline(CharSequence original) {
@@ -713,7 +722,7 @@ public class HTMLExtractManager {
         while(m.find()) {
             try {
                 int cl = Color.parseColor(m.group(1));
-                original = TextUtils.replace(original, new String[] {m.group()}, new CharSequence[] {Tuils.span(m.group(2), cl)});
+                original = TextUtils.replace(original, new String[] {m.group()}, new CharSequence[] {TextProcessor.span(m.group(2), cl)});
             } catch (Exception e) {
                 Tuils.sendOutput(context, context.getString(R.string.output_invalidcolor) + ": " + m.group(1));
             }
@@ -805,7 +814,7 @@ public class HTMLExtractManager {
                 }
             }
 
-            File file = new File(Tuils.getFolder(), PATH);
+            File file = new File(FileSystemManager.getFolder(), PATH);
             if(!file.exists()) {
                 resetFile(file, NAME);
             }
@@ -821,7 +830,7 @@ public class HTMLExtractManager {
         }
 
         public void remove(Context context) {
-            File file = new File(Tuils.getFolder(), PATH);
+            File file = new File(FileSystemManager.getFolder(), PATH);
             if(!file.exists()) {
                 resetFile(file, NAME);
             }
@@ -836,7 +845,7 @@ public class HTMLExtractManager {
         }
 
         public void edit(Context context, String newExpression) {
-            File file = new File(Tuils.getFolder(), PATH);
+            File file = new File(FileSystemManager.getFolder(), PATH);
             if(!file.exists()) {
                 resetFile(file, NAME);
             }

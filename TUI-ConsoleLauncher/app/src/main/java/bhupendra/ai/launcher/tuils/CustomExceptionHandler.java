@@ -1,5 +1,8 @@
 package bhupendra.ai.launcher.tuils;
 
+import bhupendra.ai.launcher.managers.FileSystemManager;
+
+
 /**
  * Created by francescoandreuzzi on 22/02/2018.
  */
@@ -14,7 +17,7 @@ public class CustomExceptionHandler implements Thread.UncaughtExceptionHandler {
 
     @Override
     public void uncaughtException(Thread thread, final Throwable ex) {
-        Tuils.toFile(ex);
+        FileSystemManager.toFile(ex);
         _defaultEH.uncaughtException(thread, ex);
     }
 

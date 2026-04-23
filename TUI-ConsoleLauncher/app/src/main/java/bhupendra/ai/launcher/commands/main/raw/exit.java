@@ -1,5 +1,8 @@
 package bhupendra.ai.launcher.commands.main.raw;
 
+import bhupendra.ai.launcher.managers.DeviceStateManager;
+
+
 import bhupendra.ai.launcher.R;
 import bhupendra.ai.launcher.commands.CommandAbstraction;
 import bhupendra.ai.launcher.commands.ExecutePack;
@@ -12,7 +15,7 @@ import bhupendra.ai.launcher.tuils.Tuils;
 public class exit implements CommandAbstraction {
     @Override
     public String exec(ExecutePack pack) throws Exception {
-        Tuils.resetPreferredLauncherAndOpenChooser(pack.context);
+        DeviceStateManager.resetPreferredLauncherAndOpenChooser(pack.context);
         return null;
     }
 

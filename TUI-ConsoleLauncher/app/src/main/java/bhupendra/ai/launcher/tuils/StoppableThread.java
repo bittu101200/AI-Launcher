@@ -1,5 +1,8 @@
 package bhupendra.ai.launcher.tuils;
 
+import bhupendra.ai.launcher.managers.FileSystemManager;
+
+
 /**
  * Created by francescoandreuzzi on 27/04/2017.
  */
@@ -10,7 +13,7 @@ public class StoppableThread extends Thread {
     public StoppableThread() {
         Thread.setDefaultUncaughtExceptionHandler((t, e) -> {
             Tuils.log(e);
-            Tuils.toFile(e);
+            FileSystemManager.toFile(e);
             System.exit(1);
         });
     }

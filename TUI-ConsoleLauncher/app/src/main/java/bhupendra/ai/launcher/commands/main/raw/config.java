@@ -1,5 +1,11 @@
 package bhupendra.ai.launcher.commands.main.raw;
 
+import bhupendra.ai.launcher.managers.TextProcessor;
+
+
+import bhupendra.ai.launcher.managers.FileSystemManager;
+
+
 import android.content.ActivityNotFoundException;
 import android.content.SharedPreferences;
 
@@ -93,16 +99,16 @@ public class config extends ParamCommand {
 
             @Override
             public String exec(ExecutePack pack) {
-                File file = new File(Tuils.getFolder(), pack.getString());
+                File file = new File(FileSystemManager.getFolder(), pack.getString());
 
                 try {
-                    pack.context.startActivity(Tuils.openFile(pack.context, file));
+                    pack.context.startActivity(FileSystemManager.openFile(pack.context, file));
                 } catch (ActivityNotFoundException e) {
                     Tuils.log("nf");
-                    Tuils.toFile(e);
+                    FileSystemManager.toFile(e);
                 } catch (Exception ex) {
                     Tuils.log(ex);
-                    Tuils.toFile(ex);
+                    FileSystemManager.toFile(ex);
                 }
 
                 return null;
@@ -175,37 +181,37 @@ public class config extends ParamCommand {
 
             @Override
             public String exec(ExecutePack pack) {
-                File file = new File(Tuils.getFolder(), pack.getString());
+                File file = new File(FileSystemManager.getFolder(), pack.getString());
                 String name = file.getName();
 
                 for(XMLPrefsManager.XMLPrefsRoot r : XMLPrefsManager.XMLPrefsRoot.values()) {
                     if(name.equalsIgnoreCase(r.path)) {
                         List<String> strings = r.getValues().values();
-                        Tuils.addPrefix(strings, Tuils.DOUBLE_SPACE);
+                        TextProcessor.addPrefix(strings, Tuils.DOUBLE_SPACE);
                         strings.add(0, r.path);
-                        return Tuils.toPlanString(strings, Tuils.NEWLINE);
+                        return TextProcessor.toPlanString(strings, Tuils.NEWLINE);
                     }
                 }
 
                 if(name.equalsIgnoreCase(AppsManager.PATH)) {
                     List<String> strings = AppsManager.instance.getValues().values();
-                    Tuils.addPrefix(strings, Tuils.DOUBLE_SPACE);
+                    TextProcessor.addPrefix(strings, Tuils.DOUBLE_SPACE);
                     strings.add(0, AppsManager.PATH);
-                    return Tuils.toPlanString(strings, Tuils.NEWLINE);
+                    return TextProcessor.toPlanString(strings, Tuils.NEWLINE);
                 }
 
                 if(name.equalsIgnoreCase(NotificationManager.PATH)) {
                     List<String> strings = NotificationManager.instance.getValues().values();
-                    Tuils.addPrefix(strings, Tuils.DOUBLE_SPACE);
+                    TextProcessor.addPrefix(strings, Tuils.DOUBLE_SPACE);
                     strings.add(0, NotificationManager.PATH);
-                    return Tuils.toPlanString(strings, Tuils.NEWLINE);
+                    return TextProcessor.toPlanString(strings, Tuils.NEWLINE);
                 }
 
                 if(name.equalsIgnoreCase(RssManager.PATH)) {
                     List<String> strings = NotificationManager.instance.getValues().values();
-                    Tuils.addPrefix(strings, Tuils.DOUBLE_SPACE);
+                    TextProcessor.addPrefix(strings, Tuils.DOUBLE_SPACE);
                     strings.add(0, RssManager.PATH);
-                    return Tuils.toPlanString(strings, Tuils.NEWLINE);
+                    return TextProcessor.toPlanString(strings, Tuils.NEWLINE);
                 }
 
                 return "[]";
@@ -239,7 +245,7 @@ public class config extends ParamCommand {
                     ss.add(Tuils.DOUBLE_SPACE + save.label());
                 }
 
-                return Tuils.toPlanString(ss);
+                return TextProcessor.toPlanString(ss);
             }
         },
         fontsize {
@@ -300,18 +306,18 @@ public class config extends ParamCommand {
                         File font = new File(Tuils.fontPath);
                         if (font.exists()) {
                             File[] files = font.listFiles();
-                            if (files.length > 0) Tuils.insertOld(files[0]);
-                            Tuils.deleteContentOnly(font);
+                            if (files.length > 0) FileSystemManager.insertOld(files[0]);
+                            FileSystemManager.deleteContentOnly(font);
                         } else {
                             font.mkdir();
                         }
                     }
                 } else {
-                    File toPutInsideOld = new File(Tuils.getFolder(), file.getName());
-                    Tuils.insertOld(toPutInsideOld);
+                    File toPutInsideOld = new File(FileSystemManager.getFolder(), file.getName());
+                    FileSystemManager.insertOld(toPutInsideOld);
                 }
 
-                File dest = new File(Tuils.getFolder(), file.getName());
+                File dest = new File(FileSystemManager.getFolder(), file.getName());
                 file.renameTo(dest);
 
                 return "Path: " + dest.getAbsolutePath();
