@@ -1,4 +1,5 @@
 apply plugin: 'com.android.application'
+apply plugin: 'dagger.hilt.android.plugin'
 
 android {
     namespace "bhupendra.ai.launcher"
@@ -74,6 +75,9 @@ dependencies {
     implementation 'com.jayway.jsonpath:json-path:2.9.0'
     implementation 'org.jsoup:jsoup:1.17.2'
     implementation 'it.andreuzzi:CompareString2:1.0.9'
+
+    implementation 'com.google.dagger:hilt-android:2.48.1'
+    annotationProcessor 'com.google.dagger:hilt-compiler:2.48.1'
 
     testImplementation 'junit:junit:4.13.2'
     testImplementation 'org.mockito:mockito-core:4.11.0'
