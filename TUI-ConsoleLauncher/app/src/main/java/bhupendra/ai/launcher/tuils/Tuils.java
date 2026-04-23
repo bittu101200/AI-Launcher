@@ -34,6 +34,7 @@ import androidx.core.content.FileProvider;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 import android.telephony.TelephonyManager;
 import android.text.SpannableString;
+import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.TextUtils;
 import android.text.style.AbsoluteSizeSpan;
@@ -1609,5 +1610,66 @@ public class Tuils {
 
     public static void sendXMLParseError(Context context, String PATH) {
         Tuils.sendOutput(Color.RED, context, context.getString(R.string.output_xmlproblem1) + Tuils.SPACE + PATH + context.getString(R.string.output_xmlproblem2));
+    }
+
+    public static CharSequence parseMarkdown(CharSequence text) {
+        if (text == null) return null;
+        SpannableStringBuilder ssb = new SpannableStringBuilder(text);
+
+        // 1. Code Blocks (``` ... ```) - Using a distinct color
+        java.util.regex.Pattern codeBlockPattern = java.util.regex.Pattern.compile("```[\\s\\S]*?```");
+        java.util.regex.Matcher codeBlockMatcher = codeBlockPattern.matcher(ssb);
+        int offset = 0;
+        while (codeBlockMatcher.find()) {
+            int start = codeBlockMatcher.start() - offset;
+            int end = codeBlockMatcher.end() - offset;
+            ssb.setSpan(new ForegroundColorSpan(0xFF888888), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            ssb.setSpan(new android.text.style.TypefaceSpan("monospace"), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            ssb.delete(end - 3, end);
+            ssb.delete(start, start + 3);
+            offset += 6;
+        }
+
+        // 2. Bold (**text**)
+        java.util.regex.Pattern boldPattern = java.util.regex.Pattern.compile("\\*\\*(.*?)\\*\\*");
+        java.util.regex.Matcher boldMatcher = boldPattern.matcher(ssb);
+        offset = 0;
+        while (boldMatcher.find()) {
+            int start = boldMatcher.start() - offset;
+            int end = boldMatcher.end() - offset;
+            ssb.setSpan(new android.text.style.StyleSpan(android.graphics.Typeface.BOLD), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            ssb.delete(end - 2, end);
+            ssb.delete(start, start + 2);
+            offset += 4;
+        }
+
+        // 3. Italic (*text*)
+        java.util.regex.Pattern italicPattern = java.util.regex.Pattern.compile("\\*(.*?)\\*");
+        java.util.regex.Matcher italicMatcher = italicPattern.matcher(ssb);
+        offset = 0;
+        while (italicMatcher.find()) {
+            int start = italicMatcher.start() - offset;
+            int end = italicMatcher.end() - offset;
+            ssb.setSpan(new android.text.style.StyleSpan(android.graphics.Typeface.ITALIC), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            ssb.delete(end - 1, end);
+            ssb.delete(start, start + 1);
+            offset += 2;
+        }
+
+        // 4. Inline Code (`text`)
+        java.util.regex.Pattern inlineCodePattern = java.util.regex.Pattern.compile("`(.*?)`");
+        java.util.regex.Matcher inlineCodeMatcher = inlineCodePattern.matcher(ssb);
+        offset = 0;
+        while (inlineCodeMatcher.find()) {
+            int start = inlineCodeMatcher.start() - offset;
+            int end = inlineCodeMatcher.end() - offset;
+            ssb.setSpan(new ForegroundColorSpan(0xFF888888), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            ssb.setSpan(new android.text.style.TypefaceSpan("monospace"), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            ssb.delete(end - 1, end);
+            ssb.delete(start, start + 1);
+            offset += 2;
+        }
+
+        return ssb;
     }
 }

@@ -333,10 +333,13 @@ public class AISubsystem {
             .append("You can execute powerful Linux commands via 'termux.execute'. ")
             .append("Use this for file management (ls, cp, mv, rm), git operations (git status, commit, push), ")
             .append("running scripts (python, node), or installing packages (pkg install). ")
-            .append("Always use this tool if the user asks for advanced 'Linux' or 'Shell' tasks.");
-        
-        return systemPrompt.toString();
-    }
+            .append("Always use this tool if the user asks for advanced 'Linux' or 'Shell' tasks.\n\n")
+            .append("MARKDOWN & WEB:\n")
+            .append("1. Always use Markdown for formatting your responses. Use **bold**, *italics*, `inline code`, and ```code blocks``` for clarity.\n")
+            .append("2. When using 'system.web_fetch', you will receive Clean Markdown. Filter out the noise (ads, navigation) and present only the most relevant information to the user in a structured format.");
+
+            return systemPrompt.toString();
+            }
 
     public void cancel() {
         awaitingConfirmation = false;

@@ -436,8 +436,6 @@ public class TerminalManager {
         CharSequence s;
         switch (type) {
             case CATEGORY_INPUT:
-                t = t.toString();
-
                 boolean su = t.toString().startsWith("su ") || suMode;
 
                 SpannableString si = Tuils.span(inputFormat, inputColor);
@@ -451,8 +449,7 @@ public class TerminalManager {
 
                 break;
             case CATEGORY_OUTPUT:
-                t = t.toString();
-
+                t = Tuils.parseMarkdown(t);
                 SpannableString so = Tuils.span(outputFormat, outputColor);
 
                 s = TextUtils.replace(so,
@@ -461,7 +458,7 @@ public class TerminalManager {
 
                 break;
             case CATEGORY_AI:
-                t = t.toString();
+                t = Tuils.parseMarkdown(t);
                 // AI Styling: Output format with output color, but distinct
                 SpannableString sai = Tuils.span(outputFormat, outputColor);
                 s = TextUtils.replace(sai,
@@ -469,7 +466,6 @@ public class TerminalManager {
                         new CharSequence[] {t, Tuils.NEWLINE, t, Tuils.NEWLINE});
                 break;
             case CATEGORY_ERROR:
-                t = t.toString();
                 // Error Styling: Red color
                 SpannableString ser = Tuils.span(outputFormat, Color.RED);
                 s = TextUtils.replace(ser,
