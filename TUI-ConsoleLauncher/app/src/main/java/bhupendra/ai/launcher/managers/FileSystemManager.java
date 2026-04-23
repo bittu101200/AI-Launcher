@@ -254,6 +254,20 @@ public class FileSystemManager {
             return null;
         }
 
+    public static String readFile(File file) throws IOException {
+        FileInputStream in = new FileInputStream(file);
+        String s = inputStreamToString(in);
+        in.close();
+        return s;
+    }
+
+    public static void saveFile(File file, String content) throws IOException {
+        FileOutputStream out = new FileOutputStream(file, false);
+        out.write(content.getBytes());
+        out.flush();
+        out.close();
+    }
+
     public static File getFolder() {
             if(folder != null) return folder;
             return null;

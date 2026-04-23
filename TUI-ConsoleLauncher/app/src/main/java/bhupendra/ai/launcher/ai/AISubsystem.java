@@ -91,6 +91,9 @@ public class AISubsystem {
 
         toolRegistry.register(ToolRegistry.Tier.SYSTEM, new SystemGetNotificationsTool());
         toolRegistry.register(ToolRegistry.Tier.SYSTEM, new SystemReplyNotificationTool());
+        toolRegistry.register(ToolRegistry.Tier.SYSTEM, new SystemAddNotificationHookTool());
+        toolRegistry.register(ToolRegistry.Tier.SYSTEM, new SystemListNotificationHooksTool());
+        toolRegistry.register(ToolRegistry.Tier.SYSTEM, new SystemRemoveNotificationHookTool());
 
         java.util.Map<String, String> configArgs = new java.util.HashMap<>();
         configArgs.put("action", "get or set");

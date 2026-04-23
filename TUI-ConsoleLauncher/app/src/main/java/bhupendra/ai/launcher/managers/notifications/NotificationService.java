@@ -116,6 +116,9 @@ public class NotificationService extends NotificationListenerService {
                                 continue;
                             }
 
+                            // Process Hooks
+                            NotificationHookManager.getInstance(NotificationService.this).processNotification(sbn);
+
                             bhupendra.ai.launcher.ai.AISubsystem ai =
                                 bhupendra.ai.launcher.ai.AISubsystem.getInstance();
                             if (ai != null && ai.getJourneyManager().isJourneyNotification(notification)) {
