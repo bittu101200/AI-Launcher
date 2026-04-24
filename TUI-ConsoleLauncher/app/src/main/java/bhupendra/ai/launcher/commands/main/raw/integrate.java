@@ -1,6 +1,9 @@
 package bhupendra.ai.launcher.commands.main.raw;
 
 import android.graphics.Color;
+import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
 
 import bhupendra.ai.launcher.R;
 import bhupendra.ai.launcher.commands.CommandAbstraction;
@@ -9,8 +12,7 @@ import bhupendra.ai.launcher.ai.AISubsystem;
 import bhupendra.ai.launcher.ai.AppCapabilityScanner;
 import bhupendra.ai.launcher.ai.AppCapabilityScanner.Capability;
 import bhupendra.ai.launcher.tuils.Tuils;
-
-import java.util.List;
+import bhupendra.ai.launcher.managers.TerminalManager;
 
 public class integrate implements CommandAbstraction {
 
@@ -23,15 +25,30 @@ public class integrate implements CommandAbstraction {
         List<Capability> caps = scanner.scanInstalledApps();
         if (caps.isEmpty()) return "[no capabilities found]";
 
-        StringBuilder list = new StringBuilder("[Found " + caps.size() + " capabilities]\n");
-        for (int i = 0; i < Math.min(caps.size(), 30); i++) {
-            Capability cap = caps.get(i);
-            list.append(i + 1).append(". [").append(cap.category).append("] ")
-                .append(cap.label)
-                .append(cap.preferred ? " [preferred]" : "")
-                .append("\n");
+        // Group by package for cleaner display
+        Map<String, Integer> counts = new HashMap<>();
+        Map<String, String> labels = new HashMap<>();
+        for (Capability cap : caps) {
+            counts.put(cap.packageName, counts.getOrDefault(cap.packageName, 0) + 1);
+            if (!labels.containsKey(cap.packageName) || cap.id.startsWith("launch:")) {
+                labels.put(cap.packageName, cap.label);
+            }
         }
-        list.append("\nType numbers to integrate (e.g. '1 3 5') or 'all':");
+
+        StringBuilder list = new StringBuilder("\n--- CAPABILITY HARVEST ---\n");
+        list.append("Found ").append(caps.size()).append(" total functions.\n\n");
+        
+        int appCount = 0;
+        for (String pkg : counts.keySet()) {
+            if (appCount >= 25) {
+                list.append("... and ").append(counts.size() - 25).append(" more apps.\n");
+                break;
+            }
+            list.append("• ").append(labels.get(pkg)).append(" (").append(counts.get(pkg)).append(" functions)\n");
+            appCount++;
+        }
+
+        list.append("\nType 'all' to integrate everything into the AI Mental Map, or 'cancel'.");
         Tuils.sendOutput(Color.WHITE, pack.getContext(), list.toString());
 
         new AppCapabilityScanner.PendingIntegration(caps, ai, pack.getContext());

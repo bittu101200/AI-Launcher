@@ -41,6 +41,15 @@ Thumbs.db
 *.log
 *.swp
 .worktrees/
+.graphify_*
+**/graphify-out/
+.graphify_detect.json
+.graphify_ast.json
+.graphify_incremental.json
+.graphify_analysis.json
+.graphify_labels.json
+.graphify_extract.json
+.graphify_semantic.json
 
 # Nested Git
 **/.git/

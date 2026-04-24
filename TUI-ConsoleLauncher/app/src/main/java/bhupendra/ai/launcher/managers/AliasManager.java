@@ -220,6 +220,8 @@ public class AliasManager {
         LocalBroadcastManager.getInstance(context.getApplicationContext()).unregisterReceiver(receiver);
     }
 
+    public static String ACTION_RELOAD = BuildConfig.APPLICATION_ID + ".alias_reload";
+
     public void add(Context context, String name, String value) {
         for(Alias a : aliases) {
             if(name.equals(a.name)) {
@@ -235,6 +237,9 @@ public class AliasManager {
             fos.close();
 
             aliases.add(new Alias(name, value, parameterPattern));
+            
+            // Notify other components (like MainManager) that aliases have changed
+            LocalBroadcastManager.getInstance(context).sendBroadcast(new Intent(ACTION_RELOAD));
         } catch (Exception e) {
             Tuils.sendOutput(context, e.toString());
         }
@@ -266,6 +271,9 @@ public class AliasManager {
             reader.close();
 
             tempFile.renameTo(inputFile);
+            
+            // Notify other components
+            LocalBroadcastManager.getInstance(context).sendBroadcast(new Intent(ACTION_RELOAD));
         } catch (Exception e) {
             Tuils.sendOutput(context, e.toString());
         }

@@ -232,11 +232,16 @@ public class MainManager {
         IntentFilter filter = new IntentFilter();
         filter.addAction(ACTION_EXEC);
         filter.addAction(location.ACTION_LOCATION_CMD_GOT);
+        filter.addAction(AliasManager.ACTION_RELOAD);
 
         receiver = new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
                 String action = intent.getAction();
+                if (action.equals(AliasManager.ACTION_RELOAD)) {
+                    if (aliasManager != null) aliasManager.reload();
+                    return;
+                }
                 if (action.equals(ACTION_EXEC)) {
                     String cmd = intent.getStringExtra(CMD);
                     if (cmd == null) cmd = intent.getStringExtra(PrivateIOReceiver.TEXT);
@@ -377,29 +382,49 @@ public class MainManager {
             } else colors[c] = TerminalManager.NO_COLOR;
         }
 
+        boolean agentic = XMLPrefsManager.getBoolean(bhupendra.ai.launcher.managers.xml.options.Ai.agentic_mode);
+
         for(int c = 0; c < cmds.length; c++) {
             mainPack.clear();
             mainPack.commandColor = colors[c];
 
-            for (int i = 0; i < triggers.length; i++) {
-                // Before ShellCommandTrigger (last trigger), try AI
-                if (i == triggers.length - 1 && aiTrigger != null) {
-                    if (aiTrigger.trigger(cmds[c])) {
-                        return;
-                    }
-                }
-
+            boolean matched = false;
+            // 1. Try traditional commands (Group, Alias, TUI, App)
+            for (int i = 0; i < triggers.length - 1; i++) {
                 CmdTrigger trigger = triggers[i];
-                boolean r;
                 try {
-                    r = trigger.trigger(mainPack, cmds[c]);
+                    if (trigger.trigger(mainPack, cmds[c])) {
+                        matched = true;
+                        break;
+                    }
                 } catch (Exception e) {
                     Tuils.sendOutput(mContext, Tuils.getStackTrace(e));
+                    matched = true;
                     break;
                 }
-                if (r) {
-                    break;
+            }
+
+            if (matched) continue;
+
+            // 2. If not matched and in agentic mode, go to AI immediately
+            if (agentic && aiTrigger != null) {
+                if (aiTrigger.trigger(cmds[c])) {
+                    continue;
                 }
+            }
+
+            // 3. Fallback to Shell (the traditional way)
+            try {
+                if (shellCommandTrigger.trigger(mainPack, cmds[c])) {
+                    continue;
+                }
+            } catch (Exception e) {
+                Tuils.sendOutput(mContext, Tuils.getStackTrace(e));
+            }
+
+            // 4. Last resort: AI fallback if not in agentic mode but always_on_fallback is true
+            if (!agentic && aiTrigger != null) {
+                aiTrigger.trigger(cmds[c]);
             }
         }
     }
@@ -439,6 +464,24 @@ public class MainManager {
                 }
             }
         }.start();
+    }
+
+    public void setAISubsystem(bhupendra.ai.launcher.ai.AISubsystem ai) {
+        if (ai != null) {
+            mainPack.aiSubsystem = ai;
+            ai.setMainPack(mainPack);
+            aiTrigger = new AITrigger(
+                ai,
+                mContext,
+                rawInput -> {
+                    try {
+                        shellCommandTrigger.trigger(mainPack, rawInput);
+                    } catch (Exception e) {
+                        Tuils.sendOutput(mContext, Tuils.getStackTrace(e));
+                    }
+                }
+            );
+        }
     }
 
     public MainPack getMainPack() {

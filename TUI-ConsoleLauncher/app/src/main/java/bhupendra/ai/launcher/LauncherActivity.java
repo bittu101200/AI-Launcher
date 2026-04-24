@@ -404,8 +404,7 @@ public class LauncherActivity extends AppCompatActivity implements Reloadable {
         try {
             String providerName = XMLPrefsManager.get(Ai.provider);
             AISubsystem aiSubsystem = buildAISubsystem(providerName);
-            aiSubsystem.setMainPack(main.getMainPack());
-            main.getMainPack().aiSubsystem = aiSubsystem;
+            main.setAISubsystem(aiSubsystem);
             aiSubsystem.setInstance();
         } catch (Exception e) {
             Tuils.log(e);

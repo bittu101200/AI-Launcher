@@ -245,7 +245,12 @@ public class DeviceStateManager {
         }
 
     public static void unregisterBatteryReceiver(Context context) {
-            if(batteryReceiver != null) context.unregisterReceiver(batteryReceiver);
+            try {
+                if(batteryReceiver != null) {
+                    context.unregisterReceiver(batteryReceiver);
+                    batteryReceiver = null;
+                }
+            } catch (Exception ignored) {}
         }
 
     public static void registerBatteryReceiver(Context context, OnBatteryUpdate listener) {

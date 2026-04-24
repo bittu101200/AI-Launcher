@@ -1,36 +1,66 @@
 package bhupendra.ai.launcher.ai;
 
+import android.app.usage.UsageStats;
+import android.app.usage.UsageStatsManager;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.LauncherApps;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
+import android.content.pm.ShortcutInfo;
 import android.graphics.Color;
+import android.os.Build;
+import android.os.Process;
+import android.util.Log;
+
+import org.json.JSONArray;
+import org.json.JSONObject;
+
+import java.io.File;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import bhupendra.ai.launcher.managers.FileSystemManager;
 import bhupendra.ai.launcher.tuils.Tuils;
 
 public class AppCapabilityScanner {
 
+    private static final String TAG = "AppCapabilityScanner";
+    private static final String LIB_FILENAME = "app_capabilities.json";
+
     public static class Capability {
         public final String id;
         public final String label;
+        public final String packageName;
         public final String category;
-        public final boolean preferred;
+        public final String description;
+        public long usageTime = 0;
 
-        public Capability(String id, String label, String category, boolean preferred) {
+        public Capability(String id, String label, String packageName, String category, String description) {
             this.id = id;
             this.label = label;
+            this.packageName = packageName;
             this.category = category;
-            this.preferred = preferred;
+            this.description = description;
+        }
+
+        public JSONObject toJson() throws Exception {
+            JSONObject json = new JSONObject();
+            json.put("id", id);
+            json.put("label", label);
+            json.put("package", packageName);
+            json.put("category", category);
+            json.put("description", description);
+            return json;
         }
     }
 
     public static class PendingIntegration {
         private static PendingIntegration active;
-
         private final List<Capability> capabilities;
         private final AISubsystem aiSubsystem;
         private final Context context;
@@ -49,40 +79,24 @@ public class AppCapabilityScanner {
             PendingIntegration current = active;
             active = null;
 
+            List<Capability> selected = new ArrayList<>();
             if (input.trim().equalsIgnoreCase("all")) {
-                for (Capability cap : current.capabilities) {
-                    Tool tool = new AppCapabilityScanner(current.context).buildTool(cap);
-                    current.aiSubsystem.getToolRegistry().register(ToolRegistry.Tier.APP_INTENT, tool);
-                }
-                Tuils.sendOutput(Color.GREEN, current.context,
-                    "[integrated " + current.capabilities.size() + " capabilities]");
+                selected.addAll(current.capabilities);
             } else {
                 String[] parts = input.trim().split("\\s+");
-                int count = 0;
                 for (String part : parts) {
                     try {
                         int idx = Integer.parseInt(part) - 1;
                         if (idx >= 0 && idx < current.capabilities.size()) {
-                            Tool tool = new AppCapabilityScanner(current.context).buildTool(current.capabilities.get(idx));
-                            current.aiSubsystem.getToolRegistry().register(ToolRegistry.Tier.APP_INTENT, tool);
-                            count++;
+                            selected.add(current.capabilities.get(idx));
                         }
                     } catch (NumberFormatException ignored) {}
                 }
-                Tuils.sendOutput(Color.GREEN, current.context, "[integrated " + count + " capabilities]");
             }
-        }
-    }
 
-    public static boolean shouldUseContactPicker(String action) {
-        if (android.os.Build.VERSION.SDK_INT >= 37) {
-            return "call".equals(action) || "message".equals(action) || "email".equals(action);
+            saveLibrary(current.context, selected);
+            Tuils.sendOutput(Color.GREEN, current.context, "[integrated " + selected.size() + " capabilities into Dynamic Library]");
         }
-        return false;
-    }
-
-    private static boolean isPersonTargeting(String toolId) {
-        return toolId.startsWith("call:") || toolId.startsWith("message:") || toolId.startsWith("email:");
     }
 
     private final Context context;
@@ -94,18 +108,84 @@ public class AppCapabilityScanner {
     public List<Capability> scanInstalledApps() {
         List<Capability> result = new ArrayList<>();
         PackageManager pm = context.getPackageManager();
-        Intent launch = new Intent(Intent.ACTION_MAIN, null);
-        launch.addCategory(Intent.CATEGORY_LAUNCHER);
-        for (ResolveInfo info : pm.queryIntentActivities(launch, 0)) {
+        
+        // 1. Get Usage Stats for sorting
+        Map<String, Long> usageMap = getUsageStats();
+
+        // 2. Scan Launcher Apps (Base Capabilities)
+        Intent launchIntent = new Intent(Intent.ACTION_MAIN, null);
+        launchIntent.addCategory(Intent.CATEGORY_LAUNCHER);
+        for (ResolveInfo info : pm.queryIntentActivities(launchIntent, 0)) {
             String pkg = info.activityInfo.packageName;
             String label = info.loadLabel(pm).toString();
-            result.add(new Capability("launch:" + pkg, label, "LAUNCH", false));
+            Capability cap = new Capability("launch:" + pkg, label, pkg, "APP", "Launch " + label);
+            cap.usageTime = usageMap.getOrDefault(pkg, 0L);
+            result.add(cap);
+
+            // 3. Deep Scan Shortcuts (App Functions)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N_MR1) {
+                try {
+                    LauncherApps launcherApps = (LauncherApps) context.getSystemService(Context.LAUNCHER_APPS_SERVICE);
+                    LauncherApps.ShortcutQuery query = new LauncherApps.ShortcutQuery();
+                    query.setPackage(pkg);
+                    query.setQueryFlags(LauncherApps.ShortcutQuery.FLAG_MATCH_DYNAMIC | LauncherApps.ShortcutQuery.FLAG_MATCH_MANIFEST);
+                    
+                    List<ShortcutInfo> shortcuts = launcherApps.getShortcuts(query, Process.myUserHandle());
+                    if (shortcuts != null) {
+                        for (ShortcutInfo s : shortcuts) {
+                            String desc = s.getLongLabel() != null ? s.getLongLabel().toString() : s.getShortLabel().toString();
+                            Capability subCap = new Capability("shortcut:" + pkg + ":" + s.getId(), s.getShortLabel().toString(), pkg, "FUNCTION", desc);
+                            subCap.usageTime = cap.usageTime; // Inherit parent app usage for sorting
+                            result.add(subCap);
+                        }
+                    }
+                } catch (Exception e) {
+                    Log.e(TAG, "Failed to scan shortcuts for " + pkg, e);
+                }
+            }
         }
+
+        // 4. Sort by usage time (Descending)
+        Collections.sort(result, (a, b) -> Long.compare(b.usageTime, a.usageTime));
+        
         return result;
     }
 
-    public Tool buildTool(Capability capability) {
-        Map<String, String> params = new LinkedHashMap<>();
-        return new Tool(capability.id, capability.label, params, ToolRiskClass.LAUNCH_ONLY);
+    private Map<String, Long> getUsageStats() {
+        Map<String, Long> map = new HashMap<>();
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            UsageStatsManager usm = (UsageStatsManager) context.getSystemService(Context.USAGE_STATS_SERVICE);
+            long now = System.currentTimeMillis();
+            List<UsageStats> stats = usm.queryUsageStats(UsageStatsManager.INTERVAL_WEEKLY, now - (1000 * 60 * 60 * 24 * 7), now);
+            if (stats != null) {
+                for (UsageStats s : stats) {
+                    map.put(s.getPackageName(), s.getTotalTimeInForeground());
+                }
+            }
+        }
+        return map;
+    }
+
+    public static void saveLibrary(Context context, List<Capability> selected) {
+        try {
+            JSONArray array = new JSONArray();
+            for (Capability c : selected) {
+                array.put(c.toJson());
+            }
+            File file = new File(FileSystemManager.getFolder(), LIB_FILENAME);
+            FileSystemManager.saveFile(file, array.toString());
+        } catch (Exception e) {
+            Tuils.log(e);
+        }
+    }
+
+    public static String getLibraryContent(Context context) {
+        try {
+            File file = new File(FileSystemManager.getFolder(), LIB_FILENAME);
+            if (!file.exists()) return "[]";
+            return FileSystemManager.readFile(file);
+        } catch (Exception e) {
+            return "[]";
+        }
     }
 }

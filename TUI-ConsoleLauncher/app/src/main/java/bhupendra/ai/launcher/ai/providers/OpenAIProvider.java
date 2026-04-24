@@ -87,6 +87,7 @@ public class OpenAIProvider implements AIProvider {
                     case TOOL:
                         msg.put("role", "tool");
                         msg.put("tool_call_id", t.toolCallId);
+                        msg.put("name", OpenAIToolSupport.encodeToolName(t.toolName));
                         msg.put("content", t.content);
                         messages.put(msg);
                         break;

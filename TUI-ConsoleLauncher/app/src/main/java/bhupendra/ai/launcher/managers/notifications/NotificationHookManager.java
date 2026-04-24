@@ -204,8 +204,8 @@ public class NotificationHookManager {
         String query = String.format("BACKGROUND AUTOMATION: Generate a short, natural reply to a notification.\\n" +
                 "From: %s\\nMessage: %s\\nGoal: %s\\n\\n" +
                 "INSTRUCTIONS:\\n" +
-                "1. Output ONLY the reply text.\\n" +
-                "2. If the message seems URGENT, prefix your reply with [URGENT: <brief reason why>].\\n" +
+                "1. Output the reply text for the sender.\\n" +
+                "2. If URGENT, prefix with [URGENT: <reason>] AND follow with a calming reply saying you've alerted the owner.\\n" +
                 "3. Do NOT use tools or add meta-commentary.\\n" +
                 "4. Reply in the same language as the message.",
                 sender, message, instruction);
@@ -215,8 +215,10 @@ public class NotificationHookManager {
             @Override public void onResponse(AIResponse r) {
                 if (r.type == AIResponse.Type.TEXT && r.text != null && !r.text.isEmpty()) {
                     String cleanReply = r.text.trim().replaceAll("^\"|\"$", "");
+                    boolean isUrgent = false;
                     
                     if (cleanReply.contains("[URGENT")) {
+                        isUrgent = true;
                         String reason = "Urgent message detected";
                         if (cleanReply.contains("[URGENT:") && cleanReply.contains("]")) {
                             int start = cleanReply.indexOf("[URGENT:") + 8;
@@ -231,8 +233,14 @@ public class NotificationHookManager {
                         if (cleanReply.startsWith("{") || cleanReply.startsWith("[") || cleanReply.contains("tool_")) return;
                     }
                     
-                    if (!cleanReply.trim().isEmpty()) {
-                        triggerReply(sbn, cleanReply.trim());
+                    cleanReply = cleanReply.trim();
+                    if (cleanReply.isEmpty() && isUrgent) {
+                        // Fallback calming reply if AI only provided the tag
+                        cleanReply = "I have alerted my owner that this is urgent. They will get back to you as soon as possible.";
+                    }
+                    
+                    if (!cleanReply.isEmpty()) {
+                        triggerReply(sbn, cleanReply);
                     }
                 }
             }
@@ -245,15 +253,14 @@ public class NotificationHookManager {
             new Thread(() -> {
                 try {
                     ToneGenerator toneG = new ToneGenerator(AudioManager.STREAM_ALARM, 100);
-                    toneG.startTone(ToneGenerator.TONE_CDMA_EMERGENCY_RINGBACK, 1500);
-                    Thread.sleep(1500);
+                    toneG.startTone(ToneGenerator.TONE_CDMA_EMERGENCY_RINGBACK, 2000);
+                    Thread.sleep(2000);
                     toneG.release();
                 } catch (Exception e) {
                     Log.e(TAG, "Tone failed", e);
                 }
             }).start();
             
-            // Orange: 255, 165, 0
             int orange = Color.rgb(255, 165, 0);
             Tuils.sendOutput(orange, context, "[URGENT] BEEP REASON: " + reason.toUpperCase(), 0);
         } catch (Exception e) {

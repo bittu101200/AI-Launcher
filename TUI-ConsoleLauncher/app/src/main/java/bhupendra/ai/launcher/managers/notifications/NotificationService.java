@@ -124,8 +124,8 @@ public class NotificationService extends NotificationListenerService {
                             bhupendra.ai.launcher.ai.AISubsystem ai =
                                 bhupendra.ai.launcher.ai.AISubsystem.getInstance();
                             if (ai != null && ai.getJourneyManager().isJourneyNotification(notification)) {
-                                Tuils.sendOutput(Color.CYAN, getApplicationContext(),
-                                    "[journey] " + sbn.getPackageName() + " progress update received");
+                                // Silently log to journey without terminal output
+                                ai.getJourneyManager().processNotification(sbn);
                             } else if (ai != null && ai.isAvailable() && !ai.isInFlight()) {
                                 CharSequence ticker = notification.tickerText;
                                 if (ticker != null && ticker.length() > 0) {
@@ -287,7 +287,9 @@ public class NotificationService extends NotificationListenerService {
 //                        Tuils.log("text", text);
 //                        Tuils.log("--------");
 
-                            Tuils.sendOutput(NotificationService.this.getApplicationContext(), s, TerminalManager.CATEGORY_NO_COLOR, click ? notification.contentIntent : null, longClick ? n : null);
+                            if (ai != null && ai.getJourneyManager().shouldDisplay(sbn)) {
+                                Tuils.sendOutput(NotificationService.this.getApplicationContext(), s, TerminalManager.CATEGORY_NO_COLOR, click ? notification.contentIntent : null, longClick ? n : null);
+                            }
 
                             if(replyManager != null) replyManager.onNotification(sbn, s);
                         }

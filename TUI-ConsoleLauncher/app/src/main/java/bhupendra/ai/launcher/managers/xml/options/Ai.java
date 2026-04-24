@@ -70,6 +70,11 @@ public enum Ai implements XMLPrefsSave {
         @Override public String defaultValue() { return "false"; }
         @Override public String info() { return "Require confirmation for STATE_CHANGING tools"; }
         @Override public String type() { return XMLPrefsSave.BOOLEAN; }
+    },
+    agentic_mode {
+        @Override public String defaultValue() { return "false"; }
+        @Override public String info() { return "AI-First terminal: all input goes to AI unless a TUI command is detected first"; }
+        @Override public String type() { return XMLPrefsSave.BOOLEAN; }
     };
 
     @Override public XMLPrefsElement parent() { return XMLPrefsManager.XMLPrefsRoot.AI; }

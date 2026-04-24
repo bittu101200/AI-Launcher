@@ -25,9 +25,25 @@ public class AITrigger {
     public boolean trigger(final String input) {
         if (aiSubsystem == null || !aiSubsystem.isAvailable()) return false;
 
+        boolean agenticMode = bhupendra.ai.launcher.managers.xml.XMLPrefsManager.getBoolean(bhupendra.ai.launcher.managers.xml.options.Ai.agentic_mode);
+        String finalInput = input;
+        
+        if (!agenticMode) {
+            // Traditional mode: require "ai " prefix
+            if (!input.toLowerCase().startsWith("ai ")) {
+                return false;
+            }
+            finalInput = input.substring(3).trim();
+        } else {
+            // Agentic mode: if it has prefix, strip it; otherwise take as is
+            if (input.toLowerCase().startsWith("ai ")) {
+                finalInput = input.substring(3).trim();
+            }
+        }
+
         Tuils.sendOutput(Color.GRAY, context, "[thinking...]", TerminalManager.CATEGORY_OUTPUT);
 
-        aiSubsystem.submit(input, new AICallback() {
+        aiSubsystem.submit(finalInput, new AICallback() {
             private StringBuilder tokenBuffer = new StringBuilder();
             private final java.util.regex.Pattern TOOL_CALL_PATTERN = java.util.regex.Pattern.compile("^tool_[A-Za-z0-9_]+\\(.*\\)$", java.util.regex.Pattern.DOTALL);
 
