@@ -60,9 +60,10 @@
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:gravity="center_vertical"
-
+        android:layout_margin="12dp"
+        android:padding="8dp"
+        android:background="@drawable/modern_input_bg"
         android:weightSum="@integer/input_group_weightsum"
-
         android:layout_above="@id/tools_view">
 
         <bhupendra.ai.launcher.tuils.OutlineTextView
@@ -94,12 +95,13 @@
             android:gravity="center">
 
             <ImageView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:padding="12dp"
                 android:id="@+id/submit_tv"
-
-                android:background="@null"
+                android:clickable="true"
+                android:focusable="true"
+                android:background="@drawable/button_ripple"
                 android:src="@drawable/ic_enter"/>
 
         </LinearLayout>
@@ -109,9 +111,9 @@
     <ScrollView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-
         android:layout_above="@id/input_group"
-
+        android:padding="8dp"
+        android:clipToPadding="false"
         android:fillViewport="true">
 
         <LinearLayout

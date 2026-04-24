@@ -19,6 +19,7 @@ import android.content.Context;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
+import android.graphics.drawable.GradientDrawable;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.HorizontalScrollView;
@@ -172,7 +173,12 @@ public class SuggestionRunnable implements Runnable {
                     }
                 }
 
-                if(bgColor != Integer.MAX_VALUE) sggView.setBackgroundColor(bgColor);
+                if(bgColor != Integer.MAX_VALUE) {
+                    GradientDrawable gd = new GradientDrawable();
+                    gd.setColor(bgColor);
+                    gd.setCornerRadius(Tuils.dpToPx(pack.context, 16));
+                    sggView.setBackgroundDrawable(gd);
+                }
                 else sggView.setBackgroundDrawable(getSuggestionBg(pack.context, s.type));
                 if(foreColor != Integer.MAX_VALUE) sggView.setTextColor(foreColor);
                 else sggView.setTextColor(getSuggestionTextColor(s.type));
@@ -199,6 +205,13 @@ public class SuggestionRunnable implements Runnable {
         interrupted = false;
     }
 
+    private Drawable createRoundedDrawable(int color) {
+        GradientDrawable gd = new GradientDrawable();
+        gd.setColor(color);
+        gd.setCornerRadius(Tuils.dpToPx(pack.context, 16));
+        return gd;
+    }
+
     public Drawable getSuggestionBg(Context context, int type) {
 
         if(transparentSuggestions) {
@@ -206,19 +219,19 @@ public class SuggestionRunnable implements Runnable {
         } else {
             switch (type) {
                 case SuggestionsManager.Suggestion.TYPE_APP: case SuggestionsManager.Suggestion.TYPE_APPGP:
-                    return new ColorDrawable(suggAppBg);
+                    return createRoundedDrawable(suggAppBg);
                 case SuggestionsManager.Suggestion.TYPE_ALIAS:
-                    return new ColorDrawable(suggAliasBg);
+                    return createRoundedDrawable(suggAliasBg);
                 case SuggestionsManager.Suggestion.TYPE_COMMAND:
-                    return new ColorDrawable(suggCmdBg);
+                    return createRoundedDrawable(suggCmdBg);
                 case SuggestionsManager.Suggestion.TYPE_CONTACT:
-                    return new ColorDrawable(suggContactBg);
+                    return createRoundedDrawable(suggContactBg);
                 case SuggestionsManager.Suggestion.TYPE_FILE: case SuggestionsManager.Suggestion.TYPE_CONFIGFILE:
-                    return new ColorDrawable(suggFileBg);
+                    return createRoundedDrawable(suggFileBg);
                 case SuggestionsManager.Suggestion.TYPE_SONG:
-                    return new ColorDrawable(suggSongBg);
+                    return createRoundedDrawable(suggSongBg);
                 default:
-                    return new ColorDrawable(suggDefaultBg);
+                    return createRoundedDrawable(suggDefaultBg);
             }
         }
     }

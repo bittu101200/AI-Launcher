@@ -92,6 +92,10 @@ import bhupendra.ai.launcher.tuils.interfaces.OnRedirectionListener;
 import bhupendra.ai.launcher.tuils.interfaces.OnTextChanged;
 import bhupendra.ai.launcher.tuils.stuff.PolicyReceiver;
 
+import androidx.core.view.OnApplyWindowInsetsListener;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
+
 public class UIManager implements OnTouchListener {
 
     public static String ACTION_UPDATE_SUGGESTIONS = BuildConfig.APPLICATION_ID + ".ui_update_suggestions";
@@ -794,6 +798,16 @@ public class UIManager implements OnTouchListener {
     protected UIManager(final Context context, final ViewGroup rootView, MainPack mainPack, boolean canApplyTheme, CommandExecuter executer) {
         this.rootView = rootView;
         this.canApplyTheme = canApplyTheme;
+
+        ViewCompat.setOnApplyWindowInsetsListener(rootView, (v, insets) -> {
+            int left = insets.getInsets(WindowInsetsCompat.Type.systemBars()).left;
+            int top = insets.getInsets(WindowInsetsCompat.Type.systemBars()).top;
+            int right = insets.getInsets(WindowInsetsCompat.Type.systemBars()).right;
+            int bottom = insets.getInsets(WindowInsetsCompat.Type.ime() | WindowInsetsCompat.Type.systemBars()).bottom;
+
+            v.setPadding(left, top, right, bottom);
+            return WindowInsetsCompat.CONSUMED;
+        });
 
         IntentFilter filter = new IntentFilter();
         filter.addAction(ACTION_UPDATE_SUGGESTIONS);

@@ -80,6 +80,9 @@ import bhupendra.ai.launcher.ai.providers.OpenAIProvider;
 import bhupendra.ai.launcher.managers.xml.options.Ai;
 import bhupendra.ai.launcher.tuils.interfaces.Reloadable;
 
+import androidx.core.view.WindowCompat;
+import com.google.android.material.color.DynamicColors;
+
 public class LauncherActivity extends AppCompatActivity implements Reloadable {
 
     public static final int COMMAND_REQUEST_PERMISSION = 10;
@@ -213,6 +216,9 @@ public class LauncherActivity extends AppCompatActivity implements Reloadable {
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
+        WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
+        DynamicColors.applyToActivityIfAvailable(this);
+
         super.onCreate(savedInstanceState);
 
         overridePendingTransition(0,0);
