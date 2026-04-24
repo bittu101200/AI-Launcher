@@ -53,7 +53,7 @@ public class AISubsystem {
     }
     
     public synchronized void requestUserChoice(List<String> options, ChoiceCallback callback) {
-        // Feature disabled for now to maintain polish
+        // Will be re-integrated into the polished bar in the next step
     }
 
     public interface ChoiceCallback {

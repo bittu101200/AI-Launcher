@@ -114,6 +114,10 @@ public class TerminalManager {
     private int toolbarColor;
     private boolean aiRunning = false;
 
+    public Context getContext() {
+        return mContext;
+    }
+
     public TerminalManager(final TextView terminalView, EditText inputView, TextView prefixView, ImageView submitView, final ImageView backView, ImageButton nextView, ImageButton deleteView,
                            ImageButton pasteView, final Context context, MainPack mainPack, CommandExecuter executer) {
         if (terminalView == null || inputView == null || prefixView == null)
