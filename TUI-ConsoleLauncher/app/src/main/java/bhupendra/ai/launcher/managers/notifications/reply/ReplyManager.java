@@ -224,7 +224,7 @@ public class ReplyManager implements XMLPrefsElement {
     }
 
     @TargetApi(Build.VERSION_CODES.JELLY_BEAN_MR2)
-    public void onNotification(StatusBarNotification notification, CharSequence text) {
+    public void onNotification(StatusBarNotification notification, CharSequence text, String title) {
         if(!enabled) return;
 
         String pkg = notification.getPackageName();
@@ -237,18 +237,20 @@ public class ReplyManager implements XMLPrefsElement {
             app = new BoundApp(-1, pkg, pkg);
         }
 
-        NotificationWear old = findNotificationWear(pkg);
-
-        if(old != null && (w.pendingIntent == null || w.remoteInputs == null || w.remoteInputs.length == 0)) return;
-        if(old != null) notificationWears.remove(old);
-
+        w.title = title;
         w.text = text;
         w.app = app;
 
+        // Remove old entry for same person if exists to update with new PendingIntent
+        notificationWears.remove(w);
         notificationWears.add(w);
     }
 
     private void replyTo(Context context, int applicationId, String what) {
+        replyTo(context, applicationId, null, what);
+    }
+
+    public void replyTo(Context context, int applicationId, String contact, String what) {
         if(!enabled) return;
 
         BoundApp app = findApp(applicationId);
@@ -257,10 +259,18 @@ public class ReplyManager implements XMLPrefsElement {
             return;
         }
 
-        NotificationWear wear = findNotificationWear(applicationId);
+        NotificationWear wear = null;
+        if (contact != null) {
+            wear = findNotificationWear(app.packageName, contact);
+        }
+        
+        if (wear == null) {
+            wear = findNotificationWear(applicationId);
+        }
+
         if(wear == null) {
             // Search system notifications
-            wear = findActiveNotification(app.packageName);
+            wear = findActiveNotification(app.packageName, contact);
         }
 
         if(wear != null) replyTo(context, wear, what);
@@ -268,12 +278,24 @@ public class ReplyManager implements XMLPrefsElement {
     }
 
     private void replyTo(Context context, String pkg, String what) {
+        replyTo(context, pkg, null, what);
+    }
+
+    public void replyTo(Context context, String pkg, String contact, String what) {
         if(!enabled || pkg == null) return;
 
-        NotificationWear wear = findNotificationWear(pkg);
+        NotificationWear wear = null;
+        if (contact != null) {
+            wear = findNotificationWear(pkg, contact);
+        }
+
+        if (wear == null) {
+            wear = findNotificationWear(pkg);
+        }
+
         if(wear == null) {
             // Search system notifications
-            wear = findActiveNotification(pkg);
+            wear = findActiveNotification(pkg, contact);
         }
 
         if(wear != null) replyTo(context, wear, what);
@@ -281,6 +303,10 @@ public class ReplyManager implements XMLPrefsElement {
     }
 
     private NotificationWear findActiveNotification(String pkg) {
+        return findActiveNotification(pkg, null);
+    }
+
+    private NotificationWear findActiveNotification(String pkg, String contact) {
         bhupendra.ai.launcher.managers.notifications.NotificationService service = 
             bhupendra.ai.launcher.managers.notifications.NotificationService.instance;
         if (service == null) return null;
@@ -288,16 +314,41 @@ public class ReplyManager implements XMLPrefsElement {
         StatusBarNotification[] sbns = service.getActiveNotifications();
         if (sbns == null) return null;
 
+        StatusBarNotification best = null;
         for (StatusBarNotification sbn : sbns) {
             if (sbn.getPackageName().equals(pkg)) {
-                NotificationWear w = extractWearNotification(sbn);
-                if (w != null) {
-                    w.app = findApp(pkg);
-                    if (w.app == null) w.app = new BoundApp(-1, pkg, pkg);
-                    return w;
+                if (contact != null) {
+                    bhupendra.ai.launcher.managers.notifications.NotificationContentResolver.ResolvedContent res = 
+                        bhupendra.ai.launcher.managers.notifications.NotificationContentResolver.resolve(sbn);
+                    if (res != null && contact.equalsIgnoreCase(res.title)) {
+                        NotificationWear w = extractWearNotification(sbn);
+                        if (w != null) {
+                            w.title = res.title;
+                            w.app = findApp(pkg);
+                            if (w.app == null) w.app = new BoundApp(-1, pkg, pkg);
+                            return w;
+                        }
+                    }
+                } else {
+                    if (best == null || sbn.getPostTime() > best.getPostTime()) {
+                        best = sbn;
+                    }
                 }
             }
         }
+
+        if (best != null && contact == null) {
+            NotificationWear w = extractWearNotification(best);
+            if (w != null) {
+                bhupendra.ai.launcher.managers.notifications.NotificationContentResolver.ResolvedContent res = 
+                    bhupendra.ai.launcher.managers.notifications.NotificationContentResolver.resolve(best);
+                w.title = res != null ? res.title : null;
+                w.app = findApp(pkg);
+                if (w.app == null) w.app = new BoundApp(-1, pkg, pkg);
+                return w;
+            }
+        }
+
         return null;
     }
 
@@ -382,8 +433,19 @@ public class ReplyManager implements XMLPrefsElement {
     }
 
     private NotificationWear findNotificationWear(String pkg) {
+        NotificationWear best = null;
         for(NotificationWear h : notificationWears) {
-            if(h.app != null && h.app.packageName.equals(pkg)) return h;
+            if(h.app != null && h.app.packageName.equals(pkg)) {
+                best = h;
+            }
+        }
+        return best;
+    }
+
+    private NotificationWear findNotificationWear(String pkg, String contact) {
+        if (contact == null) return findNotificationWear(pkg);
+        for(NotificationWear h : notificationWears) {
+            if(h.app != null && h.app.packageName.equals(pkg) && contact.equalsIgnoreCase(h.title)) return h;
         }
         return null;
     }

@@ -18,14 +18,23 @@ public class NotificationWear {
     public int id;
 
     public CharSequence text;
+    public String title;
 
     @Override
     public boolean equals(Object obj) {
-        try {
-            NotificationWear h = (NotificationWear) obj;
-            return h.app.packageName.equals(app.packageName);
-        } catch (Exception e) {
-            return false;
-        }
+        if (this == obj) return true;
+        if (!(obj instanceof NotificationWear)) return false;
+        NotificationWear h = (NotificationWear) obj;
+        if (app == null || h.app == null) return false;
+        if (!app.packageName.equals(h.app.packageName)) return false;
+        if (title == null) return h.title == null;
+        return title.equalsIgnoreCase(h.title);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = app != null ? app.packageName.hashCode() : 0;
+        result = 31 * result + (title != null ? title.toLowerCase().hashCode() : 0);
+        return result;
     }
 }

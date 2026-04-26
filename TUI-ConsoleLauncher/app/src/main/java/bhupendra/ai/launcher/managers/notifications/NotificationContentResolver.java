@@ -11,7 +11,7 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.regex.Pattern;
 
-final class NotificationContentResolver {
+public final class NotificationContentResolver {
 
     private static final Set<String> MESSAGING_PACKAGES = new HashSet<>(Arrays.asList(
         "com.whatsapp",
@@ -35,14 +35,14 @@ final class NotificationContentResolver {
         Pattern.CASE_INSENSITIVE
     );
 
-    static final class ResolvedContent {
-        final String originalTitle;
-        final String originalText;
-        final String title;
-        final String text;
-        final boolean resolvedFromMessages;
+    public static final class ResolvedContent {
+        public final String originalTitle;
+        public final String originalText;
+        public final String title;
+        public final String text;
+        public final boolean resolvedFromMessages;
 
-        ResolvedContent(String originalTitle, String originalText, String title, String text, boolean resolvedFromMessages) {
+        public ResolvedContent(String originalTitle, String originalText, String title, String text, boolean resolvedFromMessages) {
             this.originalTitle = originalTitle;
             this.originalText = originalText;
             this.title = title;
@@ -53,7 +53,7 @@ final class NotificationContentResolver {
 
     private NotificationContentResolver() {}
 
-    static ResolvedContent resolve(StatusBarNotification sbn) {
+    public static ResolvedContent resolve(StatusBarNotification sbn) {
         if (sbn == null) return new ResolvedContent("", "", "", "", false);
 
         Notification notification = sbn.getNotification();

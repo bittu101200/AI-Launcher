@@ -258,6 +258,8 @@ public class AISubsystem {
             smsArgs,
             ToolRiskClass.STATE_CHANGING));
 
+        toolRegistry.register(ToolRegistry.Tier.SYSTEM, new SystemSendAppMessageTool());
+
         toolRegistry.register(ToolRegistry.Tier.SYSTEM, new TermuxExecuteTool(
             "termux.execute",
             "Execute a shell command within the Termux environment.",
@@ -336,6 +338,25 @@ public class AISubsystem {
         if (rid != null) requestManager.cancel(rid);
         handleTerminalState(rid, AIRequestState.CANCELLED);
     }
+
+    public synchronized void hardKill() {
+        String rid = lastRequestId.get();
+        if (rid != null) {
+            requestManager.cancel(rid);
+        }
+        
+        conversationManager.clear();
+        clearPendingConfirmationState();
+        cancelPendingUserInteraction();
+        
+        if (rid != null) {
+            handleTerminalState(rid, AIRequestState.CANCELLED);
+        }
+        
+        notifyListeners(false);
+        lastRequestId.set(null);
+    }
+
     public void dispose() {
         cancel();
         if (instance == this) instance = null;

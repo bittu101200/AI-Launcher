@@ -441,4 +441,5 @@
     <string name="help_clearhistory">clearhistory — clear all AI conversation history</string>
     <string name="help_cleararchive">cleararchive — delete archived compaction history</string>
     <string name="help_integrate">integrate — discover installed apps and add as AI tools</string>
+    <string name="help_kill">kill — immediately terminate all AI processes and clear history</string>
 </resources>

@@ -289,7 +289,7 @@ public class NotificationService extends NotificationListenerService {
                             );
                         }
 
-                        if(replyManager != null) replyManager.onNotification(sbn, s);
+                        if(replyManager != null) replyManager.onNotification(sbn, s, resolvedContent.title);
                     } while ((sbn = queue.poll()) != null && !isInterrupted());
                 }
             }
