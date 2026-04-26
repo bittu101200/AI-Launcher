@@ -530,7 +530,8 @@ public class Tuils {
     }
 
     public static void sendOutput(int color, Context context, CharSequence s, int type) {
-        android.util.Log.i("AI_OUTPUT", String.valueOf(s));
+        if (shouldSuppressOutput(s)) return;
+        android.util.Log.i("AI_OUTPUT", s.toString());
         Intent intent = new Intent(PrivateIOReceiver.ACTION_OUTPUT);
         intent.putExtra(PrivateIOReceiver.TEXT, s);
         intent.putExtra(PrivateIOReceiver.COLOR, color);
@@ -547,7 +548,8 @@ public class Tuils {
     }
 
     public static void sendOutput(int color, Context context, CharSequence s, int type, Object action) {
-        android.util.Log.i("AI_OUTPUT", String.valueOf(s));
+        if (shouldSuppressOutput(s)) return;
+        android.util.Log.i("AI_OUTPUT", s.toString());
         Intent intent = new Intent(PrivateIOReceiver.ACTION_OUTPUT);
         intent.putExtra(PrivateIOReceiver.TEXT, s);
         intent.putExtra(PrivateIOReceiver.COLOR, color);
@@ -564,7 +566,8 @@ public class Tuils {
     }
 
     public static void sendOutput(int color, Context context, CharSequence s, int type, Object action, Object longAction) {
-        android.util.Log.i("AI_OUTPUT", String.valueOf(s));
+        if (shouldSuppressOutput(s)) return;
+        android.util.Log.i("AI_OUTPUT", s.toString());
         Intent intent = new Intent(PrivateIOReceiver.ACTION_OUTPUT);
         intent.putExtra(PrivateIOReceiver.TEXT, s);
         intent.putExtra(PrivateIOReceiver.COLOR, color);
@@ -577,6 +580,12 @@ public class Tuils {
         else if(longAction instanceof Parcelable) intent.putExtra(PrivateIOReceiver.LONG_ACTION, (Parcelable) longAction);
 
         LocalBroadcastManager.getInstance(context).sendBroadcast(intent);
+    }
+
+    private static boolean shouldSuppressOutput(CharSequence s) {
+        if (s == null) return true;
+        String text = s.toString().trim();
+        return text.length() == 0 || "null".equalsIgnoreCase(text);
     }
 
     public static void sendInput(Context context, String text) {

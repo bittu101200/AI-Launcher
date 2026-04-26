@@ -56,7 +56,7 @@ public class NotificationService extends NotificationListenerService {
     private static final long POLL_TIMEOUT_MS = 2000L;
     private String LINES_LABEL = "Lines";
     private String ANDROID_LABEL_PREFIX = "android.";
-    private String NULL_LABEL = "null";
+    private String NULL_LABEL = "";
 
     Handler handler = new Handler();
 

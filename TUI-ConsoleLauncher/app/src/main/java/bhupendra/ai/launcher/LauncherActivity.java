@@ -156,6 +156,7 @@ public class LauncherActivity extends AppCompatActivity implements Reloadable {
 
         @Override
         public void onOutput(CharSequence output) {
+            if (shouldSuppressOutput(output)) return;
             if(ui != null) ui.setOutput(output, TerminalManager.CATEGORY_OUTPUT);
             else {
                 textCategory.add(new SimpleMutableEntry<>(output, TerminalManager.CATEGORY_OUTPUT));
@@ -169,6 +170,7 @@ public class LauncherActivity extends AppCompatActivity implements Reloadable {
 
         @Override
         public void onOutput(CharSequence output, int category) {
+            if (shouldSuppressOutput(output)) return;
             if(ui != null) ui.setOutput(output, category);
             else {
                 textCategory.add(new SimpleMutableEntry<>(output, category));
@@ -182,6 +184,7 @@ public class LauncherActivity extends AppCompatActivity implements Reloadable {
 
         @Override
         public void onOutput(int color, CharSequence output) {
+            if (shouldSuppressOutput(output)) return;
             if(ui != null) ui.setOutput(color, output);
             else {
                 textColor.add(new SimpleMutableEntry<>(output, color));
@@ -196,6 +199,12 @@ public class LauncherActivity extends AppCompatActivity implements Reloadable {
         @Override
         public void dispose() {
             if(handler != null) handler.removeCallbacksAndMessages(null);
+        }
+
+        private boolean shouldSuppressOutput(CharSequence output) {
+            if (output == null) return true;
+            String text = output.toString().trim();
+            return text.length() == 0 || "null".equalsIgnoreCase(text);
         }
     };
 

@@ -383,15 +383,16 @@ public class TerminalManager {
     }
 
     public void setOutput(CharSequence output, int type) {
-        if (output == null || output.length() == 0) return;
+        if (shouldSuppressOutput(output)) return;
         writeToView(output, type);
     }
 
     public void setOutput(int color, CharSequence output) {
-        if(output == null || output.length() == 0) return;
+        if(shouldSuppressOutput(output)) return;
 
         // Use standard category output but override the color if specified
         CharSequence finalOut = getFinalText(output, CATEGORY_OUTPUT);
+        if (shouldSuppressOutput(finalOut)) return;
         if (color != TerminalManager.NO_COLOR && finalOut instanceof Spannable) {
             ((Spannable) finalOut).setSpan(new ForegroundColorSpan(color), 0, finalOut.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
         }
@@ -439,6 +440,7 @@ public class TerminalManager {
 
     private void writeToView(CharSequence text, int type) {
         text = getFinalText(text, type);
+        if (shouldSuppressOutput(text)) return;
         text = TextUtils.concat(Tuils.NEWLINE, text);
         writeToView(text);
     }
@@ -451,6 +453,7 @@ public class TerminalManager {
     }
 
     private CharSequence getFinalText(CharSequence t, int type) {
+        if (shouldSuppressOutput(t)) return Tuils.EMPTYSTRING;
         try {
             SpannableStringBuilder finalSsb = new SpannableStringBuilder();
             switch (type) {
@@ -523,6 +526,12 @@ public class TerminalManager {
             android.util.Log.e("TerminalManager", "getFinalText error: " + e.getMessage(), e);
             return t; // Fallback to raw text
         }
+    }
+
+    private boolean shouldSuppressOutput(CharSequence output) {
+        if (output == null) return true;
+        String text = output.toString().trim();
+        return text.length() == 0 || "null".equalsIgnoreCase(text);
     }
 
     public void simulateEnter() {

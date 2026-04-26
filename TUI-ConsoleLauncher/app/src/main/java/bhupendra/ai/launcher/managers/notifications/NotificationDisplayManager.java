@@ -42,6 +42,10 @@ public class NotificationDisplayManager {
     }
 
     public boolean dispatchSystemNotification(StatusBarNotification sbn, CharSequence renderedText, Parcelable action, Parcelable longAction, NotificationContentResolver.ResolvedContent resolvedContent) {
+        if (isBlankOrNull(renderedText)) {
+            debug("suppressed blank", sbn, renderedText, resolvedContent);
+            return false;
+        }
         if (!attentionDecider.shouldDisplay(sbn, renderedText, resolvedContent)) {
             debug("suppressed attention", sbn, renderedText, resolvedContent);
             return false;
@@ -136,6 +140,11 @@ public class NotificationDisplayManager {
     private String safe(CharSequence value) {
         if (value == null) return "";
         return TextUtils.isEmpty(value) ? "" : value.toString().trim();
+    }
+
+    private boolean isBlankOrNull(CharSequence value) {
+        String safeValue = safe(value);
+        return safeValue.length() == 0 || "null".equalsIgnoreCase(safeValue);
     }
 
     private void debug(String stage, StatusBarNotification sbn, CharSequence renderedText, NotificationContentResolver.ResolvedContent resolvedContent) {

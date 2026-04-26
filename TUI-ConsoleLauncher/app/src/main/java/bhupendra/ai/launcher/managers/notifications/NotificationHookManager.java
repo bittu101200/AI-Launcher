@@ -6,8 +6,6 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.service.notification.StatusBarNotification;
 import android.util.Log;
-import android.media.AudioManager;
-import android.media.ToneGenerator;
 import android.graphics.Color;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
@@ -29,6 +27,7 @@ import bhupendra.ai.launcher.ai.AISubsystem;
 import bhupendra.ai.launcher.ai.AICallback;
 import bhupendra.ai.launcher.ai.AIResponse;
 import bhupendra.ai.launcher.ai.AIRequestState;
+import bhupendra.ai.launcher.tuils.BeepPlayer;
 
 public class NotificationHookManager {
 
@@ -140,11 +139,14 @@ public class NotificationHookManager {
 
         Notification n = sbn.getNotification();
         Bundle extras = n.extras;
-        final String title = extras != null ? String.valueOf(extras.getCharSequence(Notification.EXTRA_TITLE)) : "";
-        final String text = extras != null ? String.valueOf(extras.getCharSequence(Notification.EXTRA_TEXT)) : "";
+        NotificationContentResolver.ResolvedContent resolvedContent = NotificationContentResolver.resolve(sbn);
+        final String title = firstNonEmpty(resolvedContent.title, resolvedContent.originalTitle,
+                extras != null ? safe(extras.getCharSequence(Notification.EXTRA_TITLE)) : "");
+        final String text = firstNonEmpty(resolvedContent.text, resolvedContent.originalText,
+                extras != null ? safe(extras.getCharSequence(Notification.EXTRA_TEXT)) : "");
         final String pkg = sbn.getPackageName();
 
-        if (text.matches("\\d+ new messages")) return;
+        if (text.length() == 0 || text.matches("\\d+ new messages")) return;
 
         for (final Hook h : hooks) {
             if (!h.enabled) continue;
@@ -223,8 +225,12 @@ public class NotificationHookManager {
                         if (cleanReply.contains("[URGENT:") && cleanReply.contains("]")) {
                             int start = cleanReply.indexOf("[URGENT:") + 8;
                             int end = cleanReply.indexOf("]", start);
-                            reason = cleanReply.substring(start, end).trim();
-                            cleanReply = cleanReply.substring(0, cleanReply.indexOf("[URGENT:")) + cleanReply.substring(end + 1);
+                            if (end > start) {
+                                reason = cleanReply.substring(start, end).trim();
+                                cleanReply = cleanReply.substring(0, cleanReply.indexOf("[URGENT:")) + cleanReply.substring(end + 1);
+                            } else {
+                                cleanReply = cleanReply.replace("[URGENT:", "").trim();
+                            }
                         } else {
                             cleanReply = cleanReply.replace("[URGENT]", "").trim();
                         }
@@ -250,16 +256,16 @@ public class NotificationHookManager {
 
     private void triggerUrgentAlert(String reason) {
         try {
-            new Thread(() -> {
-                try {
-                    ToneGenerator toneG = new ToneGenerator(AudioManager.STREAM_ALARM, 100);
-                    toneG.startTone(ToneGenerator.TONE_CDMA_EMERGENCY_RINGBACK, 2000);
-                    Thread.sleep(2000);
-                    toneG.release();
-                } catch (Exception e) {
-                    Log.e(TAG, "Tone failed", e);
-                }
-            }).start();
+            BeepPlayer.Options options = new BeepPlayer.Options(
+                    3900,
+                    350,
+                    120,
+                    5,
+                    0.75f,
+                    true,
+                    180000,
+                    true);
+            BeepPlayer.playAlert(context, options);
             
             int orange = Color.rgb(255, 165, 0);
             Tuils.sendOutput(orange, context, "[URGENT] BEEP REASON: " + reason.toUpperCase(), 0);
@@ -296,8 +302,22 @@ public class NotificationHookManager {
             i.putExtra(PrivateIOReceiver.TEXT, replyText);
             i.putExtra(PrivateIOReceiver.PENDING_INTENT, replyAction.actionIntent);
             i.putExtra(PrivateIOReceiver.ID, sbn.getId());
-            i.putExtra(PrivateIOReceiver.CURRENT_ID, PrivateIOReceiver.currentId);
             LocalBroadcastManager.getInstance(context).sendBroadcast(i);
         }
+    }
+
+    private static String firstNonEmpty(String... values) {
+        if (values == null) return "";
+        for (String value : values) {
+            String safeValue = safe(value);
+            if (safeValue.length() > 0) return safeValue;
+        }
+        return "";
+    }
+
+    private static String safe(CharSequence value) {
+        if (value == null) return "";
+        String text = value.toString().trim();
+        return "null".equalsIgnoreCase(text) ? "" : text;
     }
 }

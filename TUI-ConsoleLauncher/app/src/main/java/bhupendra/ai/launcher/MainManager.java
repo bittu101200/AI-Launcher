@@ -45,6 +45,7 @@ import bhupendra.ai.launcher.managers.notifications.KeeperService;
 import bhupendra.ai.launcher.managers.xml.XMLPrefsManager;
 import bhupendra.ai.launcher.managers.xml.options.Behavior;
 import bhupendra.ai.launcher.managers.xml.options.Theme;
+import bhupendra.ai.launcher.tuils.BeepPlayer;
 import bhupendra.ai.launcher.tuils.TermuxManager;
 import bhupendra.ai.launcher.tuils.PrivateIOReceiver;
 import bhupendra.ai.launcher.tuils.StoppableThread;
@@ -323,6 +324,7 @@ public class MainManager {
 //    command manager
     public void onCommand(String input, String alias, boolean wasMusicService) {
         final String originalInput = input;
+        BeepPlayer.stopRepeatingAlert();
 
         if (bhupendra.ai.launcher.ai.AppCapabilityScanner.PendingIntegration.isActive()) {
             bhupendra.ai.launcher.ai.AppCapabilityScanner.PendingIntegration.processSelection(input);
