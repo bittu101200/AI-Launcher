@@ -388,7 +388,7 @@ The integration gateway. Callable manually only in Phase 1. The AI does not self
 - Runs on a background thread; result cached to disk
 - Listens for `ACTION_PACKAGE_ADDED` / `ACTION_PACKAGE_REMOVED` — incremental re-scan on change
 - Uses `LauncherApps` / `ShortcutManager` first so Phase 1 integrations prefer app-published, user-visible shortcuts over inferred deep links
-- Uses `PackageManager` with `QUERY_ALL_PACKAGES` for Android 11+ visibility. This permission is **already declared in the existing manifest** for the `apps` command — no new permission is added in Phase 1. Both F-Droid and Play Store variants already carry this permission with justification covered by the existing `apps` command use case. No manifest change required.
+- Uses `PackageManager` with `QUERY_ALL_PACKAGES` for Android 11+ visibility. This permission is **already declared in the existing manifest** for the `apps` command — no new permission is added in Phase 1. The default build already carries this permission with justification covered by the existing `apps` command use case. No manifest change required.
 - Never blocks main thread; deferred when battery < 15%
 
 ### `LauncherIndex`
@@ -707,7 +707,7 @@ AndroidManifest.xml         — no new permissions for Phase 1 (QUERY_ALL_PACKAG
 ## Verification Plan
 
 ### Happy Path
-1. **Build passes:** `./gradlew assembleFdroidDebug` with zero errors
+1. **Build passes:** `./gradlew assembleDebug` with zero errors
 2. **AI disabled:** `enabled=false` → all existing commands work identically, no regressions
 3. **MockProvider:** `provider=mock` → AI responses appear without network
 4. **Always-on fallback:** Unrecognized input → AI responds via MockProvider

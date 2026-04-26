@@ -6,12 +6,12 @@
 # Build And Test
 
 - First-time setup: `chmod +x gradlew`
-- Debug APKs: `./gradlew assembleFdroidDebug` or `./gradlew assemblePlaystoreDebug`
+- Debug APK: `./gradlew assembleDebug`
 - Release APK: `./gradlew assembleRelease` using signing values from `TUI-ConsoleLauncher/local.properties` (`storeFile`, `storePassword`, `keyAlias`, `keyPassword`)
 - Clean: `./gradlew clean`
 - Lint: `./gradlew lint`
-- Unit tests are flavor-specific. `testDebugUnitTest` is ambiguous; use `./gradlew testFdroidDebugUnitTest` or `./gradlew testPlaystoreDebugUnitTest`.
-- Focused unit test: `./gradlew testFdroidDebugUnitTest --tests 'bhupendra.ai.launcher.ai.AISubsystemToolExecutionTest'`
+- Unit tests: `./gradlew testDebugUnitTest`
+- Focused unit test: `./gradlew testDebugUnitTest --tests 'bhupendra.ai.launcher.ai.AISubsystemToolExecutionTest'`
 
 # Repo Shape
 
@@ -19,7 +19,7 @@
 - Main entrypoints: `app/src/main/java/bhupendra/ai/launcher/LauncherActivity.java`, `MainManager.java`, `UIManager.java`, and `TUIApplication.java`.
 - Hilt is present, but not everything uses it. `di/AppModule.java` provides a few singletons; `AISubsystem` is still a manual singleton created outside Hilt.
 - Built-in launcher commands live in `app/src/main/java/.../commands/main/raw/` and are discovered through `CommandGroup`/`MainPack`.
-- Flavor-only code exists under `app/src/fdroid/`; `sms.java` is F-Droid only.
+- SMS-capable behavior is part of the default main source set; there are no product flavors.
 
 # AI And Command Wiring
 

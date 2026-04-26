@@ -109,7 +109,7 @@ public class BuiltInToolsTest {
 Run:
 
 ```bash
-./gradlew testFdroidDebugUnitTest --tests "bhupendra.ai.launcher.ai.BuiltInToolsTest"
+./gradlew testDebugUnitTest --tests "bhupendra.ai.launcher.ai.BuiltInToolsTest"
 ```
 
 Expected: FAIL because `BuiltInTools` does not exist yet.
@@ -196,7 +196,7 @@ this.toolExecutor = toolExecutor != null
 Run:
 
 ```bash
-./gradlew testFdroidDebugUnitTest --tests "bhupendra.ai.launcher.ai.BuiltInToolsTest"
+./gradlew testDebugUnitTest --tests "bhupendra.ai.launcher.ai.BuiltInToolsTest"
 ```
 
 Expected: PASS.
@@ -281,7 +281,7 @@ public class BuiltInToolExecutorTest {
 Run:
 
 ```bash
-./gradlew testFdroidDebugUnitTest --tests "bhupendra.ai.launcher.ai.BuiltInToolExecutorTest"
+./gradlew testDebugUnitTest --tests "bhupendra.ai.launcher.ai.BuiltInToolExecutorTest"
 ```
 
 Expected: FAIL because `BuiltInToolExecutor` does not exist yet.
@@ -405,7 +405,7 @@ Use current launcher behavior as the source of truth for permissions and setting
 Run:
 
 ```bash
-./gradlew testFdroidDebugUnitTest --tests "bhupendra.ai.launcher.ai.BuiltInToolExecutorTest"
+./gradlew testDebugUnitTest --tests "bhupendra.ai.launcher.ai.BuiltInToolExecutorTest"
 ```
 
 Expected: PASS.
@@ -468,7 +468,7 @@ public class ConfigToolCatalogTest {
 Run:
 
 ```bash
-./gradlew testFdroidDebugUnitTest --tests "bhupendra.ai.launcher.ai.ConfigToolCatalogTest"
+./gradlew testDebugUnitTest --tests "bhupendra.ai.launcher.ai.ConfigToolCatalogTest"
 ```
 
 Expected: FAIL because `ConfigToolCatalog` does not exist yet.
@@ -614,7 +614,7 @@ public void execute_rejectsConfigEntryOutsideAllowlist() {
 Run:
 
 ```bash
-./gradlew testFdroidDebugUnitTest --tests "bhupendra.ai.launcher.ai.ConfigToolCatalogTest" --tests "bhupendra.ai.launcher.ai.BuiltInToolExecutorTest"
+./gradlew testDebugUnitTest --tests "bhupendra.ai.launcher.ai.ConfigToolCatalogTest" --tests "bhupendra.ai.launcher.ai.BuiltInToolExecutorTest"
 ```
 
 Expected: PASS.
@@ -694,7 +694,7 @@ public void submit_autoRunsReadOnlyToolWithoutConfirmation() throws InterruptedE
 Run:
 
 ```bash
-./gradlew testFdroidDebugUnitTest --tests "bhupendra.ai.launcher.ai.AISubsystemToolExecutionTest"
+./gradlew testDebugUnitTest --tests "bhupendra.ai.launcher.ai.AISubsystemToolExecutionTest"
 ```
 
 Expected: PASS once Tasks 1-3 are in place.
@@ -881,7 +881,7 @@ COMPLETED
 Run:
 
 ```bash
-./gradlew assembleFdroidDebug
+./gradlew assembleDebug
 ```
 
 Expected: `BUILD SUCCESSFUL`.
@@ -906,7 +906,7 @@ git commit -m "feat: add launcher AI thinking indicator"
 Run:
 
 ```bash
-./gradlew testFdroidDebugUnitTest --tests "bhupendra.ai.launcher.ai.BuiltInToolsTest" --tests "bhupendra.ai.launcher.ai.BuiltInToolExecutorTest" --tests "bhupendra.ai.launcher.ai.ConfigToolCatalogTest" --tests "bhupendra.ai.launcher.ai.AISubsystemToolExecutionTest"
+./gradlew testDebugUnitTest --tests "bhupendra.ai.launcher.ai.BuiltInToolsTest" --tests "bhupendra.ai.launcher.ai.BuiltInToolExecutorTest" --tests "bhupendra.ai.launcher.ai.ConfigToolCatalogTest" --tests "bhupendra.ai.launcher.ai.AISubsystemToolExecutionTest"
 ```
 
 Expected: `BUILD SUCCESSFUL` with all targeted tests passing.
@@ -916,8 +916,8 @@ Expected: `BUILD SUCCESSFUL` with all targeted tests passing.
 Run:
 
 ```bash
-./gradlew assembleFdroidDebug
-/usr/local/share/android-commandlinetools/platform-tools/adb install -r app/build/outputs/apk/fdroid/debug/app-fdroid-debug.apk
+./gradlew assembleDebug
+/usr/local/share/android-commandlinetools/platform-tools/adb install -r app/build/outputs/apk/debug/app-debug.apk
 ```
 
 Expected: `Success` from `adb install`.

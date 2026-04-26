@@ -61,7 +61,7 @@
 |---|---|
 | `app/build.gradle` | Update `applicationId` / namespace references if present for `bhupendra.ai.launcher` |
 | `app/src/main/AndroidManifest.xml` | Update manifest package/authorities/permissions using the old namespace |
-| `app/src/fdroid/AndroidManifest.xml` | Update variant-specific manifest references if present |
+| `app/src/main/AndroidManifest.xml` | Update manifest references if present |
 | `app/src/main/java/**` | Rename Java package declarations/imports from `ohi.andre.consolelauncher` to `bhupendra.ai.launcher` |
 | `MainManager.java` | Add AITrigger field; AI cancel/confirm gate in onCommand(); PendingIntegration gate |
 | `commands/main/MainPack.java` | Add `public AISubsystem aiSubsystem` field |
@@ -145,7 +145,7 @@ git commit -m "test: add JUnit4 + Mockito test infrastructure"
 **Files:**
 - Modify: `TUI-ConsoleLauncher/app/build.gradle`
 - Modify: `TUI-ConsoleLauncher/app/src/main/AndroidManifest.xml`
-- Modify: `TUI-ConsoleLauncher/app/src/fdroid/AndroidManifest.xml`
+- Modify: `TUI-ConsoleLauncher/app/src/main/AndroidManifest.xml`
 - Modify: `TUI-ConsoleLauncher/app/src/main/java/**`
 - Modify: `TUI-ConsoleLauncher/app/src/test/java/**`
 
@@ -206,7 +206,7 @@ package bhupendra.ai.launcher.ai;
 - [ ] **Step 5: Run a full compile check**
 
 ```bash
-cd TUI-ConsoleLauncher && ./gradlew assembleFdroidDebug 2>&1 | tail -20
+cd TUI-ConsoleLauncher && ./gradlew assembleDebug 2>&1 | tail -20
 ```
 
 Expected: `BUILD SUCCESSFUL`
@@ -216,7 +216,7 @@ Expected: `BUILD SUCCESSFUL`
 ```bash
 git add TUI-ConsoleLauncher/app/build.gradle
 git add TUI-ConsoleLauncher/app/src/main/AndroidManifest.xml
-git add TUI-ConsoleLauncher/app/src/fdroid/AndroidManifest.xml
+git add TUI-ConsoleLauncher/app/src/main/AndroidManifest.xml
 git add TUI-ConsoleLauncher/app/src/main/java/
 git add TUI-ConsoleLauncher/app/src/test/java/
 git commit -m "refactor: rename package id to bhupendra.ai.launcher"
@@ -2793,7 +2793,7 @@ if (android.os.Build.VERSION.SDK_INT >= 37 && ambiguousContact) {
 - [ ] **Step 3: Verify build**
 
 ```bash
-cd TUI-ConsoleLauncher && ./gradlew assembleFdroidDebug 2>&1 | grep -E "^.*error:|BUILD" | tail -10
+cd TUI-ConsoleLauncher && ./gradlew assembleDebug 2>&1 | grep -E "^.*error:|BUILD" | tail -10
 ```
 
 - [ ] **Step 4: Commit**
@@ -2815,19 +2815,19 @@ cd TUI-ConsoleLauncher && ./gradlew test 2>&1 | tail -15
 
 Expected: `BUILD SUCCESSFUL`, all tests pass.
 
-- [ ] **Step 2: Build F-Droid debug APK**
+- [ ] **Step 2: Build debug APK**
 
 ```bash
-cd TUI-ConsoleLauncher && ./gradlew assembleFdroidDebug 2>&1 | tail -5
+cd TUI-ConsoleLauncher && ./gradlew assembleDebug 2>&1 | tail -5
 ```
 
 Expected: `BUILD SUCCESSFUL`
-APK: `app/build/outputs/apk/fdroid/debug/app-fdroid-debug.apk`
+APK: `app/build/outputs/apk/debug/app-debug.apk`
 
 - [ ] **Step 3: Install on device**
 
 ```bash
-adb wait-for-device && adb install -r TUI-ConsoleLauncher/app/build/outputs/apk/fdroid/debug/app-fdroid-debug.apk
+adb wait-for-device && adb install -r TUI-ConsoleLauncher/app/build/outputs/apk/debug/app-debug.apk
 ```
 
 - [ ] **Step 4: Smoke test**
@@ -2888,5 +2888,5 @@ git commit -m "feat: complete Phase 1 AI smart launcher
 - [ ] Predictive back works on Android 16+ in gesture and 3-button modes
 - [ ] Android 17 contact picker resolves ambiguous person actions without broad contact permission
 - [ ] `./gradlew test` → all pass
-- [ ] `./gradlew assembleFdroidDebug` → BUILD SUCCESSFUL
+- [ ] `./gradlew assembleDebug` → BUILD SUCCESSFUL
 - [ ] No crash on startup with provider=mock

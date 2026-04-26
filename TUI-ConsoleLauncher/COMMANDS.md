@@ -4,17 +4,17 @@ This document summarizes the essential commands for building, installing, and ma
 
 ## 🛠 Building the APK
 
-To perform a clean build of the F-Droid version (includes SMS permissions):
+To build the default debug APK, which includes SMS permissions:
 
 ```bash
 # Ensure gradlew is executable
 chmod +x gradlew
 
-# Build the F-Droid Debug APK
-./gradlew assembleFdroidDebug
+# Build the Debug APK
+./gradlew assembleDebug
 ```
 
-**Output Path:** `app/build/outputs/apk/fdroid/debug/app-fdroid-debug.apk`
+**Output Path:** `app/build/outputs/apk/debug/app-debug.apk`
 
 ---
 
@@ -28,7 +28,7 @@ emulator -avd Pixel_9_Pro -gpu host -accel on &
 
 # 2. Wait for the device and install (overwriting existing)
 adb wait-for-device
-adb install -r app/build/outputs/apk/fdroid/debug/app-fdroid-debug.apk
+adb install -r app/build/outputs/apk/debug/app-debug.apk
 ```
 
 ---

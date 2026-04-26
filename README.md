@@ -21,7 +21,7 @@ All Android application source code lives in [`TUI-ConsoleLauncher/`](./TUI-Cons
 - Multiple AI provider options including `opencode_zen`, `gemini`, `claude`, `openai`, `ollama`, and `mock`
 - Notification ingestion, filtering, display, reply actions, and automation hooks
 - On-device command routing that can operate in explicit `ai ...` mode or more agentic fallback modes
-- F-Droid and Play Store product flavors
+- Single default app build with SMS-capable behavior included
 
 ## Architecture Overview
 
@@ -113,14 +113,12 @@ Run all Gradle commands from `TUI-ConsoleLauncher/`.
 ```bash
 cd TUI-ConsoleLauncher
 chmod +x gradlew
-./gradlew assembleFdroidDebug
-./gradlew assemblePlaystoreDebug
+./gradlew assembleDebug
 ```
 
-APK outputs:
+APK output:
 
-- `app/build/outputs/apk/fdroid/debug/app-fdroid-debug.apk`
-- `app/build/outputs/apk/playstore/debug/app-playstore-debug.apk`
+- `app/build/outputs/apk/debug/app-debug.apk`
 
 ### Release build
 
@@ -140,26 +138,25 @@ Release signing values are read from `TUI-ConsoleLauncher/local.properties`:
 
 ```bash
 cd TUI-ConsoleLauncher
-adb install -r app/build/outputs/apk/fdroid/debug/app-fdroid-debug.apk
+adb install -r app/build/outputs/apk/debug/app-debug.apk
 ```
 
 ## Testing And Debugging
 
 ### Unit tests
 
-Flavor-specific test tasks are required:
+Run the default debug unit tests:
 
 ```bash
 cd TUI-ConsoleLauncher
-./gradlew testFdroidDebugUnitTest
-./gradlew testPlaystoreDebugUnitTest
+./gradlew testDebugUnitTest
 ```
 
 Focused example:
 
 ```bash
 cd TUI-ConsoleLauncher
-./gradlew testFdroidDebugUnitTest --tests 'bhupendra.ai.launcher.ai.AISubsystemToolExecutionTest'
+./gradlew testDebugUnitTest --tests 'bhupendra.ai.launcher.ai.AISubsystemToolExecutionTest'
 ```
 
 ### Lint
@@ -209,12 +206,9 @@ Notable runtime behaviors:
 - `always_on_fallback` allows non-agentic fallback to AI after traditional command and shell routing fail.
 - AI requests can request user choices and typed parameters through the suggestions UI.
 
-## Product Flavors
+## Build Variants
 
-The app has two product flavors:
-
-- `fdroid`: includes the F-Droid-only SMS command source under [`app/src/fdroid/`](./TUI-ConsoleLauncher/app/src/fdroid/)
-- `playstore`: excludes the SMS-specific flavor code
+The app has a single default build. SMS permissions and the `sms` command are included in the main source set.
 
 ## Security And Platform Constraints
 
@@ -240,7 +234,7 @@ AI Launcher/
 │   │   ├── src/main/java/bhupendra/ai/launcher/
 │   │   ├── src/main/assets/
 │   │   ├── src/main/res/
-│   │   └── src/fdroid/
+│   │   └── src/test/
 │   ├── COMMANDS.md
 │   └── README.md
 ├── docs/

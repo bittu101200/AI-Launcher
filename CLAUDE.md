@@ -15,11 +15,10 @@ Run all commands from `TUI-ConsoleLauncher/`:
 ```bash
 chmod +x gradlew
 
-# F-Droid debug APK (includes SMS permissions)
-./gradlew assembleFdroidDebug
-# Output: app/build/outputs/apk/fdroid/debug/app-fdroid-debug.apk
+# Debug APK (includes SMS permissions)
+./gradlew assembleDebug
+# Output: app/build/outputs/apk/debug/app-debug.apk
 
-./gradlew assemblePlaystoreDebug
 ./gradlew assembleRelease   # requires signing config in local.properties
 ./gradlew clean
 ```
@@ -31,7 +30,7 @@ Signing keys go in `local.properties`: `storeFile`, `storePassword`, `keyAlias`,
 ```bash
 emulator -avd Pixel_9_Pro -gpu host -accel on &
 adb wait-for-device
-adb install -r app/build/outputs/apk/fdroid/debug/app-fdroid-debug.apk
+adb install -r app/build/outputs/apk/debug/app-debug.apk
 adb logcat | grep bhupendra.ai
 adb uninstall bhupendra.ai.launcher
 ```
@@ -113,10 +112,9 @@ All rendering paths in `TerminalManager` and `TextProcessor` are wrapped in try-
 - `TuiLocationManager` — GPS/location.
 - `TermuxManager` — Bridges commands to Termux (BusyBox is deprecated).
 
-### Product Flavors
+### Build Variants
 
-- **`fdroid`** — Includes `commands/main/raw/sms.java`. Source in `app/src/fdroid/`.
-- **`playstore`** — No SMS command.
+The project has a single default app build. SMS-capable behavior is included in the main source set; there are no product flavors.
 
 ## Key Constraints
 
