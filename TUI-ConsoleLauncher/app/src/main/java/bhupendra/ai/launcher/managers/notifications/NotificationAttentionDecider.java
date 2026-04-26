@@ -34,7 +34,8 @@ public class NotificationAttentionDecider {
         "com.google.android.apps.messaging",
         "com.google.android.apps.googlevoice",
         "com.discord",
-        "com.instagram.android"
+        "com.instagram.android",
+        "com.snapchat.android"
     ));
 
     private static final Pattern GROUP_SUMMARY_PATTERN = Pattern.compile(

@@ -530,6 +530,18 @@ public class AppsManager implements XMLPrefsElement {
         return is.get(0);
     }
 
+    public LaunchInfo findLaunchInfoWithPackage(String packageName) {
+        if (appsHolder != null) {
+            List<LaunchInfo> is = AppUtils.findLaunchInfosWithPackage(packageName, appsHolder.getApps());
+            if (is != null && is.size() > 0) return is.get(0);
+        }
+        if (hiddenApps != null) {
+            List<LaunchInfo> is = AppUtils.findLaunchInfosWithPackage(packageName, hiddenApps);
+            if (is != null && is.size() > 0) return is.get(0);
+        }
+        return null;
+    }
+
     public void writeLaunchTimes(LaunchInfo info) {
         editor.putInt(info.write(), info.launchedTimes);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.GINGERBREAD) {

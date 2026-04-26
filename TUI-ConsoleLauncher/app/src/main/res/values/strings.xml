@@ -32,8 +32,10 @@
     <!-- reply -->
     <string name="reply_id_not_found">No bound app found with ID:</string>
     <string name="reply_notification_not_found">0 notifications from this app</string>
+    <string name="reply_notification_found_active">Active notification found, attempting reply...</string>
 
     <!-- notifications menu -->
+    <string name="open_notification">Open</string>
     <string name="exclude_notification">Exclude notification</string>
     <string name="exclude_app">Exclude app</string>
     <string name="reply_notification">Reply to the last notification</string>

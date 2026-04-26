@@ -420,22 +420,29 @@ public class CommandTuils {
     }
 
     private static ArgInfo activityName(String input, AppsManager apps) {
-        AppsManager.LaunchInfo info = apps.findLaunchInfoWithLabel(input, AppsManager.SHOWN_APPS);
-        return new ArgInfo(info, null, info != null, info != null ? 1 : 0);
+        String name = findName(input);
+        AppsManager.LaunchInfo info = apps.findLaunchInfoWithLabel(name, AppsManager.SHOWN_APPS);
+        if (info == null) {
+            // Try as package name
+            info = apps.findLaunchInfoWithPackage(name);
+        }
+        return new ArgInfo(info, input.substring(name.length()), info != null, info != null ? 1 : 0);
     }
 
     private static ArgInfo hiddenPackage(String input, AppsManager apps) {
-        AppsManager.LaunchInfo info = apps.findLaunchInfoWithLabel(input, AppsManager.HIDDEN_APPS);
-        return new ArgInfo(info, null, info != null, info != null ? 1 : 0);
+        String name = findName(input);
+        AppsManager.LaunchInfo info = apps.findLaunchInfoWithLabel(name, AppsManager.HIDDEN_APPS);
+        return new ArgInfo(info, input.substring(name.length()), info != null, info != null ? 1 : 0);
     }
 
     private static ArgInfo allPackages(String input, AppsManager apps) {
-        AppsManager.LaunchInfo info = apps.findLaunchInfoWithLabel(input, AppsManager.SHOWN_APPS);
+        String name = findName(input);
+        AppsManager.LaunchInfo info = apps.findLaunchInfoWithLabel(name, AppsManager.SHOWN_APPS);
         if(info == null) {
-            info = apps.findLaunchInfoWithLabel(input, AppsManager.HIDDEN_APPS);
+            info = apps.findLaunchInfoWithLabel(name, AppsManager.HIDDEN_APPS);
         }
 
-        return new ArgInfo(info, null, info != null, info != null ? 1 : 0);
+        return new ArgInfo(info, input.substring(name.length()), info != null, info != null ? 1 : 0);
     }
 
     private static ArgInfo defaultApp(String input, AppsManager apps) {

@@ -41,7 +41,7 @@ public class NotificationDisplayManager {
         return instance;
     }
 
-    public boolean dispatchSystemNotification(StatusBarNotification sbn, CharSequence renderedText, PendingIntent action, Parcelable longAction, NotificationContentResolver.ResolvedContent resolvedContent) {
+    public boolean dispatchSystemNotification(StatusBarNotification sbn, CharSequence renderedText, Parcelable action, Parcelable longAction, NotificationContentResolver.ResolvedContent resolvedContent) {
         if (!attentionDecider.shouldDisplay(sbn, renderedText, resolvedContent)) {
             debug("suppressed attention", sbn, renderedText, resolvedContent);
             return false;
@@ -85,7 +85,7 @@ public class NotificationDisplayManager {
         }
 
         if (shouldSuppressDuplicate(buildJourneyFingerprint(packageName, title, text))) return false;
-        Tuils.sendOutput(appContext, message.toString(), TerminalManager.CATEGORY_OUTPUT);
+        Tuils.sendOutput(appContext, message.toString(), TerminalManager.CATEGORY_NO_COLOR, notification.contentIntent);
         return true;
     }
 

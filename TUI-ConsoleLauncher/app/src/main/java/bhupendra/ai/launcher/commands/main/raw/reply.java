@@ -10,6 +10,7 @@ import bhupendra.ai.launcher.commands.ExecutePack;
 import bhupendra.ai.launcher.commands.main.MainPack;
 import bhupendra.ai.launcher.commands.main.specific.APICommand;
 import bhupendra.ai.launcher.commands.main.specific.ParamCommand;
+import bhupendra.ai.launcher.managers.AppsManager;
 import bhupendra.ai.launcher.managers.notifications.reply.ReplyManager;
 import bhupendra.ai.launcher.tuils.Tuils;
 
@@ -24,14 +25,15 @@ public class reply extends ParamCommand implements APICommand {
         to {
             @Override
             public int[] args() {
-                return new int[] {CommandAbstraction.BOUND_REPLY_APP, CommandAbstraction.PLAIN_TEXT};
+                return new int[] {CommandAbstraction.VISIBLE_PACKAGE, CommandAbstraction.PLAIN_TEXT};
             }
 
             @Override
             public String exec(ExecutePack pack) {
                 Intent intent = new Intent(ReplyManager.ACTION);
 
-                intent.putExtra(ReplyManager.ID, pack.getString());
+                AppsManager.LaunchInfo launchInfo = pack.getLaunchInfo();
+                intent.putExtra(ReplyManager.ID, launchInfo.componentName.getPackageName());
                 intent.putExtra(ReplyManager.WHAT, pack.getString());
 
                 LocalBroadcastManager.getInstance(pack.getContext()).sendBroadcast(intent);

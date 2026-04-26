@@ -314,7 +314,7 @@ public class FileSystemManager {
             uri = Uri.fromFile(file);
         }
         else {
-            uri = FileProvider.getUriForFile(context, context.getApplicationContext().getPackageName() + ".provider", file);
+            uri = FileProvider.getUriForFile(context, context.getApplicationContext().getPackageName() + ".FILE_PROVIDER", file);
         }
         return uri;
     }

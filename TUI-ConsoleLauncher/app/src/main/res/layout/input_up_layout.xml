@@ -51,7 +51,8 @@
             android:imeOptions="actionGo|flagNoFullscreen"
             android:textCursorDrawable="@drawable/cursor"
 
-            android:importantForAutofill="no"
+            android:importantForAutofill="noExcludeDescendants"
+            android:autofillHints=""
 
             android:lines="1"
             android:singleLine="true"/>

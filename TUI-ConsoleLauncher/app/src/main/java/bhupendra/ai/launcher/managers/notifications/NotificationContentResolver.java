@@ -21,7 +21,8 @@ final class NotificationContentResolver {
         "com.google.android.apps.messaging",
         "com.google.android.apps.googlevoice",
         "com.discord",
-        "com.instagram.android"
+        "com.instagram.android",
+        "com.snapchat.android"
     ));
 
     private static final Pattern SINGLE_MESSAGE_SUMMARY_PATTERN = Pattern.compile(

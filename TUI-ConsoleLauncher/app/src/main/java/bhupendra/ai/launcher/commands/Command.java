@@ -77,4 +77,22 @@ public class Command {
             return 0;
         }
     }
+
+    public boolean hasMoreArgs() {
+        boolean useParamArgs = cmd instanceof ParamCommand && mArgs != null && mArgs.length >= 1;
+
+        int[] args;
+        if (useParamArgs) {
+            if(!(mArgs[0] instanceof Param)) args = null;
+            else args = ((Param) mArgs[0]).args();
+        } else {
+            args = cmd.argType();
+        }
+
+        if (args == null || args.length == 0) {
+            return false;
+        }
+
+        return (useParamArgs ? nArgs : nArgs + 1) < args.length;
+    }
 }

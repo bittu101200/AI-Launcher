@@ -6,12 +6,14 @@ import android.content.Intent;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.Vibrator;
+import android.os.Bundle;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 import android.text.TextPaint;
 import android.text.style.ClickableSpan;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.PopupMenu;
+import android.widget.Toast;
 
 import bhupendra.ai.launcher.MainManager;
 import bhupendra.ai.launcher.R;
@@ -68,18 +70,70 @@ public class LongClickableSpan extends ClickableSpan {
 
     @Override
     public void onClick(View widget) {
-        execute(widget, clickO);
+        execute(widget, clickO, false);
     }
 
     public void onLongClick(View widget) {
-        if(execute(widget, longClickO, longIntentKey) && longPressVibrateDuration > 0) ((Vibrator) widget.getContext().getApplicationContext().getSystemService(Context.VIBRATOR_SERVICE)).vibrate(longPressVibrateDuration);
+        if(execute(widget, longClickO, longIntentKey, true) && longPressVibrateDuration > 0) ((Vibrator) widget.getContext().getApplicationContext().getSystemService(Context.VIBRATOR_SERVICE)).vibrate(longPressVibrateDuration);
     }
 
-    private static boolean execute(View v, Object o) {
-        return execute(v, o, null);
+    private static boolean execute(View v, Object o, boolean isLongClick) {
+        return execute(v, o, null, isLongClick);
     }
 
-    private static boolean execute(final View v, Object o, String intentKey) {
+    private static void executeIntent(Context context, PendingIntent pi, String pkg) {
+        if (pi == null && pkg == null) return;
+
+        try {
+            // Collapse status bar/system dialogs
+            context.sendBroadcast(new Intent(Intent.ACTION_CLOSE_SYSTEM_DIALOGS));
+        } catch (Exception e) {}
+
+        Bundle options = null;
+        if (android.os.Build.VERSION.SDK_INT >= 34) { // Android 14+
+            try {
+                android.app.ActivityOptions actOptions = android.app.ActivityOptions.makeBasic();
+                actOptions.setPendingIntentBackgroundActivityStartMode(android.app.ActivityOptions.MODE_BACKGROUND_ACTIVITY_START_ALLOWED);
+                options = actOptions.toBundle();
+            } catch (Exception e) {
+                Tuils.log("ActivityOptions error", e);
+            }
+        }
+
+        boolean success = false;
+        if (pi != null) {
+            try {
+                if (options != null) {
+                    pi.send(context, 0, null, null, null, null, options);
+                } else {
+                    pi.send();
+                }
+                success = true;
+            } catch (Exception e) {
+                Tuils.log("PendingIntent.send failed", e);
+            }
+        }
+
+        // Fallback: If PI failed or is null, try to launch the app by package
+        if (!success && pkg != null) {
+            try {
+                Intent launchIntent = context.getPackageManager().getLaunchIntentForPackage(pkg);
+                if (launchIntent != null) {
+                    launchIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                    context.startActivity(launchIntent, options);
+                    success = true;
+                }
+            } catch (Exception e) {
+                Tuils.log("Fallback launch failed", e);
+            }
+        }
+
+        if (!success) {
+            Toast.makeText(context, "Could not open app", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private static boolean execute(final View v, Object o, String intentKey, boolean isLongClick) {
         if(o == null) return false;
 
         if(!set) {
@@ -103,13 +157,7 @@ public class LongClickableSpan extends ClickableSpan {
 
             LocalBroadcastManager.getInstance(v.getContext().getApplicationContext()).sendBroadcast(intent);
         } else if(o instanceof PendingIntent) {
-            PendingIntent pi = (PendingIntent) o;
-
-            try {
-                pi.send();
-            } catch (PendingIntent.CanceledException e) {
-                Tuils.log(e);
-            }
+            executeIntent(v.getContext(), (PendingIntent) o, null);
         } else if(o instanceof Uri) {
             Intent i = new Intent(Intent.ACTION_VIEW, (Uri) o);
             i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
@@ -122,50 +170,68 @@ public class LongClickableSpan extends ClickableSpan {
         } else if(o instanceof NotificationService.Notification) {
             final NotificationService.Notification n = (NotificationService.Notification) o;
 
-            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.HONEYCOMB) {
-                if(showMenu) {
-                    PopupMenu menu = new PopupMenu(v.getContext().getApplicationContext(), v);
-                    menu.getMenuInflater().inflate(R.menu.notification_menu, menu.getMenu());
+            if (isLongClick) {
+                int count = 0;
+                if(n.pendingIntent != null) count++;
+                if(showExcludeApp) count++;
+                if(showExcludeNotification) count++;
+                if(showReply) count++;
 
-                    menu.getMenu().findItem(R.id.exclude_app).setVisible(showExcludeApp);
-                    menu.getMenu().findItem(R.id.exclude_notification).setVisible(showExcludeNotification);
-                    menu.getMenu().findItem(R.id.reply_notification).setVisible(showReply);
+                boolean forceMenu = count > 1;
 
-                    menu.setOnMenuItemClickListener(item -> {
-                        int id = item.getItemId();
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.HONEYCOMB) {
+                    if(showMenu || forceMenu) {
+                        PopupMenu menu = new PopupMenu(v.getContext().getApplicationContext(), v);
+                        menu.getMenuInflater().inflate(R.menu.notification_menu, menu.getMenu());
 
-                        if (id == R.id.exclude_app) {
-                            NotificationManager.setState(n.pkg, false);
-                        } else if (id == R.id.exclude_notification) {
-                            Tuils.log(n.text);
-                            NotificationManager.addFilter(n.text, -1);
-                        } else if (id == R.id.reply_notification) {
+                        menu.getMenu().findItem(R.id.open_notification).setVisible(n.pendingIntent != null);
+                        menu.getMenu().findItem(R.id.exclude_app).setVisible(showExcludeApp);
+                        menu.getMenu().findItem(R.id.exclude_notification).setVisible(showExcludeNotification);
+                        menu.getMenu().findItem(R.id.reply_notification).setVisible(showReply);
+
+                        menu.setOnMenuItemClickListener(item -> {
+                            int id = item.getItemId();
+
+                            if (id == R.id.open_notification) {
+                                executeIntent(v.getContext(), n.pendingIntent, n.pkg);
+                            } else if (id == R.id.exclude_app) {
+                                NotificationManager.setState(n.pkg, false);
+                            } else if (id == R.id.exclude_notification) {
+                                Tuils.log(n.text);
+                                NotificationManager.addFilter(n.text, -1);
+                            } else if (id == R.id.reply_notification) {
+                                Intent intent = new Intent(PrivateIOReceiver.ACTION_INPUT);
+                                intent.putExtra(PrivateIOReceiver.TEXT, "reply -to " + n.pkg + Tuils.SPACE);
+
+                                LocalBroadcastManager.getInstance(v.getContext().getApplicationContext()).sendBroadcast(intent);
+                            } else {
+                                return false;
+                            }
+
+                            return true;
+                        });
+
+                        menu.show();
+                    } else {
+                        if (showReply) {
                             Intent intent = new Intent(PrivateIOReceiver.ACTION_INPUT);
                             intent.putExtra(PrivateIOReceiver.TEXT, "reply -to " + n.pkg + Tuils.SPACE);
 
                             LocalBroadcastManager.getInstance(v.getContext().getApplicationContext()).sendBroadcast(intent);
+                        } else if (showExcludeNotification) {
+                            NotificationManager.addFilter(n.text, -1);
+                        } else if (showExcludeApp) {
+                            NotificationManager.setState(n.pkg, false);
                         } else {
-                            return false;
+                            executeIntent(v.getContext(), n.pendingIntent, n.pkg);
                         }
-
-                        return true;
-                    });
-
-                    menu.show();
-                } else {
-                    if(showReply) {
-                        Intent intent = new Intent(PrivateIOReceiver.ACTION_INPUT);
-                        intent.putExtra(PrivateIOReceiver.TEXT, "reply -to " + n.pkg + Tuils.SPACE);
-
-                        LocalBroadcastManager.getInstance(v.getContext().getApplicationContext()).sendBroadcast(intent);
                     }
-                    else if(showExcludeNotification) NotificationManager.addFilter(n.text, -1);
-                    else if(showExcludeApp) NotificationManager.setState(n.pkg, false);
                 }
+            } else {
+                executeIntent(v.getContext(), n.pendingIntent, n.pkg);
             }
         }
 
         return true;
     }
 }
-

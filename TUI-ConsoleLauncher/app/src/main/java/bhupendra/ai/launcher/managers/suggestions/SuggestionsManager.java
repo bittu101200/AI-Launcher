@@ -676,8 +676,7 @@ public class SuggestionsManager {
                     } else {
                         if(cmd.cmd instanceof ParamCommand && (cmd.mArgs == null || cmd.mArgs.length == 0 || cmd.mArgs[0] instanceof String))
                             suggestParams(pack, suggestionList, (ParamCommand) cmd.cmd, beforeLastSpace, null);
-                        else suggestArgs(pack, cmd.nextArg(), suggestionList, beforeLastSpace );
-                    }
+                        else suggestArgs(pack, cmd.nextArg(), suggestionList, beforeLastSpace, !cmd.hasMoreArgs());                    }
 
                 } else {
                     String[] split = rmQuotes.matcher(beforeLastSpace).replaceAll(Tuils.EMPTYSTRING).split(Tuils.SPACE);
@@ -693,7 +692,7 @@ public class SuggestionsManager {
                         suggestFile(pack, suggestionList, Tuils.EMPTYSTRING, beforeLastSpace );
                     } else {
 //                        ==> app
-                        if(!suggestAppInsideGroup(pack, suggestionList, Tuils.EMPTYSTRING, beforeLastSpace , false)) suggestApp(pack, suggestionList, beforeLastSpace  + Tuils.SPACE, Tuils.EMPTYSTRING);
+                        if(!suggestAppInsideGroup(pack, suggestionList, Tuils.EMPTYSTRING, beforeLastSpace , false)) suggestApp(pack, suggestionList, beforeLastSpace  + Tuils.SPACE, Tuils.EMPTYSTRING, true);
                     }
 
                 }
@@ -724,7 +723,7 @@ public class SuggestionsManager {
 
                     if(cmd.cmd instanceof ParamCommand && (cmd.mArgs == null || cmd.mArgs.length == 0 || cmd.mArgs[0] instanceof String)) {
                         suggestParams(pack, suggestionList, (ParamCommand) cmd.cmd, beforeLastSpace , lastWord);
-                    } else suggestArgs(pack, cmd.nextArg(), suggestionList, lastWord, beforeLastSpace );
+                    } else suggestArgs(pack, cmd.nextArg(), suggestionList, lastWord, beforeLastSpace, !cmd.hasMoreArgs());
                 } else {
 
                     String[] split = beforeLastSpace .replaceAll("['\"]", Tuils.EMPTYSTRING).split(Tuils.SPACE);
@@ -739,7 +738,7 @@ public class SuggestionsManager {
                     if(isShellCmd) {
                         suggestFile(pack, suggestionList, lastWord, beforeLastSpace );
                     } else {
-                        if(!suggestAppInsideGroup(pack, suggestionList, lastWord, beforeLastSpace , false)) suggestApp(pack, suggestionList, beforeLastSpace  + Tuils.SPACE + lastWord, Tuils.EMPTYSTRING);
+                        if(!suggestAppInsideGroup(pack, suggestionList, lastWord, beforeLastSpace , false)) suggestApp(pack, suggestionList, beforeLastSpace  + Tuils.SPACE + lastWord, Tuils.EMPTYSTRING, true);
                     }
                 }
 
@@ -747,7 +746,7 @@ public class SuggestionsManager {
             } else {
                 suggestCommand(pack, suggestionList, lastWord, beforeLastSpace );
                 suggestAlias(pack.aliasManager, suggestionList, lastWord);
-                suggestApp(pack, suggestionList, lastWord, Tuils.EMPTYSTRING);
+                suggestApp(pack, suggestionList, lastWord, Tuils.EMPTYSTRING, true);
                 suggestAppGroup(pack, suggestionList, lastWord, beforeLastSpace );
             }
         }
@@ -852,13 +851,13 @@ public class SuggestionsManager {
         }
     }
 
-    private void suggestArgs(MainPack info, int type, List<Suggestion> suggestions, String afterLastSpace, String beforeLastSpace ) {
+    private void suggestArgs(MainPack info, int type, List<Suggestion> suggestions, String afterLastSpace, String beforeLastSpace, boolean canExec) {
         switch (type) {
             case CommandAbstraction.FILE:
                 suggestFile(info, suggestions, afterLastSpace, beforeLastSpace );
                 break;
             case CommandAbstraction.VISIBLE_PACKAGE:
-                suggestApp(info, suggestions, afterLastSpace, beforeLastSpace );
+                suggestApp(info, suggestions, afterLastSpace, beforeLastSpace, canExec);
                 break;
             case CommandAbstraction.COMMAND:
                 suggestCommand(info, suggestions, afterLastSpace, beforeLastSpace );
@@ -917,8 +916,8 @@ public class SuggestionsManager {
         }
     }
 
-    private void suggestArgs(MainPack info, int type, List<Suggestion> suggestions, String beforeLastSpace ) {
-        suggestArgs(info, type, suggestions, null, beforeLastSpace );
+    private void suggestArgs(MainPack info, int type, List<Suggestion> suggestions, String beforeLastSpace, boolean canExec) {
+        suggestArgs(info, type, suggestions, null, beforeLastSpace, canExec);
     }
 
     private void suggestBoolean(List<Suggestion> suggestions, String beforeLastSpace ) {
@@ -1186,8 +1185,8 @@ public class SuggestionsManager {
         }
     }
 
-    private void suggestApp(MainPack info, List<Suggestion> suggestions, String afterLastSpace, String beforeLastSpace) {
-        suggestApp(info.appsManager.shownApps(), suggestions, afterLastSpace, beforeLastSpace, true);
+    private void suggestApp(MainPack info, List<Suggestion> suggestions, String afterLastSpace, String beforeLastSpace, boolean canExec) {
+        suggestApp(info.appsManager.shownApps(), suggestions, afterLastSpace, beforeLastSpace, canExec);
     }
 
     private void suggestHiddenApp(MainPack info, List<Suggestion> suggestions, String afterLastSpace, String beforeLastSpace) {

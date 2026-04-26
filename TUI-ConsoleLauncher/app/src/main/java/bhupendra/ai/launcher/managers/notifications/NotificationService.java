@@ -283,7 +283,7 @@ public class NotificationService extends NotificationListenerService {
                             notificationDisplayManager.dispatchSystemNotification(
                                 displaySbn,
                                 s,
-                                click ? notification.contentIntent : null,
+                                click ? n : null,
                                 longClick ? n : null,
                                 resolvedContent
                             );
