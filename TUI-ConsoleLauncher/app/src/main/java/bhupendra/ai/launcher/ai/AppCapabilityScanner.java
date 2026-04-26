@@ -100,12 +100,31 @@ public class AppCapabilityScanner {
     }
 
     private final Context context;
+    private static List<Capability> cachedScan = null;
+    private static long cachedScanTime = 0;
+    private static final long SCAN_CACHE_TTL_MS = 60_000L;
 
     public AppCapabilityScanner(Context context) {
         this.context = context.getApplicationContext();
     }
 
     public List<Capability> scanInstalledApps() {
+        long now = System.currentTimeMillis();
+        if (cachedScan != null && (now - cachedScanTime) < SCAN_CACHE_TTL_MS) {
+            return new ArrayList<>(cachedScan);
+        }
+        List<Capability> result = doScan();
+        cachedScan = result;
+        cachedScanTime = now;
+        return new ArrayList<>(result);
+    }
+
+    public static void invalidateCache() {
+        cachedScan = null;
+        cachedScanTime = 0;
+    }
+
+    private List<Capability> doScan() {
         List<Capability> result = new ArrayList<>();
         PackageManager pm = context.getPackageManager();
         
@@ -174,6 +193,7 @@ public class AppCapabilityScanner {
             }
             File file = new File(FileSystemManager.getFolder(), LIB_FILENAME);
             FileSystemManager.saveFile(file, array.toString());
+            invalidateCache();
         } catch (Exception e) {
             Tuils.log(e);
         }

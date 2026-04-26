@@ -6,7 +6,6 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.io.IOException;
-import java.util.concurrent.TimeUnit;
 
 import bhupendra.ai.launcher.ai.AICallback;
 import bhupendra.ai.launcher.ai.AIProvider;
@@ -38,10 +37,7 @@ public class OpenCodeZenProvider implements AIProvider {
     public OpenCodeZenProvider(String apiKey, String model) {
         this.apiKey = apiKey;
         this.model = (model != null && !model.isEmpty()) ? model : DEFAULT_MODEL;
-        this.client = new OkHttpClient.Builder()
-            .connectTimeout(10, TimeUnit.SECONDS)
-            .readTimeout(30, TimeUnit.SECONDS)
-            .build();
+        this.client = SharedHttpClient.get();
     }
 
     @Override

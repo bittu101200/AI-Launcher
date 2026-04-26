@@ -770,7 +770,10 @@ public class UIManager implements OnTouchListener {
             float i = indexs.get(c);
 
             for(int a = 0; a < Label.values().length; a++) {
-                if(i == labelIndexes[a] && labelTexts[a] != null) sequence = TextUtils.concat(sequence, labelTexts[a]);
+                if(i == labelIndexes[a] && labelTexts[a] != null) {
+                    if(sequence.length() > 0) sequence = TextUtils.concat(sequence, Tuils.SPACE);
+                    sequence = TextUtils.concat(sequence, labelTexts[a]);
+                }
             }
         }
 

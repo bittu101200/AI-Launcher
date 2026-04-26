@@ -140,7 +140,7 @@ public class AISubsystem {
     public AISubsystem(AIProvider provider, Context context, ToolExecutor toolExecutor) {
         this.provider = provider;
         this.appContext = context != null ? context.getApplicationContext() : null;
-        this.toolExecutor = toolExecutor;
+        this.toolExecutor = toolExecutor != null ? toolExecutor : new AndroidToolExecutor();
         this.toolRegistry = new ToolRegistry();
         this.conversationManager = new ConversationManager(ConversationManager.Mode.SESSION, 4000);
         this.requestManager = new RequestManager(provider, 10_000, 30_000);
@@ -336,7 +336,10 @@ public class AISubsystem {
         if (rid != null) requestManager.cancel(rid);
         handleTerminalState(rid, AIRequestState.CANCELLED);
     }
-    public void dispose() { cancel(); }
+    public void dispose() {
+        cancel();
+        if (instance == this) instance = null;
+    }
     public bhupendra.ai.launcher.ai.platform.LauncherIndex getLauncherIndex() { return launcherIndex; }
     public LongTermMemory getLongTermMemory() { return longTermMemory; }
     public void setInstance() { instance = this; }
@@ -399,9 +402,18 @@ public class AISubsystem {
         if (state == AIRequestState.COMPLETED
                 || state == AIRequestState.FAILED
                 || state == AIRequestState.CANCELLED) {
-            android.util.Log.i("AI_OUTPUT", "AI_TURN_FINISHED");
+            logAITurnFinished();
         }
         lastRequestId.compareAndSet(requestId, null);
+    }
+
+    private void logAITurnFinished() {
+        if (appContext == null) return;
+        try {
+            android.util.Log.i("AI_OUTPUT", "AI_TURN_FINISHED");
+        } catch (RuntimeException ignored) {
+            // Local JVM tests do not mock android.util.Log.
+        }
     }
 
     private void handleAIResponse(String requestId, AIResponse response, AICallback callback) {
@@ -546,7 +558,15 @@ public class AISubsystem {
                 requestManager.transition(requestId, AIRequestState.THINKING, callback);
                 
                 // Technical visibility: Inform the user which tool is running
-                Tuils.sendOutput(Color.GRAY, appContext, "[executing] " + tool.name, TerminalManager.CATEGORY_OUTPUT);
+                if (appContext != null) {
+                    Tuils.sendOutput(Color.GRAY, appContext, "[executing] " + tool.name, TerminalManager.CATEGORY_OUTPUT);
+                }
+
+                if (appContext == null && toolExecutor instanceof AndroidToolExecutor) {
+                    callback.onResponse(AIResponse.error(requestId, "Tool execution requires app context"));
+                    requestManager.finishToolExecution(requestId, false);
+                    return;
+                }
                 
                 String output = toolExecutor.execute(appContext, tool, toolCall.argumentsJson);
                 conversationManager.append(ConversationTurn.tool(toolCall.callId, toolCall.toolName, output != null ? output : "[done]"));
@@ -558,14 +578,12 @@ public class AISubsystem {
             }
         };
 
-        // PERMISSION FLOW REPAIR: 
-        // 1. system.execute_command should NOT ask for permission (it's the core engine)
-        // 2. READ_ONLY and LAUNCH_ONLY should NOT ask for permission
-        // 3. Honoring user preference for STATE_CHANGING tools
-        boolean requireConfirmation = XMLPrefsManager.getBoolean(Ai.confirm_state_changing);
+        boolean requireConfirmation = true;
+        if (appContext != null) {
+            requireConfirmation = XMLPrefsManager.getBoolean(Ai.confirm_state_changing);
+        }
         
         if (tool.riskClass == ToolRiskClass.READ_ONLY || 
-            tool.riskClass == ToolRiskClass.LAUNCH_ONLY || 
             "system.execute_command".equals(tool.name) ||
             !requireConfirmation) {
             runTool.run();
@@ -579,6 +597,7 @@ public class AISubsystem {
             conversationManager.append(ConversationTurn.tool(toolCall.callId, toolCall.toolName, "[user declined]"));
             executeToolAtIndex(requestId, toolCalls, index + 1, callback);
         };
-        callback.onResponse(AIResponse.text(requestId, "[AI wants to] " + tool.name + "\nRun? (Enter to confirm)"));
+        String label = tool.description != null && tool.description.length() > 0 ? tool.description : tool.name;
+        callback.onResponse(AIResponse.text(requestId, "[AI wants to] " + label + "\nRun? (Enter to confirm)"));
     }
 }

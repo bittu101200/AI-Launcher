@@ -143,15 +143,14 @@ public class NotificationAttentionDecider {
         }
     }
 
-    public boolean shouldDisplay(StatusBarNotification sbn, CharSequence renderedText) {
+    public boolean shouldDisplay(StatusBarNotification sbn, CharSequence renderedText, NotificationContentResolver.ResolvedContent resolvedContent) {
         if (sbn == null) return false;
 
         Notification notification = sbn.getNotification();
         if (notification == null) return false;
 
-        NotificationContentResolver.ResolvedContent resolved = NotificationContentResolver.resolve(sbn);
-        String title = resolved.title;
-        String text = resolved.text;
+        String title = resolvedContent.title;
+        String text = resolvedContent.text;
 
         Candidate candidate = new Candidate.Builder()
             .setSource("system")
@@ -161,7 +160,7 @@ public class NotificationAttentionDecider {
             .setTitle(title)
             .setText(text)
             .setRenderedText(renderedText)
-            .setGroupSummary(isGroupSummary(notification, title, text) && !resolved.resolvedFromMessages)
+            .setGroupSummary(isGroupSummary(notification, title, text) && !resolvedContent.resolvedFromMessages)
             .setHasProgress(hasProgress(notification))
             .setHasReplyAction(hasReplyAction(notification))
             .build();

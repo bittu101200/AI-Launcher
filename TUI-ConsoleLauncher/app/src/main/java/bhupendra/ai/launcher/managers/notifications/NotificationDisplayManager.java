@@ -27,6 +27,7 @@ public class NotificationDisplayManager {
     private final Context appContext;
     private final NotificationAttentionDecider attentionDecider;
     private final Map<String, Long> recentDisplays = new HashMap<>();
+    private final Map<String, String> appLabelCache = new HashMap<>();
 
     private NotificationDisplayManager(Context context) {
         this.appContext = context.getApplicationContext();
@@ -40,16 +41,16 @@ public class NotificationDisplayManager {
         return instance;
     }
 
-    public boolean dispatchSystemNotification(StatusBarNotification sbn, CharSequence renderedText, PendingIntent action, Parcelable longAction) {
-        if (!attentionDecider.shouldDisplay(sbn, renderedText)) {
-            debug("suppressed attention", sbn, renderedText);
+    public boolean dispatchSystemNotification(StatusBarNotification sbn, CharSequence renderedText, PendingIntent action, Parcelable longAction, NotificationContentResolver.ResolvedContent resolvedContent) {
+        if (!attentionDecider.shouldDisplay(sbn, renderedText, resolvedContent)) {
+            debug("suppressed attention", sbn, renderedText, resolvedContent);
             return false;
         }
         if (shouldSuppressDuplicate(buildSystemFingerprint(sbn, renderedText))) {
-            debug("suppressed duplicate", sbn, renderedText);
+            debug("suppressed duplicate", sbn, renderedText, resolvedContent);
             return false;
         }
-        debug("dispatch", sbn, renderedText);
+        debug("dispatch", sbn, renderedText, resolvedContent);
         Tuils.sendOutput(appContext, renderedText, TerminalManager.CATEGORY_NO_COLOR, action, longAction);
         return true;
     }
@@ -120,9 +121,14 @@ public class NotificationDisplayManager {
 
     private String resolveAppName(String packageName) {
         if (packageName == null || packageName.length() == 0) return "";
+        String cached = appLabelCache.get(packageName);
+        if (cached != null) return cached;
         try {
-            return appContext.getPackageManager().getApplicationInfo(packageName, 0).loadLabel(appContext.getPackageManager()).toString();
+            String label = appContext.getPackageManager().getApplicationInfo(packageName, 0).loadLabel(appContext.getPackageManager()).toString();
+            appLabelCache.put(packageName, label);
+            return label;
         } catch (PackageManager.NameNotFoundException e) {
+            appLabelCache.put(packageName, packageName);
             return packageName;
         }
     }
@@ -132,18 +138,17 @@ public class NotificationDisplayManager {
         return TextUtils.isEmpty(value) ? "" : value.toString().trim();
     }
 
-    private void debug(String stage, StatusBarNotification sbn, CharSequence renderedText) {
+    private void debug(String stage, StatusBarNotification sbn, CharSequence renderedText, NotificationContentResolver.ResolvedContent resolvedContent) {
         if (sbn == null) return;
         String packageName = sbn.getPackageName();
         if (!NotificationContentResolver.isMessagingPackage(packageName)) return;
-        NotificationContentResolver.ResolvedContent resolved = NotificationContentResolver.resolve(sbn);
         Log.d(
             DEBUG_TAG,
             stage
                 + " pkg=" + packageName
                 + " key=" + sbn.getKey()
-                + " title=" + resolved.title
-                + " text=" + resolved.text
+                + " title=" + (resolvedContent != null ? resolvedContent.title : "")
+                + " text=" + (resolvedContent != null ? resolvedContent.text : "")
                 + " rendered=" + safe(renderedText)
         );
     }

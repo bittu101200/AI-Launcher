@@ -3,7 +3,6 @@ package bhupendra.ai.launcher.ai.providers;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import java.io.IOException;
-import java.util.concurrent.TimeUnit;
 import okhttp3.*;
 import bhupendra.ai.launcher.ai.*;
 import android.util.Log;
@@ -24,10 +23,7 @@ public class OpenAIProvider implements AIProvider {
         this.apiKey = apiKey;
         this.baseUrl = (baseUrl != null && !baseUrl.isEmpty()) ? baseUrl : DEFAULT_BASE;
         this.model = (model != null && !model.isEmpty()) ? model : DEFAULT_MODEL;
-        this.client = new OkHttpClient.Builder()
-            .connectTimeout(10, TimeUnit.SECONDS)
-            .readTimeout(30, TimeUnit.SECONDS)
-            .build();
+        this.client = SharedHttpClient.get();
     }
 
     @Override

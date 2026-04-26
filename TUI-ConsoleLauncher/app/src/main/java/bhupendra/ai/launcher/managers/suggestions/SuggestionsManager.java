@@ -7,6 +7,7 @@ import android.app.Activity;
 import android.content.Context;
 import android.graphics.Color;
 import android.os.Build;
+import android.os.HandlerThread;
 import android.os.Handler;
 import android.os.Looper;
 import android.view.Gravity;
@@ -21,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -58,7 +60,6 @@ import bhupendra.ai.launcher.managers.xml.options.Notifications;
 import bhupendra.ai.launcher.managers.xml.options.Reply;
 import bhupendra.ai.launcher.managers.xml.options.Rss;
 import bhupendra.ai.launcher.managers.xml.options.Suggestions;
-import bhupendra.ai.launcher.tuils.StoppableThread;
 import bhupendra.ai.launcher.tuils.Tuils;
 
 import static bhupendra.ai.launcher.commands.CommandTuils.xmlPrefsEntrys;
@@ -103,7 +104,9 @@ public class SuggestionsManager {
     };
 
     private MainPack pack;
-    private StoppableThread lastSuggestionThread;
+    private HandlerThread suggestionWorkerThread;
+    private Handler suggestionWorkerHandler;
+    private int suggestionGeneration = 0;
     private Handler handler = new Handler();
 
     private RemoverRunnable removeAllSuggestions;
@@ -127,6 +130,23 @@ public class SuggestionsManager {
     private AlgMap.Alg alg;
 
     private int quickCompare;
+
+    private static final long DIR_CACHE_TTL_MS = 3000L;
+    private final HashMap<String, DirCacheEntry> dirCache = new HashMap<>();
+
+    private static class DirCacheEntry {
+        final String[] files;
+        final long timestamp;
+
+        DirCacheEntry(String[] files) {
+            this.files = files;
+            this.timestamp = System.currentTimeMillis();
+        }
+
+        boolean isExpired() {
+            return System.currentTimeMillis() - timestamp > DIR_CACHE_TTL_MS;
+        }
+    }
 
     public SuggestionsManager(LinearLayout suggestionsView, MainPack mainPack, TerminalManager mTerminalAdapter) {
         this.suggestionsView = suggestionsView;
@@ -153,6 +173,10 @@ public class SuggestionsManager {
         clickToLaunch = XMLPrefsManager.getBoolean(Suggestions.click_to_launch);
 
         minCmdPriority = XMLPrefsManager.getInt(Suggestions.noinput_min_command_priority);
+
+        suggestionWorkerThread = new HandlerThread("SuggestionWorker");
+        suggestionWorkerThread.start();
+        suggestionWorkerHandler = new Handler(suggestionWorkerThread.getLooper());
 
         spaces = UIManager.getListOfIntValues(XMLPrefsManager.get(Suggestions.suggestions_spaces), 4, 0);
 
@@ -314,7 +338,8 @@ public class SuggestionsManager {
 
     private void stop() {
         handler.removeCallbacksAndMessages(null);
-        if(lastSuggestionThread != null) lastSuggestionThread.interrupt();
+        suggestionWorkerHandler.removeCallbacksAndMessages(null);
+        suggestionGeneration++;
     }
 
     public void dispose() {
@@ -465,17 +490,17 @@ public class SuggestionsManager {
             suggestionViewParams.gravity = Gravity.CENTER_VERTICAL;
         }
 
-        if(suggestionRunnable == null) {
+        if (suggestionRunnable == null) {
             suggestionRunnable = new SuggestionRunnable(pack, suggestionsView, suggestionViewParams, (HorizontalScrollView) suggestionsView.getParent().getParent(), spaces);
         }
 
-        if (lastSuggestionThread != null) {
-            lastSuggestionThread.interrupt();
-            suggestionRunnable.interrupt();
-            if(handler != null) {
-                handler.removeCallbacks(suggestionRunnable);
-            }
+        suggestionRunnable.interrupt();
+        if(handler != null) {
+            handler.removeCallbacks(suggestionRunnable);
         }
+        suggestionWorkerHandler.removeCallbacksAndMessages(null);
+
+        final int thisGeneration = ++suggestionGeneration;
 
         try {
             int l = input.length();
@@ -509,114 +534,94 @@ public class SuggestionsManager {
             FileSystemManager.toFile(e);
         }
 
-        lastSuggestionThread = new StoppableThread() {
-            @Override
-            public void run() {
-
-                super.run();
-
-                String before, lastWord;
-                String lastInput;
-                if(multipleCmdSeparator.length() > 0) {
-                    String[] split = input.split(multipleCmdSeparator);
-                    if(split.length == 0) lastInput = input;
-                    else lastInput = split[split.length - 1];
-                } else {
-                    lastInput = input;
-                }
-
-                int lastSpace = lastInput.lastIndexOf(Tuils.SPACE);
-                if(lastSpace == -1) {
-                    before = Tuils.EMPTYSTRING;
-                    lastWord = lastInput;
-                } else {
-                    before = lastInput.substring(0,lastSpace);
-                    lastWord = lastInput.substring(lastSpace + 1,lastInput.length());
-                }
-
-                final List<SuggestionsManager.Suggestion> suggestions;
-                try {
-                    if (mode == Mode.COMMAND) {
-                        suggestions = getSuggestions(before, lastWord);
-                    } else {
-                        suggestions = getInteractiveSuggestions(input);
-                    }
-                } catch (Exception e) {
-                    Tuils.log(e);
-                    FileSystemManager.toFile(e);
-                    return;
-                }
-
-                if(suggestions.size() == 0) {
-                    ((Activity) pack.context).runOnUiThread(removeAllSuggestions);
-                    removeAllSuggestions.isGoingToRun = true;
-
-                    if(hideViewValue == HideSuggestionViewValues.ALWAYS || (hideViewValue == HideSuggestionViewValues.TRUE && input.length() == 0)) {
-                        hide();
-                    }
-
-                    return;
-                } else {
-                    if(removeAllSuggestions.isGoingToRun) {
-                        removeAllSuggestions.stop = true;
-                    }
-
-                    show();
-                }
-
-                if (Thread.interrupted()) {
-                    suggestionRunnable.interrupt();
-                    return;
-                }
-
-                final TextView[] existingViews = new TextView[suggestionsView.getChildCount()];
-                for (int count = 0; count < existingViews.length; count++) {
-                    existingViews[count] = (TextView) suggestionsView.getChildAt(count);
-                }
-
-                if (Thread.interrupted()) {
-                    suggestionRunnable.interrupt();
-                    return;
-                }
-
-                int n = suggestions.size() - existingViews.length;
-                TextView[] toAdd = null;
-                TextView[] toRecycle = null;
-                if (n == 0) {
-                    toRecycle = existingViews;
-                    toAdd = null;
-                } else if (n > 0) {
-                    toRecycle = existingViews;
-                    toAdd = new TextView[n];
-                    for (int count = 0; count < toAdd.length; count++) {
-                        toAdd[count] = getSuggestionView(pack.context);
-                    }
-                } else if (n < 0) {
-                    toAdd = null;
-                    toRecycle = new TextView[suggestions.size()];
-                    System.arraycopy(existingViews, 0, toRecycle, 0, toRecycle.length);
-                }
-
-                if (Thread.interrupted()) {
-                    suggestionRunnable.interrupt();
-                    return;
-                }
-
-                suggestionRunnable.setN(n);
-                suggestionRunnable.setSuggestions(suggestions);
-                suggestionRunnable.setToAdd(toAdd);
-                suggestionRunnable.setToRecycle(toRecycle);
-                suggestionRunnable.reset();
-                ((Activity) pack.context).runOnUiThread(suggestionRunnable);
+        suggestionWorkerHandler.post(() -> {
+            String before, lastWord;
+            String lastInput;
+            if(multipleCmdSeparator.length() > 0) {
+                String[] split = input.split(multipleCmdSeparator);
+                if(split.length == 0) lastInput = input;
+                else lastInput = split[split.length - 1];
+            } else {
+                lastInput = input;
             }
-        };
 
-        try {
-            lastSuggestionThread.start();
-        } catch (InternalError e) {
-            Tuils.log(e);
-            FileSystemManager.toFile(e);
-        }
+            int lastSpace = lastInput.lastIndexOf(Tuils.SPACE);
+            if(lastSpace == -1) {
+                before = Tuils.EMPTYSTRING;
+                lastWord = lastInput;
+            } else {
+                before = lastInput.substring(0,lastSpace);
+                lastWord = lastInput.substring(lastSpace + 1,lastInput.length());
+            }
+
+            final List<SuggestionsManager.Suggestion> suggestions;
+            try {
+                if (mode == Mode.COMMAND) {
+                    suggestions = getSuggestions(before, lastWord);
+                } else {
+                    suggestions = getInteractiveSuggestions(input);
+                }
+            } catch (Exception e) {
+                Tuils.log(e);
+                FileSystemManager.toFile(e);
+                return;
+            }
+
+            if (thisGeneration != suggestionGeneration) return;
+
+            if(suggestions.size() == 0) {
+                ((Activity) pack.context).runOnUiThread(removeAllSuggestions);
+                removeAllSuggestions.isGoingToRun = true;
+
+                if(hideViewValue == HideSuggestionViewValues.ALWAYS || (hideViewValue == HideSuggestionViewValues.TRUE && input.length() == 0)) {
+                    ((Activity) pack.context).runOnUiThread(this::hide);
+                }
+
+                return;
+            } else {
+                if(removeAllSuggestions.isGoingToRun) {
+                    removeAllSuggestions.stop = true;
+                }
+
+                ((Activity) pack.context).runOnUiThread(this::show);
+            }
+
+            if (thisGeneration != suggestionGeneration) return;
+
+            final TextView[] existingViews = new TextView[suggestionsView.getChildCount()];
+            for (int count = 0; count < existingViews.length; count++) {
+                existingViews[count] = (TextView) suggestionsView.getChildAt(count);
+            }
+
+            if (thisGeneration != suggestionGeneration) return;
+
+            int n = suggestions.size() - existingViews.length;
+            TextView[] toAdd = null;
+            TextView[] toRecycle = null;
+            if (n == 0) {
+                toRecycle = existingViews;
+                toAdd = null;
+            } else if (n > 0) {
+                toRecycle = existingViews;
+                toAdd = new TextView[n];
+                for (int count = 0; count < toAdd.length; count++) {
+                    toAdd[count] = getSuggestionView(pack.context);
+                }
+            } else if (n < 0) {
+                toAdd = null;
+                toRecycle = new TextView[suggestions.size()];
+                System.arraycopy(existingViews, 0, toRecycle, 0, toRecycle.length);
+            }
+
+            if (thisGeneration != suggestionGeneration) return;
+
+            suggestionRunnable.setN(n);
+            suggestionRunnable.setSuggestions(suggestions);
+            suggestionRunnable.setToAdd(toAdd);
+            suggestionRunnable.setToRecycle(toRecycle);
+            suggestionRunnable.reset();
+            ((Activity) pack.context).runOnUiThread(suggestionRunnable);
+        });
     }
 
 //    there's always a space between beforelastspace and lastword
@@ -1060,11 +1065,19 @@ public class SuggestionsManager {
         }
 
         try {
-            String[] files = dir.list();
-            if(files == null) {
-                return;
+            String[] files;
+            String cacheKey = dir.getAbsolutePath();
+            DirCacheEntry cached = dirCache.get(cacheKey);
+            if (cached != null && !cached.isExpired()) {
+                files = cached.files;
+            } else {
+                files = dir.list();
+                if(files == null) {
+                    return;
+                }
+                Arrays.sort(files);
+                dirCache.put(cacheKey, new DirCacheEntry(files));
             }
-            Arrays.sort(files);
             for (String s : files) {
                 suggestions.add(new Suggestion(beforeLastSpace , s, false, Suggestion.TYPE_FILE, afterLastSpaceHolder));
             }

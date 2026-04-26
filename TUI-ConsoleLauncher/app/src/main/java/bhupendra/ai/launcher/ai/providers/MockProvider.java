@@ -25,6 +25,9 @@ public class MockProvider implements AIProvider {
     public void complete(AIRequest request, String requestId, AICallback callback) {
         callback.onStateChange(requestId, AIRequestState.THINKING);
         executor.execute(() -> {
+            try {
+                Thread.sleep(25);
+            } catch (InterruptedException ignored) {}
             AIResponse response = fixedToolCalls != null
                 ? AIResponse.toolCalls(requestId, fixedToolCalls)
                 : AIResponse.text(requestId, fixedText != null ? fixedText : "");

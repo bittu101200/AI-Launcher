@@ -3,7 +3,6 @@ package bhupendra.ai.launcher.ai.providers;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import java.io.IOException;
-import java.util.concurrent.TimeUnit;
 import okhttp3.*;
 import bhupendra.ai.launcher.ai.*;
 
@@ -18,10 +17,7 @@ public class ClaudeProvider implements AIProvider {
 
     public ClaudeProvider(String apiKey) {
         this.apiKey = apiKey;
-        this.client = new OkHttpClient.Builder()
-            .connectTimeout(10, TimeUnit.SECONDS)
-            .readTimeout(30, TimeUnit.SECONDS)
-            .build();
+        this.client = SharedHttpClient.get();
     }
 
     @Override
