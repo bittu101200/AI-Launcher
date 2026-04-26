@@ -1,30 +1,46 @@
 package bhupendra.ai.launcher.ai;
 
+import bhupendra.ai.launcher.UIManager;
+import bhupendra.ai.launcher.tuils.Tuils;
+import android.graphics.Color;
 import bhupendra.ai.launcher.managers.FileSystemManager;
 import android.content.Context;
+import android.content.Intent;
 import android.app.ActivityManager;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.ArrayList;
 import bhupendra.ai.launcher.managers.xml.XMLPrefsManager;
 import bhupendra.ai.launcher.managers.xml.classes.XMLPrefsSave;
 import bhupendra.ai.launcher.managers.xml.options.Ai;
 import bhupendra.ai.launcher.commands.main.MainPack;
 import bhupendra.ai.launcher.tuils.TermuxManager;
 import bhupendra.ai.launcher.ai.tools.*;
+import bhupendra.ai.launcher.ai.providers.MockProvider;
 import bhupendra.ai.launcher.managers.DeviceStateManager;
+import bhupendra.ai.launcher.managers.TerminalManager;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
 import java.util.Map;
 import java.util.HashMap;
 import java.util.Collections;
+import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
 public class AISubsystem {
+    private static final String PROMPT_APPENDIX =
+        "\nTASK EXECUTION POLICY:\n" +
+        "1. Classify the request before using tools: TUI command, config change, app action, communication, web lookup, or clarification.\n" +
+        "2. Use the fewest tools possible. Do not probe unrelated tools to guess intent.\n" +
+        "3. If the user names an exact or obvious config target, call system.config directly. Use system.search_config only when the exact key is genuinely unknown.\n" +
+        "4. For UI visibility requests such as notes, ram, battery, time, weather, storage, unlock, or device name, prefer the matching show_* config key.\n" +
+        "5. Only inspect notifications when the task is actually about notifications.\n" +
+        "6. If the target is ambiguous, ask one short clarifying question before exploratory tool calls.\n";
 
     private static volatile AISubsystem instance;
 
-    private final AIProvider provider;
+    private AIProvider provider;
     private final Context appContext;
     private final ToolExecutor toolExecutor;
     private final ToolRegistry toolRegistry;
@@ -39,6 +55,7 @@ public class AISubsystem {
     private volatile boolean awaitingConfirmation;
     private volatile Runnable pendingConfirmAction;
     private volatile Runnable pendingDeclineAction;
+    private volatile ChoiceCallback pendingChoiceCallback;
 
     public interface AIListener {
         void onAIStateChanged(boolean running);
@@ -53,11 +70,65 @@ public class AISubsystem {
     }
     
     public synchronized void requestUserChoice(List<String> options, ChoiceCallback callback) {
-        // Will be re-integrated into the polished bar in the next step
+        requestUserChoice("Choose an option", options, callback);
+    }
+
+    public synchronized void requestUserChoice(String prompt, List<String> options, ChoiceCallback callback) {
+        pendingChoiceCallback = callback;
+        if (appContext == null) {
+            if (callback != null) callback.onSelection(null);
+            return;
+        }
+
+        ArrayList<String> choiceOptions = new ArrayList<>(options != null ? options : Collections.emptyList());
+        Intent intent = new Intent(UIManager.ACTION_SHOW_CHOICE_SUGGESTIONS);
+        intent.putStringArrayListExtra(UIManager.EXTRA_SUGGESTION_OPTIONS, choiceOptions);
+        intent.putExtra(UIManager.EXTRA_SUGGESTION_PROMPT, prompt);
+        LocalBroadcastManager.getInstance(appContext).sendBroadcast(intent);
+        Tuils.sendOutput(Color.GRAY, appContext, "[interaction] choice mode: " + prompt, TerminalManager.CATEGORY_OUTPUT);
+    }
+
+    public synchronized void requestToolParameter(String fieldName, String prompt, String prefill, ChoiceCallback callback) {
+        pendingChoiceCallback = callback;
+        if (appContext == null) {
+            if (callback != null) callback.onSelection(null);
+            return;
+        }
+
+        Intent intent = new Intent(UIManager.ACTION_SHOW_PARAMETER_SUGGESTIONS);
+        intent.putExtra(UIManager.EXTRA_SUGGESTION_FIELD, fieldName);
+        intent.putExtra(UIManager.EXTRA_SUGGESTION_PROMPT, prompt);
+        intent.putExtra(UIManager.EXTRA_SUGGESTION_PREFILL, prefill);
+        LocalBroadcastManager.getInstance(appContext).sendBroadcast(intent);
+        Tuils.sendOutput(Color.GRAY, appContext, "[interaction] parameter mode: " + fieldName, TerminalManager.CATEGORY_OUTPUT);
+    }
+
+    public synchronized void resolvePendingUserInteraction(String value) {
+        ChoiceCallback callback = pendingChoiceCallback;
+        pendingChoiceCallback = null;
+        broadcastSuggestionModeReset();
+        if (callback != null) callback.onSelection(value);
+    }
+
+    public synchronized void cancelPendingUserInteraction() {
+        ChoiceCallback callback = pendingChoiceCallback;
+        pendingChoiceCallback = null;
+        broadcastSuggestionModeReset();
+        if (callback != null) callback.onSelection(null);
+    }
+
+    private void broadcastSuggestionModeReset() {
+        if (appContext == null) return;
+        Intent intent = new Intent(UIManager.ACTION_RESET_SUGGESTIONS_MODE);
+        LocalBroadcastManager.getInstance(appContext).sendBroadcast(intent);
     }
 
     public interface ChoiceCallback {
         void onSelection(String choice);
+    }
+
+    public boolean hasPendingUserInteraction() {
+        return pendingChoiceCallback != null;
     }
 
     public static AISubsystem getInstance() { return instance; }
@@ -80,6 +151,31 @@ public class AISubsystem {
         }
 
         instance = this;
+    }
+
+    public static AIProvider buildProvider(String providerName) {
+        String key = XMLPrefsManager.get(Ai.api_key);
+        String model = XMLPrefsManager.get(Ai.model);
+
+        switch (providerName.toLowerCase()) {
+            case "opencode_zen": {
+                String zenModel = (model != null && !model.isEmpty()) ? model : "minimax-m2.5-free";
+                return new bhupendra.ai.launcher.ai.providers.OpenCodeZenProvider(key, zenModel);
+            }
+            case "openai":
+            case "ollama": {
+                String baseUrl = XMLPrefsManager.get(Ai.base_url);
+                return new bhupendra.ai.launcher.ai.providers.OpenAIProvider(key, baseUrl, model);
+            }
+            case "gemini": {
+                String geminiModel = (model != null && !model.isEmpty()) ? model : "gemini-flash-latest";
+                return new bhupendra.ai.launcher.ai.providers.OpenAIProvider(key, "https://generativelanguage.googleapis.com/v1beta/openai", geminiModel);
+            }
+            case "claude":
+                return new bhupendra.ai.launcher.ai.providers.ClaudeProvider(key);
+            default:
+                return new MockProvider("AI is in mock mode. Set provider in ai.xml.");
+        }
     }
 
     private void registerSystemTools() {
@@ -114,13 +210,13 @@ public class AISubsystem {
         configArgs.put("value", "The value to set (optional if action is get)");
         toolRegistry.register(ToolRegistry.Tier.SYSTEM, new SystemConfigTool(
             "system.config",
-            "Read or update application settings.",
+            "Read or update application settings when the target key is already known or obvious. Prefer this over search for direct requests like show_notes=false.",
             configArgs,
             ToolRiskClass.STATE_CHANGING));
 
         toolRegistry.register(ToolRegistry.Tier.SYSTEM, new SystemSearchConfigTool(
             "system.search_config",
-            "Search for available configuration keys and their current values.",
+            "Search configuration keys only when the exact key is genuinely unknown.",
             Collections.singletonMap("query", "Search term for settings"),
             ToolRiskClass.READ_ONLY));
 
@@ -147,6 +243,7 @@ public class AISubsystem {
 
         toolRegistry.register(ToolRegistry.Tier.SYSTEM, new SystemBeepTool());
         toolRegistry.register(ToolRegistry.Tier.SYSTEM, new SystemRequestUserChoiceTool());
+        toolRegistry.register(ToolRegistry.Tier.SYSTEM, new SystemRequestUserInputTool());
 
         toolRegistry.register(ToolRegistry.Tier.SYSTEM, new SystemGetAppFunctionsTool());
         toolRegistry.register(ToolRegistry.Tier.SYSTEM, new SystemExecuteAppFunctionTool());
@@ -237,6 +334,7 @@ public class AISubsystem {
     public void cancel() { 
         String rid = lastRequestId.get();
         if (rid != null) requestManager.cancel(rid);
+        handleTerminalState(rid, AIRequestState.CANCELLED);
     }
     public void dispose() { cancel(); }
     public bhupendra.ai.launcher.ai.platform.LauncherIndex getLauncherIndex() { return launcherIndex; }
@@ -251,18 +349,59 @@ public class AISubsystem {
     public boolean isInFlight() { return requestManager.isInFlight(); }
     public boolean isAwaitingConfirmation() { return awaitingConfirmation; }
 
+    public synchronized void refresh() {
+        if (appContext == null) return;
+        
+        String providerName = XMLPrefsManager.get(Ai.provider);
+        
+        android.util.Log.d("AI_REFRESH", "Refreshing AI subsystem: provider=" + providerName);
+        this.provider = buildProvider(providerName);
+        requestManager.setProvider(this.provider);
+    }
+
     public void confirmCurrentTool() {
-        if (awaitingConfirmation && pendingConfirmAction != null) {
-            awaitingConfirmation = false;
-            pendingConfirmAction.run();
+        Runnable confirmAction = null;
+        synchronized (this) {
+            if (awaitingConfirmation && pendingConfirmAction != null) {
+                confirmAction = pendingConfirmAction;
+                clearPendingConfirmationState();
+            }
+        }
+        if (confirmAction != null) {
+            confirmAction.run();
         }
     }
 
     public void declineCurrentTool() {
-        if (awaitingConfirmation && pendingDeclineAction != null) {
-            awaitingConfirmation = false;
-            pendingDeclineAction.run();
+        Runnable declineAction = null;
+        synchronized (this) {
+            if (awaitingConfirmation && pendingDeclineAction != null) {
+                declineAction = pendingDeclineAction;
+                clearPendingConfirmationState();
+            }
         }
+        if (declineAction != null) {
+            declineAction.run();
+        }
+    }
+
+    private synchronized void clearPendingConfirmationState() {
+        awaitingConfirmation = false;
+        pendingConfirmAction = null;
+        pendingDeclineAction = null;
+    }
+
+    private void handleTerminalState(String requestId, AIRequestState state) {
+        if (requestId == null) return;
+        clearPendingConfirmationState();
+        cancelPendingUserInteraction();
+        notifyListeners(false);
+        if (state == AIRequestState.COMPLETED
+                || state == AIRequestState.FAILED
+                || state == AIRequestState.CANCELLED) {
+            android.util.Log.i("AI_OUTPUT", "AI_TURN_FINISHED");
+        }
+        lastRequestId.compareAndSet(requestId, null);
     }
 
     private void handleAIResponse(String requestId, AIResponse response, AICallback callback) {
@@ -275,13 +414,9 @@ public class AISubsystem {
             }
             callback.onResponse(response);
             requestManager.finishToolExecution(requestId, true);
-            notifyListeners(false);
-            android.util.Log.i("AI_OUTPUT", "AI_TURN_FINISHED");
         } else if (response.type == AIResponse.Type.ERROR) {
             callback.onResponse(response);
             requestManager.finishToolExecution(requestId, false);
-            notifyListeners(false);
-            android.util.Log.i("AI_OUTPUT", "AI_TURN_FINISHED");
         }
     }
 
@@ -316,14 +451,30 @@ public class AISubsystem {
         requestManager.submit(request, new AICallback() {
             @Override public void onToken(String rid, String token) { callback.onToken(rid, token); }
             @Override public void onResponse(AIResponse response) { handleAIResponse(requestId, response, callback); }
-            @Override public void onStateChange(String rid, AIRequestState s) { callback.onStateChange(rid, s); }
+            @Override public void onStateChange(String rid, AIRequestState s) {
+                callback.onStateChange(rid, s);
+                if (s == AIRequestState.COMPLETED
+                        || s == AIRequestState.CANCELLED
+                        || s == AIRequestState.TIMED_OUT_CONNECT
+                        || s == AIRequestState.TIMED_OUT_INACTIVITY
+                        || s == AIRequestState.FAILED) {
+                    handleTerminalState(rid, s);
+                }
+            }
         });
         return requestId;
     }
 
     private String getSystemPrompt() {
-        String basePrompt = "";
+        String bundledPrompt = "";
+        String localPrompt = "";
         java.io.File promptFile = new java.io.File(FileSystemManager.getFolder(), "ai_system_prompt.md");
+        try {
+            if (appContext != null) {
+                java.io.InputStream in = appContext.getAssets().open("ai_system_prompt.md");
+                bundledPrompt = FileSystemManager.inputStreamToString(in);
+            }
+        } catch (Exception e) {}
         try {
             if (promptFile.exists()) {
                 java.io.BufferedReader reader = new java.io.BufferedReader(new java.io.FileReader(promptFile));
@@ -331,9 +482,23 @@ public class AISubsystem {
                 String line;
                 while ((line = reader.readLine()) != null) sb.append(line).append("\n");
                 reader.close();
-                basePrompt = sb.toString();
+                localPrompt = sb.toString();
             }
         } catch (Exception e) {}
+
+        String basePrompt = bundledPrompt;
+        if (basePrompt.isEmpty()) {
+            basePrompt = localPrompt;
+        } else if (!localPrompt.isEmpty()) {
+            basePrompt = basePrompt + "\nLOCAL PROMPT OVERRIDES:\n" + localPrompt;
+        }
+
+        if (basePrompt.isEmpty() && appContext != null) {
+            try {
+                java.io.InputStream in = appContext.getAssets().open("ai_system_prompt.md");
+                basePrompt = FileSystemManager.inputStreamToString(in);
+            } catch (Exception ignored) {}
+        }
         if (basePrompt.isEmpty()) basePrompt = "You are an AI assistant.";
 
         StringBuilder cmds = new StringBuilder();
@@ -357,7 +522,7 @@ public class AISubsystem {
             } catch (Exception ignored) {}
             pulseContent = pulse.toString();
         }
-        return basePrompt.replace("{{SYSTEM_PULSE}}", pulseContent);
+        return basePrompt.replace("{{SYSTEM_PULSE}}", pulseContent) + PROMPT_APPENDIX;
     }
 
     private void beginToolExecution(final String requestId, List<ToolCall> toolCalls, final AICallback callback) {
@@ -379,6 +544,10 @@ public class AISubsystem {
         Runnable runTool = () -> {
             try {
                 requestManager.transition(requestId, AIRequestState.THINKING, callback);
+                
+                // Technical visibility: Inform the user which tool is running
+                Tuils.sendOutput(Color.GRAY, appContext, "[executing] " + tool.name, TerminalManager.CATEGORY_OUTPUT);
+                
                 String output = toolExecutor.execute(appContext, tool, toolCall.argumentsJson);
                 conversationManager.append(ConversationTurn.tool(toolCall.callId, toolCall.toolName, output != null ? output : "[done]"));
                 if (output != null && !output.isEmpty()) callback.onResponse(AIResponse.toolOutput(requestId, output, toolCall));
@@ -392,17 +561,21 @@ public class AISubsystem {
         // PERMISSION FLOW REPAIR: 
         // 1. system.execute_command should NOT ask for permission (it's the core engine)
         // 2. READ_ONLY and LAUNCH_ONLY should NOT ask for permission
+        // 3. Honoring user preference for STATE_CHANGING tools
+        boolean requireConfirmation = XMLPrefsManager.getBoolean(Ai.confirm_state_changing);
+        
         if (tool.riskClass == ToolRiskClass.READ_ONLY || 
             tool.riskClass == ToolRiskClass.LAUNCH_ONLY || 
-            "system.execute_command".equals(tool.name)) {
+            "system.execute_command".equals(tool.name) ||
+            !requireConfirmation) {
             runTool.run();
             return;
         }
 
         awaitingConfirmation = true;
-        pendingConfirmAction = () -> { awaitingConfirmation = false; runTool.run(); };
+        pendingConfirmAction = runTool;
         pendingDeclineAction = () -> {
-            awaitingConfirmation = false;
+            clearPendingConfirmationState();
             conversationManager.append(ConversationTurn.tool(toolCall.callId, toolCall.toolName, "[user declined]"));
             executeToolAtIndex(requestId, toolCalls, index + 1, callback);
         };

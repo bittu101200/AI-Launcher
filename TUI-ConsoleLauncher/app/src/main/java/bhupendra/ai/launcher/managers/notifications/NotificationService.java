@@ -71,6 +71,7 @@ public class NotificationService extends NotificationListenerService {
     PackageManager manager;
     ReplyManager replyManager;
     NotificationManager notificationManager;
+    NotificationDisplayManager notificationDisplayManager;
 
     private final Pattern formatPattern = Pattern.compile("%(?:\\[(\\d+)\\])?(?:\\[([^]]+)\\])?(?:(?:\\{)([a-zA-Z\\.\\:\\s]+)(?:\\})|([a-zA-Z\\.\\:]+))");
 
@@ -86,6 +87,7 @@ public class NotificationService extends NotificationListenerService {
     private void init() {
         try {
             notificationManager = NotificationManager.create(this);
+            notificationDisplayManager = NotificationDisplayManager.getInstance(this);
             XMLPrefsManager.loadCommons(this);
         } catch (Exception e) {
             Tuils.log(e);
@@ -124,26 +126,7 @@ public class NotificationService extends NotificationListenerService {
                             bhupendra.ai.launcher.ai.AISubsystem ai =
                                 bhupendra.ai.launcher.ai.AISubsystem.getInstance();
                             if (ai != null && ai.getJourneyManager().isJourneyNotification(notification)) {
-                                // Silently log to journey without terminal output
                                 ai.getJourneyManager().processNotification(sbn);
-                            } else if (ai != null && ai.isAvailable() && !ai.isInFlight()) {
-                                CharSequence ticker = notification.tickerText;
-                                if (ticker != null && ticker.length() > 0) {
-                                    String query = "[notification from " + sbn.getPackageName() + "] "
-                                        + ticker + " — urgent or actionable? One line reply.";
-                                    ai.submit(query, new bhupendra.ai.launcher.ai.AICallback() {
-                                        @Override public void onToken(String rid, String t) {}
-                                        @Override public void onResponse(bhupendra.ai.launcher.ai.AIResponse r) {
-                                            if (r.type == bhupendra.ai.launcher.ai.AIResponse.Type.TEXT
-                                                    && r.text != null && !r.text.isEmpty()) {
-                                                Tuils.sendOutput(Color.CYAN, getApplicationContext(),
-                                                    "[AI] " + r.text);
-                                            }
-                                        }
-                                        @Override public void onStateChange(String rid,
-                                            bhupendra.ai.launcher.ai.AIRequestState s) {}
-                                    });
-                                }
                             }
 
                             String pack = sbn.getPackageName();
@@ -284,11 +267,13 @@ public class NotificationService extends NotificationListenerService {
                                 Tuils.log(e);
                             }
 
-//                        Tuils.log("text", text);
-//                        Tuils.log("--------");
-
-                            if (ai != null && ai.getJourneyManager().shouldDisplay(sbn)) {
-                                Tuils.sendOutput(NotificationService.this.getApplicationContext(), s, TerminalManager.CATEGORY_NO_COLOR, click ? notification.contentIntent : null, longClick ? n : null);
+                            if (notificationDisplayManager != null) {
+                                notificationDisplayManager.dispatchSystemNotification(
+                                    sbn,
+                                    s,
+                                    click ? notification.contentIntent : null,
+                                    longClick ? n : null
+                                );
                             }
 
                             if(replyManager != null) replyManager.onNotification(sbn, s);
@@ -365,6 +350,8 @@ public class NotificationService extends NotificationListenerService {
             notificationManager.dispose();
             notificationManager = null;
         }
+
+        notificationDisplayManager = null;
 
         bgThread.interrupt();
         bgThread = null;

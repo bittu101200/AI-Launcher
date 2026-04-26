@@ -19,9 +19,9 @@ public class SystemExecuteAppFunctionTool extends BaseAITool {
 
     public SystemExecuteAppFunctionTool() {
         super("system.execute_app_function",
-              "Execute a specific discovered App Function (shortcut) within another app. You MUST run 'system.discover_app_capabilities' first to get the correct 'function_id'.",
+              "Execute a specific discovered App Function (shortcut) within another app. You can provide either the raw shortcut ID or the full 'id' from the Dynamic Library.",
               createParams(),
-              ToolRiskClass.STATE_CHANGING);
+              ToolRiskClass.LAUNCH_ONLY);
     }
 
     private static Map<String, String> createParams() {
@@ -33,9 +33,24 @@ public class SystemExecuteAppFunctionTool extends BaseAITool {
 
     @Override
     public String execute(Context context, JSONObject args) throws Exception {
-        String pkg = args.getString("package_name");
-        String functionId = args.getString("function_id");
+        String pkg = args.has("package_name") ? args.getString("package_name") : 
+                     (args.has("package") ? args.getString("package") : null);
+        String functionId = args.has("function_id") ? args.getString("function_id") : 
+                            (args.has("id") ? args.getString("id") : null);
         
+        if (pkg == null || functionId == null) {
+            return "[error: Missing required arguments. Expected 'package_name' and 'function_id']";
+        }
+        
+        // Clean up library ID format if present (shortcut:pkg:id)
+        if (functionId.startsWith("shortcut:" + pkg + ":")) {
+            functionId = functionId.substring(("shortcut:" + pkg + ":").length());
+        } else if (functionId.startsWith("shortcut:")) {
+            // Fallback for generic shortcut: prefix
+            String[] parts = functionId.split(":");
+            if (parts.length >= 3) functionId = parts[2];
+        }
+
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N_MR1) {
             return "[error: App Function execution requires Android 7.1 or higher]";
         }

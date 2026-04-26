@@ -2,9 +2,9 @@ package bhupendra.ai.launcher.ai;
 
 import android.content.Context;
 import android.graphics.Color;
-import bhupendra.ai.launcher.tuils.Tuils;
-
+import org.json.JSONObject;
 import bhupendra.ai.launcher.managers.TerminalManager;
+import bhupendra.ai.launcher.tuils.Tuils;
 
 public class AITrigger {
 
@@ -20,6 +20,10 @@ public class AITrigger {
         this.aiSubsystem = aiSubsystem;
         this.context = context;
         this.shellFallback = shellFallback;
+    }
+
+    public boolean triggerDirect(final String query) {
+        return submitQuery(query, null);
     }
 
     public boolean trigger(final String input) {
@@ -41,29 +45,36 @@ public class AITrigger {
             }
         }
 
+        return submitQuery(finalInput, input);
+    }
+
+    private boolean submitQuery(final String query, final String fallbackInput) {
+        if (aiSubsystem == null || !aiSubsystem.isAvailable()) return false;
+
         Tuils.sendOutput(Color.GRAY, context, "[thinking...]", TerminalManager.CATEGORY_OUTPUT);
 
-        aiSubsystem.submit(finalInput, new AICallback() {
+        aiSubsystem.submit(query, new AICallback() {
             private StringBuilder tokenBuffer = new StringBuilder();
             private final java.util.regex.Pattern TOOL_CALL_PATTERN = java.util.regex.Pattern.compile("^tool_[A-Za-z0-9_]+\\(.*\\)$", java.util.regex.Pattern.DOTALL);
 
             @Override public void onToken(String rid, String token) {
+                // Hold tokens until the final response so markdown is rendered consistently.
                 tokenBuffer.append(token);
-                // Buffer tool calls to avoid leaking them to UI
-                if (tokenBuffer.toString().trim().startsWith("tool_")) {
-                    return;
-                }
-                Tuils.sendOutput(Color.WHITE, context, token, TerminalManager.CATEGORY_AI);
             }
 
             @Override public void onResponse(AIResponse response) {
                 if (response.type == AIResponse.Type.TEXT && response.text != null) {
                     if (response.isToolOutput) {
-                        // Suppress tool results from UI, they are for AI consumption
-                        Tuils.log("Suppressed tool output: " + response.text);
+                        if (response.toolCall != null) {
+                            Tuils.sendOutput(Color.GRAY, context, buildToolStatus(response), TerminalManager.CATEGORY_OUTPUT);
+                        }
                         return;
                     }
                     String currentText = response.text.trim();
+                    if (currentText.startsWith("[AI wants to]")) {
+                        Tuils.sendOutput(Color.GRAY, context, response.text, TerminalManager.CATEGORY_OUTPUT);
+                        return;
+                    }
                     if (TOOL_CALL_PATTERN.matcher(currentText).matches()) {
                         return;
                     }
@@ -83,7 +94,7 @@ public class AITrigger {
                         break;
                     case TIMED_OUT_CONNECT:
                         Tuils.sendOutput(Color.YELLOW, context, "[AI unavailable \u2014 retrying as shell command]", TerminalManager.CATEGORY_OUTPUT);
-                        if (shellFallback != null) shellFallback.triggerShell(input);
+                        if (shellFallback != null && fallbackInput != null) shellFallback.triggerShell(fallbackInput);
                         break;
                     case TIMED_OUT_INACTIVITY:
                         Tuils.sendOutput(Color.YELLOW, context, "[AI response timed out]", TerminalManager.CATEGORY_OUTPUT);
@@ -98,5 +109,20 @@ public class AITrigger {
         });
 
         return true;
+    }
+
+    private String buildToolStatus(AIResponse response) {
+        try {
+            JSONObject args = new JSONObject(response.toolCall.argumentsJson);
+            if ("system.web_search_query".equals(response.toolCall.toolName)) {
+                return "[searching: " + args.optString("query", "...") + "]";
+            }
+            if ("system.web_fetch".equals(response.toolCall.toolName)) {
+                String url = args.optString("url", "...");
+                if (url.length() > 40) url = url.substring(0, 37) + "...";
+                return "[fetching: " + url + "]";
+            }
+        } catch (Exception ignored) {}
+        return "[executed: " + response.toolCall.toolName + "]";
     }
 }

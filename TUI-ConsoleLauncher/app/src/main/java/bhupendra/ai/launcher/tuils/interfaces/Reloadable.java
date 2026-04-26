@@ -17,6 +17,7 @@ public interface Reloadable {
 
     void reload();
     void addMessage(String header, String message);
+    default boolean applyLiveConfigChange(String key) { return false; }
 
     class ReloadMessageCategory {
 

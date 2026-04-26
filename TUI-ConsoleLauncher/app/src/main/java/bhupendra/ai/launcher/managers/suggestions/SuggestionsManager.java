@@ -69,6 +69,12 @@ import static bhupendra.ai.launcher.commands.CommandTuils.xmlPrefsFiles;
  */
 public class SuggestionsManager {
 
+    public enum Mode {
+        COMMAND,
+        CHOICE,
+        PARAMETER
+    }
+
     private HideSuggestionViewValues hideViewValue;
 
     public static final String SINGLE_QUOTE = "'", DOUBLE_QUOTES = "\"";
@@ -107,6 +113,10 @@ public class SuggestionsManager {
     int[] counts, noInputCounts;
 
     private Pattern rmQuotes = Pattern.compile("['\"]");
+    private Mode mode = Mode.COMMAND;
+    private String interactivePrompt;
+    private String interactiveField;
+    private List<String> interactiveOptions = new ArrayList<>();
 
     int suggestionsPerCategory;
     float suggestionsDeadline;
@@ -358,7 +368,53 @@ public class SuggestionsManager {
         hide();
     }
 
+    public void showCommandMode() {
+        mode = Mode.COMMAND;
+        interactivePrompt = null;
+        interactiveField = null;
+        interactiveOptions = new ArrayList<>();
+    }
+
+    public void showChoiceMode(String prompt, List<String> options) {
+        mode = Mode.CHOICE;
+        interactivePrompt = prompt;
+        interactiveField = null;
+        interactiveOptions = options != null ? new ArrayList<>(options) : new ArrayList<>();
+        show();
+    }
+
+    public void showParameterMode(String field, String prompt) {
+        mode = Mode.PARAMETER;
+        interactiveField = field;
+        interactivePrompt = prompt;
+        interactiveOptions = new ArrayList<>();
+        show();
+    }
+
     public void clickSuggestion(SuggestionsManager.Suggestion suggestion) {
+        if (suggestion == null) return;
+
+        bhupendra.ai.launcher.ai.AISubsystem ai = bhupendra.ai.launcher.ai.AISubsystem.getInstance();
+        if (suggestion.type == SuggestionsManager.Suggestion.TYPE_CHOICE) {
+            if (ai != null) ai.resolvePendingUserInteraction(suggestion.text);
+            return;
+        } else if (suggestion.type == SuggestionsManager.Suggestion.TYPE_PARAMETER_SUBMIT) {
+            String value = mTerminalAdapter.getInput().trim();
+            if (value.length() == 0) {
+                mTerminalAdapter.focusInputEnd();
+                return;
+            }
+            if (ai != null) ai.resolvePendingUserInteraction(value);
+            return;
+        } else if (suggestion.type == SuggestionsManager.Suggestion.TYPE_PARAMETER_CLEAR) {
+            mTerminalAdapter.setInput(Tuils.EMPTYSTRING);
+            mTerminalAdapter.focusInputEnd();
+            return;
+        } else if (suggestion.type == SuggestionsManager.Suggestion.TYPE_PARAMETER_CANCEL) {
+            if (ai != null) ai.cancelPendingUserInteraction();
+            return;
+        }
+
         boolean execOnClick = suggestion.exec;
 
         String text = suggestion.getText();
@@ -480,7 +536,11 @@ public class SuggestionsManager {
 
                 final List<SuggestionsManager.Suggestion> suggestions;
                 try {
-                    suggestions = getSuggestions(before, lastWord);
+                    if (mode == Mode.COMMAND) {
+                        suggestions = getSuggestions(before, lastWord);
+                    } else {
+                        suggestions = getInteractiveSuggestions(input);
+                    }
                 } catch (Exception e) {
                     Tuils.log(e);
                     FileSystemManager.toFile(e);
@@ -708,6 +768,34 @@ public class SuggestionsManager {
 
         Collections.sort(suggestionList, comparator);
         return suggestionList;
+    }
+
+    private List<Suggestion> getInteractiveSuggestions(String input) {
+        List<Suggestion> suggestions = new ArrayList<>();
+
+        if (mode == Mode.CHOICE) {
+            for (String option : interactiveOptions) {
+                suggestions.add(new Suggestion(null, option, false, Suggestion.TYPE_CHOICE, null, 0xFF2F4858, Color.WHITE));
+            }
+            suggestions.add(new Suggestion(null, "Cancel", false, Suggestion.TYPE_PARAMETER_CANCEL, null, 0xFF5C5C5C, Color.WHITE));
+        } else if (mode == Mode.PARAMETER) {
+            String trimmed = input == null ? Tuils.EMPTYSTRING : input.trim();
+            String fieldLabel = interactiveField == null || interactiveField.length() == 0 ? "value" : interactiveField.replace('_', ' ');
+            String submitLabel = trimmed.length() == 0 ? "Enter " + fieldLabel + "..." : "Submit: " + abbreviate(trimmed, 28);
+
+            suggestions.add(new Suggestion(null, submitLabel, false, Suggestion.TYPE_PARAMETER_SUBMIT, null, 0xFF8D6E63, Color.WHITE));
+            if (trimmed.length() > 0) {
+                suggestions.add(new Suggestion(null, "Clear", false, Suggestion.TYPE_PARAMETER_CLEAR, null, 0xFF455A64, Color.WHITE));
+            }
+            suggestions.add(new Suggestion(null, "Cancel", false, Suggestion.TYPE_PARAMETER_CANCEL, null, 0xFF5C5C5C, Color.WHITE));
+        }
+
+        return suggestions;
+    }
+
+    private String abbreviate(String text, int max) {
+        if (text == null || text.length() <= max) return text;
+        return text.substring(0, Math.max(0, max - 3)) + "...";
     }
 
     private boolean needsFileSuggestion(String cmd) {
@@ -1321,6 +1409,10 @@ public class SuggestionsManager {
         public static final int TYPE_COLOR = 14;
         public static final int TYPE_PERMANENT = 15;
         public static final int TYPE_CONFIGFILE = 16;
+        public static final int TYPE_CHOICE = 17;
+        public static final int TYPE_PARAMETER_SUBMIT = 18;
+        public static final int TYPE_PARAMETER_CANCEL = 19;
+        public static final int TYPE_PARAMETER_CLEAR = 20;
 
         public String text, textBefore;
 
@@ -1328,6 +1420,8 @@ public class SuggestionsManager {
         public int type;
 
         public Object object;
+        public Integer overrideBgColor;
+        public Integer overrideTextColor;
 
         public static boolean appendQuotesBeforeFile;
 
@@ -1349,6 +1443,12 @@ public class SuggestionsManager {
             this.type = type;
 
             this.object = tag;
+        }
+
+        public Suggestion(String beforeLastSpace, String text, boolean exec, int type, Object tag, Integer overrideBgColor, Integer overrideTextColor) {
+            this(beforeLastSpace, text, exec, type, tag);
+            this.overrideBgColor = overrideBgColor;
+            this.overrideTextColor = overrideTextColor;
         }
 
         public String getText() {

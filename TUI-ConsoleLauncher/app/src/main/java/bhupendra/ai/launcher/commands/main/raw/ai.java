@@ -1,20 +1,12 @@
 package bhupendra.ai.launcher.commands.main.raw;
 
-import android.graphics.Color;
-
 import bhupendra.ai.launcher.R;
+import bhupendra.ai.launcher.ai.AISubsystem;
 import bhupendra.ai.launcher.commands.CommandAbstraction;
 import bhupendra.ai.launcher.commands.ExecutePack;
 import bhupendra.ai.launcher.commands.main.MainPack;
-import bhupendra.ai.launcher.ai.AISubsystem;
-import bhupendra.ai.launcher.ai.AICallback;
-import bhupendra.ai.launcher.ai.AIResponse;
-import bhupendra.ai.launcher.ai.AIRequestState;
-import bhupendra.ai.launcher.tuils.Tuils;
+import bhupendra.ai.launcher.ai.AITrigger;
 import android.util.Log;
-
-import bhupendra.ai.launcher.managers.TerminalManager;
-import org.json.JSONObject;
 
 public class ai implements CommandAbstraction {
 
@@ -34,63 +26,8 @@ public class ai implements CommandAbstraction {
             return "[AI subsystem not available — check ai.xml]";
         }
 
-        Tuils.sendOutput(Color.GRAY, pack.getContext(), "[thinking...]", TerminalManager.CATEGORY_OUTPUT);
-
-        aiSubsystem.submit(query.trim(), new AICallback() {
-            private StringBuilder tokenBuffer = new StringBuilder();
-            private final java.util.regex.Pattern TOOL_CALL_PATTERN = java.util.regex.Pattern.compile("^tool_[A-Za-z0-9_]+\\(.*\\)$", java.util.regex.Pattern.DOTALL);
-
-            @Override public void onToken(String rid, String token) {
-                // HACK: Don't stream tokens because it breaks markdown parsing midway.
-                // We'll wait for the full response in onResponse.
-                // If we want streaming, TerminalManager needs complex partial markdown logic.
-                tokenBuffer.append(token);
-            }
-
-            @Override public void onResponse(AIResponse r) {
-                Log.d(TAG, "onResponse: type=" + r.type + " text=" + (r.text != null ? r.text.substring(0, Math.min(20, r.text.length())) : "null") + " err=" + r.errorMessage + " isTool=" + r.isToolOutput);
-                if (r.type == AIResponse.Type.TEXT && r.text != null) {
-                    if (r.isToolOutput && r.toolCall != null) {
-                        // Minimal notification for web tools
-                        String notify = null;
-                        try {
-                            JSONObject args = new JSONObject(r.toolCall.argumentsJson);
-                            if ("system.web_search_query".equals(r.toolCall.toolName)) {
-                                notify = "[searching: " + args.optString("query", "...") + "]";
-                            } else if ("system.web_fetch".equals(r.toolCall.toolName)) {
-                                String url = args.optString("url", "...");
-                                if (url.length() > 40) url = url.substring(0, 37) + "...";
-                                notify = "[fetching: " + url + "]";
-                            } else {
-                                notify = "[executed: " + r.toolCall.toolName + "]";
-                            }
-                        } catch (Exception e) {
-                            notify = "[executed: " + r.toolCall.toolName + "]";
-                        }
-                        
-                        if (notify != null) {
-                            Tuils.sendOutput(Color.GRAY, pack.getContext(), notify, TerminalManager.CATEGORY_OUTPUT);
-                        }
-                        return;
-                    }
-
-                    String currentText = r.text.trim();
-                    if (TOOL_CALL_PATTERN.matcher(currentText).matches()) {
-                        return;
-                    }
-                    // Send FULL text here so it can be parsed as markdown correctly
-                    Tuils.sendOutput(Color.WHITE, pack.getContext(), r.text, TerminalManager.CATEGORY_AI);
-                } else if (r.type == AIResponse.Type.ERROR) {
-                    Tuils.sendOutput(Color.RED, pack.getContext(), "[AI error: " + r.errorMessage + "]", TerminalManager.CATEGORY_ERROR);
-                }
-            }
-
-            @Override public void onStateChange(String rid, AIRequestState s) {
-                if (s == AIRequestState.EXECUTING_TOOLS) {
-                    Tuils.sendOutput(Color.GRAY, pack.getContext(), "[executing tools...]", TerminalManager.CATEGORY_OUTPUT);
-                }
-            }
-        });
+        AITrigger trigger = new AITrigger(aiSubsystem, pack.getContext(), null);
+        trigger.triggerDirect(query.trim());
         return null;
     }
 

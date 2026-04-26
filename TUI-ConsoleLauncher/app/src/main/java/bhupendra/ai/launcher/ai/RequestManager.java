@@ -4,13 +4,17 @@ import java.util.concurrent.atomic.AtomicReference;
 
 public class RequestManager {
 
-    private final AIProvider provider;
+    private volatile AIProvider provider;
     private final AtomicReference<String> activeId = new AtomicReference<>();
     private final AtomicReference<AIRequestState> state = new AtomicReference<>(AIRequestState.IDLE);
     private volatile AICallback activeCallback;
     private volatile boolean cancelRequested;
 
     public RequestManager(AIProvider provider, long connectTimeoutMs, long inactivityTimeoutMs) {
+        this.provider = provider;
+    }
+
+    public void setProvider(AIProvider provider) {
         this.provider = provider;
     }
 
@@ -47,7 +51,7 @@ public class RequestManager {
 
             @Override
             public void onStateChange(String rid, AIRequestState s) {
-                if (!rid.equals(activeId.get())) return;
+                if (!rid.equals(activeId.get()) || cancelRequested) return;
                 transition(rid, s, activeCallback);
             }
         });
@@ -80,5 +84,18 @@ public class RequestManager {
     public void transition(String rid, AIRequestState newState, AICallback cb) {
         state.set(newState);
         if (cb != null) cb.onStateChange(rid, newState);
+        if (isTerminalState(newState)) {
+            activeId.compareAndSet(rid, null);
+            activeCallback = null;
+            cancelRequested = false;
+        }
+    }
+
+    private boolean isTerminalState(AIRequestState state) {
+        return state == AIRequestState.COMPLETED
+            || state == AIRequestState.CANCELLED
+            || state == AIRequestState.TIMED_OUT_CONNECT
+            || state == AIRequestState.TIMED_OUT_INACTIVITY
+            || state == AIRequestState.FAILED;
     }
 }

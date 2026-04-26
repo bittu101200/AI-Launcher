@@ -47,31 +47,9 @@ public class JourneyManager {
         return false;
     }
 
-    public boolean shouldDisplay(StatusBarNotification sbn) {
-        if (sbn == null) return false;
-        
-        String pkg = sbn.getPackageName();
-        if (DISPLAY_BLACKLIST.contains(pkg)) return false;
-        
-        Notification n = sbn.getNotification();
-        if (isJourneyNotification(n)) return false;
-
-        // Specifically check for low-priority importance
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-            // Only show notifications that are at least "Default" importance
-            // (Skips MIN and LOW importance notifications)
-            // Note: StatusBarNotification doesn't directly expose importance easily without RankingMap
-            // but we can check the Notification object's priority for older versions.
-        }
-        
-        if (n.priority < Notification.PRIORITY_DEFAULT) return false;
-
-        return true;
-    }
-
     public void processNotification(StatusBarNotification sbn) {
         if (sbn != null) {
-            Log.d(TAG, "Silent journey update logged: " + sbn.getPackageName());
+            Log.d(TAG, "Notification processed: " + sbn.getPackageName());
         }
     }
 }

@@ -383,6 +383,7 @@ public class MainManager {
         }
 
         boolean agentic = XMLPrefsManager.getBoolean(bhupendra.ai.launcher.managers.xml.options.Ai.agentic_mode);
+        boolean alwaysOnFallback = XMLPrefsManager.getBoolean(bhupendra.ai.launcher.managers.xml.options.Ai.always_on_fallback);
 
         for(int c = 0; c < cmds.length; c++) {
             mainPack.clear();
@@ -422,8 +423,8 @@ public class MainManager {
                 Tuils.sendOutput(mContext, Tuils.getStackTrace(e));
             }
 
-            // 4. Last resort: AI fallback if not in agentic mode but always_on_fallback is true
-            if (!agentic && aiTrigger != null) {
+            // 4. Last resort: AI fallback if not in agentic mode and always_on_fallback is enabled
+            if (!agentic && alwaysOnFallback && aiTrigger != null) {
                 aiTrigger.trigger(cmds[c]);
             }
         }

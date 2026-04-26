@@ -153,7 +153,10 @@ public class SuggestionRunnable implements Runnable {
                 int bgColor = Integer.MAX_VALUE;
                 int foreColor = Integer.MAX_VALUE;
 
-                if(s.type == SuggestionsManager.Suggestion.TYPE_APP || s.type == SuggestionsManager.Suggestion.TYPE_APPGP) {
+                if (s.overrideBgColor != null) bgColor = s.overrideBgColor;
+                if (s.overrideTextColor != null) foreColor = s.overrideTextColor;
+
+                if(bgColor == Integer.MAX_VALUE && (s.type == SuggestionsManager.Suggestion.TYPE_APP || s.type == SuggestionsManager.Suggestion.TYPE_APPGP)) {
                     Object o = s.object;
                     if(o != null && o instanceof AppsManager.LaunchInfo) {
                         AppsManager.LaunchInfo i = (AppsManager.LaunchInfo) o;

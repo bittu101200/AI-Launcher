@@ -359,7 +359,12 @@ public class TerminalManager {
 //
 //        LocalBroadcastManager.getInstance(mContext.getApplicationContext()).sendBroadcast(intent);
 
-        executer.execute(cmd, obj);
+        bhupendra.ai.launcher.ai.AISubsystem ai = bhupendra.ai.launcher.ai.AISubsystem.getInstance();
+        if (ai != null && ai.hasPendingUserInteraction()) {
+            ai.resolvePendingUserInteraction(cmd);
+        } else {
+            executer.execute(cmd, obj);
+        }
 
 //        because it will clear suggestions without refilling them, because "aftertextchanged" wont be called
 //        if(cmd.length() > 0) LocalBroadcastManager.getInstance(mContext.getApplicationContext()).sendBroadcast(new Intent(UIManager.ACTION_CLEAR_SUGGESTIONS));

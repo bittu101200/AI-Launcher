@@ -118,7 +118,14 @@ public class XMLPrefsManager {
 
         @Override
         public void write(XMLPrefsSave save, String value) {
+            android.util.Log.d("XML_WRITE", "Writing " + save.label() + " = " + (save.label().contains("api_key") ? "****" : value) + " to " + path);
             set(new File(FileSystemManager.getFolder(), path), save.label(), new String[] {VALUE_ATTRIBUTE}, new String[] {value});
+            bhupendra.ai.launcher.managers.xml.classes.XMLPrefsEntry entry = values.get(save);
+            if (entry != null) {
+                entry.value = value;
+            } else {
+                values.add(save.label(), value);
+            }
         }
 
         public XMLPrefsList getValues() {

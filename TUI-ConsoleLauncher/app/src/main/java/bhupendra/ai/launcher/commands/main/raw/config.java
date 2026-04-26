@@ -20,6 +20,7 @@ import bhupendra.ai.launcher.commands.ExecutePack;
 import bhupendra.ai.launcher.commands.main.MainPack;
 import bhupendra.ai.launcher.commands.main.specific.ParamCommand;
 import bhupendra.ai.launcher.managers.AppsManager;
+import bhupendra.ai.launcher.managers.ConfigChangeHandler;
 import bhupendra.ai.launcher.managers.RssManager;
 import bhupendra.ai.launcher.managers.notifications.NotificationManager;
 import bhupendra.ai.launcher.managers.xml.XMLPrefsManager;
@@ -56,6 +57,8 @@ public class config extends ParamCommand {
                 save.parent().write(save, value);
 
                 ((Reloadable) pack.getContext()).addMessage(save.parent().path(), save.label() + " -> " + value);
+
+                ConfigChangeHandler.apply(pack.getContext(), save);
 
                 if(save.label().startsWith("default_app_n")) {
                     return pack.getContext().getString(R.string.output_usedefapp);
@@ -134,6 +137,8 @@ public class config extends ParamCommand {
 
                 ((Reloadable) pack.getContext()).addMessage(save.parent().path(), save.label() + " -> " + value);
 
+                ConfigChangeHandler.apply(pack.getContext(), save);
+
                 return null;
             }
 
@@ -155,6 +160,8 @@ public class config extends ParamCommand {
                 save.parent().write(save, Tuils.EMPTYSTRING);
 
                 ((Reloadable) pack.getContext()).addMessage(save.parent().path(), save.label() + " -> " + "\"\"");
+
+                ConfigChangeHandler.apply(pack.getContext(), save);
 
                 return null;
             }
@@ -271,6 +278,8 @@ public class config extends ParamCommand {
                 parent.write(Ui.unlock_size, String.valueOf(size));
                 parent.write(Ui.input_output_size, String.valueOf(size));
 
+                ConfigChangeHandler.apply(pack.getContext(), Ui.device_size);
+
                 return null;
             }
         },
@@ -286,6 +295,8 @@ public class config extends ParamCommand {
                 save.parent().write(save, save.defaultValue());
 
                 ((Reloadable) pack.getContext()).addMessage(save.parent().path(), save.label() + " -> " + save.defaultValue());
+
+                ConfigChangeHandler.apply(pack.getContext(), save);
 
                 return null;
             }
@@ -319,6 +330,10 @@ public class config extends ParamCommand {
 
                 File dest = new File(FileSystemManager.getFolder(), file.getName());
                 file.renameTo(dest);
+
+                if (pack.getContext() instanceof Reloadable) {
+                    ((Reloadable) pack.getContext()).reload();
+                }
 
                 return "Path: " + dest.getAbsolutePath();
             }

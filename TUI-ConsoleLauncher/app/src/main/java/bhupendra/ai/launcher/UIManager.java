@@ -96,6 +96,13 @@ public class UIManager implements OnTouchListener {
 
     public static String ACTION_UPDATE_SUGGESTIONS = BuildConfig.APPLICATION_ID + ".ui_update_suggestions";
     public static String ACTION_UPDATE_HINT = BuildConfig.APPLICATION_ID + ".ui_update_hint";
+    public static String ACTION_SHOW_CHOICE_SUGGESTIONS = BuildConfig.APPLICATION_ID + ".ui_show_choice_suggestions";
+    public static String ACTION_SHOW_PARAMETER_SUGGESTIONS = BuildConfig.APPLICATION_ID + ".ui_show_parameter_suggestions";
+    public static String ACTION_RESET_SUGGESTIONS_MODE = BuildConfig.APPLICATION_ID + ".ui_reset_suggestions_mode";
+    public static String EXTRA_SUGGESTION_PROMPT = "suggestion_prompt";
+    public static String EXTRA_SUGGESTION_OPTIONS = "suggestion_options";
+    public static String EXTRA_SUGGESTION_FIELD = "suggestion_field";
+    public static String EXTRA_SUGGESTION_PREFILL = "suggestion_prefill";
     public static String ACTION_ROOT = BuildConfig.APPLICATION_ID + ".ui_root";
     public static String ACTION_NOROOT = BuildConfig.APPLICATION_ID + ".ui_noroot";
     public static String ACTION_LOGTOFILE = BuildConfig.APPLICATION_ID + ".ui_log";
@@ -152,6 +159,12 @@ public class UIManager implements OnTouchListener {
 
     private TextView getLabelView(Label l) {
         return labelViews[(int) labelIndexes[l.ordinal()]];
+    }
+
+    private TextView getLabelViewSafe(Label l) {
+        int index = (int) labelIndexes[l.ordinal()];
+        if (index < 0 || index >= labelViews.length) return null;
+        return labelViews[index];
     }
 
     private int notesMaxLines;
@@ -798,6 +811,9 @@ public class UIManager implements OnTouchListener {
         IntentFilter filter = new IntentFilter();
         filter.addAction(ACTION_UPDATE_SUGGESTIONS);
         filter.addAction(ACTION_UPDATE_HINT);
+        filter.addAction(ACTION_SHOW_CHOICE_SUGGESTIONS);
+        filter.addAction(ACTION_SHOW_PARAMETER_SUGGESTIONS);
+        filter.addAction(ACTION_RESET_SUGGESTIONS_MODE);
         filter.addAction(ACTION_ROOT);
         filter.addAction(ACTION_NOROOT);
 //        filter.addAction(ACTION_CLEAR_SUGGESTIONS);
@@ -816,6 +832,36 @@ public class UIManager implements OnTouchListener {
                 if(action.equals(ACTION_UPDATE_SUGGESTIONS)) {
                     if(suggestionsManager != null) suggestionsManager.requestSuggestion(Tuils.EMPTYSTRING);
                 } else if(action.equals(ACTION_UPDATE_HINT)) {
+                    mTerminalAdapter.setDefaultHint();
+                } else if(action.equals(ACTION_SHOW_CHOICE_SUGGESTIONS)) {
+                    if (suggestionsManager != null) {
+                        String prompt = intent.getStringExtra(EXTRA_SUGGESTION_PROMPT);
+                        java.util.ArrayList<String> options = intent.getStringArrayListExtra(EXTRA_SUGGESTION_OPTIONS);
+                        suggestionsManager.showChoiceMode(prompt, options);
+                        if (prompt != null && prompt.length() > 0) {
+                            mTerminalAdapter.setHint(prompt);
+                        }
+                        suggestionsManager.requestSuggestion(mTerminalAdapter.getInput());
+                        mTerminalAdapter.requestInputFocus();
+                    }
+                } else if(action.equals(ACTION_SHOW_PARAMETER_SUGGESTIONS)) {
+                    if (suggestionsManager != null) {
+                        String field = intent.getStringExtra(EXTRA_SUGGESTION_FIELD);
+                        String prompt = intent.getStringExtra(EXTRA_SUGGESTION_PROMPT);
+                        String prefill = intent.getStringExtra(EXTRA_SUGGESTION_PREFILL);
+                        suggestionsManager.showParameterMode(field, prompt);
+                        if (prompt != null && prompt.length() > 0) {
+                            mTerminalAdapter.setHint(prompt);
+                        }
+                        mTerminalAdapter.setInput(prefill != null ? prefill : Tuils.EMPTYSTRING);
+                        suggestionsManager.requestSuggestion(mTerminalAdapter.getInput());
+                        mTerminalAdapter.requestInputFocus();
+                    }
+                } else if(action.equals(ACTION_RESET_SUGGESTIONS_MODE)) {
+                    if (suggestionsManager != null) {
+                        suggestionsManager.showCommandMode();
+                        suggestionsManager.requestSuggestion(mTerminalAdapter.getInput());
+                    }
                     mTerminalAdapter.setDefaultHint();
                 } else if(action.equals(ACTION_ROOT)) {
                     mTerminalAdapter.onRoot();
@@ -1207,7 +1253,7 @@ public class UIManager implements OnTouchListener {
             handler.post(networkRunnable);
         }
 
-        final TextView notesView = getLabelView(Label.notes);
+        final TextView notesView = getLabelViewSafe(Label.notes);
         notesManager = new NotesManager(context, notesView);
         if(show[Label.notes.ordinal()]) {
             notesRunnable = new NotesRunnable();
@@ -1381,6 +1427,12 @@ public class UIManager implements OnTouchListener {
                 if(currentText.length() == 0) toolbarView.setVisibility(View.GONE);
                 else if(before == 0) toolbarView.setVisibility(View.VISIBLE);
             }));
+
+            if (hideToolbarNoInput && toolbarView != null) {
+                toolbarView.setVisibility(inputView.getText().length() == 0 ? View.GONE : View.VISIBLE);
+            }
+
+            suggestionsManager.requestSuggestion(inputView.getText().toString());
         } else {
             rootView.findViewById(R.id.suggestions_group).setVisibility(View.GONE);
         }
@@ -1763,5 +1815,164 @@ public class UIManager implements OnTouchListener {
             mTerminalAdapter.onAIStateChanged(running);
         }
     }
-}
 
+    public boolean applyLiveConfigChange(String key) {
+        if (key == null) return false;
+
+        switch (key) {
+            case "show_notes":
+                return applyNotesVisibility(XMLPrefsManager.getBoolean(Ui.show_notes));
+            case "show_ram":
+                return applySimpleLabelVisibility(Label.ram, XMLPrefsManager.getBoolean(Ui.show_ram), ramRunnable);
+            case "show_time":
+                return applySimpleLabelVisibility(Label.time, XMLPrefsManager.getBoolean(Ui.show_time), timeRunnable);
+            case "show_storage_info":
+                return applySimpleLabelVisibility(Label.storage, XMLPrefsManager.getBoolean(Ui.show_storage_info), storageRunnable);
+            case "show_network_info":
+                return applySimpleLabelVisibility(Label.network, XMLPrefsManager.getBoolean(Ui.show_network_info), networkRunnable);
+            case "show_weather":
+                return applyWeatherVisibility(XMLPrefsManager.getBoolean(Ui.show_weather));
+            case "show_unlock_counter":
+                return applySimpleLabelVisibility(Label.unlock, XMLPrefsManager.getBoolean(Ui.show_unlock_counter), unlockTimeRunnable);
+            case "show_device_name":
+                return applyDeviceVisibility(XMLPrefsManager.getBoolean(Ui.show_device_name));
+            case "show_battery":
+                return applyBatteryVisibility(XMLPrefsManager.getBoolean(Ui.show_battery));
+            default:
+                return false;
+        }
+    }
+
+    private boolean applyNotesVisibility(boolean visible) {
+        TextView notesView = getLabelViewSafe(Label.notes);
+        if (notesView == null || notesManager == null || handler == null) return false;
+
+        if (!visible) {
+            if (notesRunnable != null) handler.removeCallbacks(notesRunnable);
+            updateText(Label.notes, Tuils.EMPTYSTRING);
+            return true;
+        }
+
+        if (notesRunnable == null) {
+            notesRunnable = new NotesRunnable();
+        } else {
+            handler.removeCallbacks(notesRunnable);
+        }
+        notesView.setMovementMethod(new LinkMovementMethod());
+        notesMaxLines = XMLPrefsManager.getInt(Ui.notes_max_lines);
+        if (notesMaxLines > 0) {
+            notesView.setMaxLines(notesMaxLines);
+            notesView.setEllipsize(TextUtils.TruncateAt.MARQUEE);
+        } else {
+            notesView.setMaxLines(Integer.MAX_VALUE);
+            notesView.setEllipsize(null);
+        }
+        updateText(Label.notes, TextProcessor.span(mContext, labelSizes[Label.notes.ordinal()], notesManager.getNotes()));
+        handler.post(notesRunnable);
+        return true;
+    }
+
+    private boolean applySimpleLabelVisibility(Label label, boolean visible, Runnable runnable) {
+        TextView view = getLabelViewSafe(label);
+        if (view == null || handler == null) return false;
+
+        if (!visible) {
+            if (runnable != null) handler.removeCallbacks(runnable);
+            updateText(label, Tuils.EMPTYSTRING);
+            return true;
+        }
+
+        switch (label) {
+            case ram:
+                if (ramRunnable == null) ramRunnable = new RamRunnable();
+                handler.removeCallbacks(ramRunnable);
+                handler.post(ramRunnable);
+                return true;
+            case time:
+                if (timeRunnable == null) timeRunnable = new TimeRunnable();
+                handler.removeCallbacks(timeRunnable);
+                handler.post(timeRunnable);
+                return true;
+            case storage:
+                if (storageRunnable == null) storageRunnable = new StorageRunnable();
+                handler.removeCallbacks(storageRunnable);
+                handler.post(storageRunnable);
+                return true;
+            case network:
+                if (networkRunnable == null) networkRunnable = new NetworkRunnable();
+                handler.removeCallbacks(networkRunnable);
+                handler.post(networkRunnable);
+                return true;
+            case unlock:
+                handler.removeCallbacks(unlockTimeRunnable);
+                handler.post(unlockTimeRunnable);
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    private boolean applyDeviceVisibility(boolean visible) {
+        TextView view = getLabelViewSafe(Label.device);
+        if (view == null) return false;
+        if (!visible) {
+            updateText(Label.device, Tuils.EMPTYSTRING);
+            return true;
+        }
+
+        Pattern USERNAME = Pattern.compile("%u", Pattern.CASE_INSENSITIVE | Pattern.LITERAL);
+        Pattern DV = Pattern.compile("%d", Pattern.CASE_INSENSITIVE | Pattern.LITERAL);
+        String deviceFormat = XMLPrefsManager.get(Behavior.device_format);
+        String username = XMLPrefsManager.get(Ui.username);
+        String deviceName = XMLPrefsManager.get(Ui.deviceName);
+        if (deviceName == null || deviceName.length() == 0) {
+            deviceName = Build.DEVICE;
+        }
+        deviceFormat = USERNAME.matcher(deviceFormat).replaceAll(Matcher.quoteReplacement(username != null ? username : "null"));
+        deviceFormat = DV.matcher(deviceFormat).replaceAll(Matcher.quoteReplacement(deviceName));
+        deviceFormat = Tuils.patternNewline.matcher(deviceFormat).replaceAll(Matcher.quoteReplacement(Tuils.NEWLINE));
+        updateText(Label.device, TextProcessor.span(mContext, deviceFormat, XMLPrefsManager.getColor(Theme.device_color), labelSizes[Label.device.ordinal()]));
+        return true;
+    }
+
+    private boolean applyBatteryVisibility(boolean visible) {
+        TextView view = getLabelViewSafe(Label.battery);
+        if (view == null) return false;
+        if (!visible) {
+            updateText(Label.battery, Tuils.EMPTYSTRING);
+            DeviceStateManager.unregisterBatteryReceiver(mContext);
+            batteryUpdate = null;
+            return true;
+        }
+
+        mediumPercentage = XMLPrefsManager.getInt(Behavior.battery_medium);
+        lowPercentage = XMLPrefsManager.getInt(Behavior.battery_low);
+        if (batteryUpdate == null) {
+            batteryUpdate = new BatteryUpdate();
+            DeviceStateManager.registerBatteryReceiver(mContext, batteryUpdate);
+        } else {
+            batteryUpdate.update(-1);
+        }
+        return true;
+    }
+
+    private boolean applyWeatherVisibility(boolean visible) {
+        TextView view = getLabelViewSafe(Label.weather);
+        if (view == null || handler == null) return false;
+        if (!visible) {
+            if (weatherRunnable != null) handler.removeCallbacks(weatherRunnable);
+            updateText(Label.weather, Tuils.EMPTYSTRING);
+            return true;
+        }
+
+        weatherColor = XMLPrefsManager.getColor(Theme.weather_color);
+        showWeatherUpdate = XMLPrefsManager.getBoolean(Behavior.show_weather_updates);
+        if (weatherRunnable == null) weatherRunnable = new WeatherRunnable();
+        handler.removeCallbacks(weatherRunnable);
+        String where = XMLPrefsManager.get(Behavior.weather_location);
+        if (where.contains(",") || TextProcessor.isNumber(where)) {
+            handler.post(weatherRunnable);
+        }
+        return true;
+    }
+}

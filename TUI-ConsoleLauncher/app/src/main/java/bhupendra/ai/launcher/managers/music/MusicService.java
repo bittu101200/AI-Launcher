@@ -4,6 +4,7 @@ import bhupendra.ai.launcher.managers.FileSystemManager;
 
 
 import android.app.Notification;
+import android.app.Notification.Action;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
@@ -12,30 +13,31 @@ import android.content.ContentUris;
 import android.content.Context;
 import android.content.Intent;
 import android.media.AudioManager;
+import android.media.MediaMetadata;
 import android.media.MediaPlayer;
+import android.media.session.MediaSession;
+import android.media.session.PlaybackState;
 import android.net.Uri;
 import android.os.Binder;
 import android.os.Build;
 import android.os.IBinder;
 import android.os.PowerManager;
-import androidx.core.app.NotificationCompat;
-import androidx.core.app.RemoteInput;
 
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 
 import bhupendra.ai.launcher.LauncherActivity;
-import bhupendra.ai.launcher.MainManager;
 import bhupendra.ai.launcher.R;
-import bhupendra.ai.launcher.tuils.PrivateIOReceiver;
-import bhupendra.ai.launcher.tuils.PublicIOReceiver;
 import bhupendra.ai.launcher.tuils.Tuils;
 
 public class MusicService extends Service implements
         MediaPlayer.OnPreparedListener, MediaPlayer.OnErrorListener,
         MediaPlayer.OnCompletionListener {
 
+    private static final String ACTION_PLAY_PAUSE = "bhupendra.ai.launcher.music.PLAY_PAUSE";
+    private static final String ACTION_NEXT = "bhupendra.ai.launcher.music.NEXT";
+    private static final String ACTION_PREVIOUS = "bhupendra.ai.launcher.music.PREVIOUS";
     public static final int NOTIFY_ID=100001;
 
     private MediaPlayer player;
@@ -44,6 +46,8 @@ public class MusicService extends Service implements
     private final IBinder musicBind = new MusicBinder();
     private String songTitle = Tuils.EMPTYSTRING;
     private boolean shuffle=false;
+    private MediaSession mediaSession;
+    private boolean foregroundStarted;
 
     private long lastNotificationChange;
 
@@ -54,22 +58,25 @@ public class MusicService extends Service implements
         songPosn=0;
         player = new MediaPlayer();
         initMusicPlayer();
+        initMediaSession();
 
         lastNotificationChange = System.currentTimeMillis();
     }
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
+        if (intent != null && intent.getAction() != null) {
+            handleTransportAction(intent.getAction());
+            return START_STICKY;
+        }
+
         if(System.currentTimeMillis() - lastNotificationChange < 500 || songTitle == null || songTitle.length() == 0) return super.onStartCommand(intent, flags, startId);
 
         lastNotificationChange = System.currentTimeMillis();
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-            startForeground(NOTIFY_ID, buildNotification(this.getApplicationContext(), songTitle), android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK);
-        } else {
-            startForeground(NOTIFY_ID, buildNotification(this.getApplicationContext(), songTitle));
-        }
+        updatePlaybackState(isPng() ? PlaybackState.STATE_PLAYING : PlaybackState.STATE_PAUSED);
+        updateNotification();
 
-        return super.onStartCommand(intent, flags, startId);
+        return START_STICKY;
     }
 
     @Override
@@ -79,11 +86,9 @@ public class MusicService extends Service implements
         lastNotificationChange = System.currentTimeMillis();
 
         mp.start();
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-            startForeground(NOTIFY_ID, buildNotification(this.getApplicationContext(), songTitle), android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK);
-        } else {
-            startForeground(NOTIFY_ID, buildNotification(this.getApplicationContext(), songTitle));
-        }
+        updateMetadata();
+        updatePlaybackState(PlaybackState.STATE_PLAYING);
+        updateNotification();
     }
 
     public void initMusicPlayer(){
@@ -116,6 +121,7 @@ public class MusicService extends Service implements
     }
 
     public String playSong(){
+        if (songs == null || songs.isEmpty()) return getString(R.string.no_songs);
         try {
             player.reset();
         } catch (Exception e) {
@@ -124,6 +130,7 @@ public class MusicService extends Service implements
         }
 
         Song playSong = songs.get(songPosn);
+        songTitle = playSong.getTitle();
 
         long id = playSong.getID();
         if(id == -1) {
@@ -136,7 +143,6 @@ public class MusicService extends Service implements
                 return null;
             }
         } else {
-            songTitle=playSong.getTitle();
             long currSong = playSong.getID();
             Uri trackUri = ContentUris.withAppendedId(android.provider.MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, currSong);
             try {
@@ -148,6 +154,9 @@ public class MusicService extends Service implements
                 return null;
             }
         }
+        updateMetadata();
+        updatePlaybackState(PlaybackState.STATE_BUFFERING);
+        updateNotification();
         player.prepareAsync();
 
         return playSong.getTitle();
@@ -168,13 +177,17 @@ public class MusicService extends Service implements
     @Override
     public boolean onError(MediaPlayer mp, int what, int extra) {
         mp.reset();
+        updatePlaybackState(PlaybackState.STATE_ERROR);
         return false;
     }
 
-    public static Notification buildNotification(Context context, String songTitle) {
+    private Notification buildNotification() {
+        Context context = getApplicationContext();
         String channelId = "music_channel";
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             NotificationChannel channel = new NotificationChannel(channelId, "Music", NotificationManager.IMPORTANCE_LOW);
+            channel.setDescription("Music playback");
+            channel.setShowBadge(false);
             NotificationManager manager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
             if (manager != null) {
                 manager.createNotificationChannel(channel);
@@ -184,36 +197,48 @@ public class MusicService extends Service implements
         Intent notIntent = new Intent(context, LauncherActivity.class);
         PendingIntent pendInt = PendingIntent.getActivity(context, 0, notIntent, Tuils.pendingIntentFlags(PendingIntent.FLAG_UPDATE_CURRENT));
 
-        Notification not;
-        NotificationCompat.Builder builder = new NotificationCompat.Builder(context, channelId);
-        builder.setContentIntent(pendInt)
-                .setSmallIcon(R.mipmap.ic_launcher)
-                .setTicker(songTitle)
-                .setOngoing(true)
-                .setContentTitle("Playing")
-                .setContentText(songTitle);
-
-        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            String label = "cmd";
-            RemoteInput remoteInput = new RemoteInput.Builder(PrivateIOReceiver.TEXT)
-                    .setLabel(label)
-                    .build();
-
-            Intent i = new Intent(PublicIOReceiver.ACTION_CMD);
-            i.putExtra(MainManager.MUSIC_SERVICE, true);
-
-            NotificationCompat.Action action = new NotificationCompat.Action.Builder(R.mipmap.ic_launcher, label,
-                    PendingIntent.getBroadcast(context.getApplicationContext(), 10, i, Tuils.pendingIntentFlags(PendingIntent.FLAG_UPDATE_CURRENT)))
-                    .addRemoteInput(remoteInput)
-                    .build();
-
-            builder.addAction(action);
+        Notification.Builder builder;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            builder = new Notification.Builder(context, channelId);
+        } else {
+            builder = new Notification.Builder(context);
         }
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) not = builder.build();
-        else not = builder.getNotification();
+        builder.setContentIntent(pendInt)
+            .setSmallIcon(android.R.drawable.ic_media_play)
+            .setOngoing(isPng())
+            .setOnlyAlertOnce(true)
+            .setCategory(Notification.CATEGORY_TRANSPORT)
+            .setVisibility(Notification.VISIBILITY_PUBLIC)
+            .setShowWhen(false)
+            .setContentTitle(songTitle != null && songTitle.length() > 0 ? songTitle : "T-UI Player")
+            .setContentText(isPng() ? "Playing" : "Paused");
 
-        return not;
+        builder.addAction(new Action.Builder(
+            android.R.drawable.ic_media_previous,
+            "Previous",
+            buildServiceAction(context, ACTION_PREVIOUS, 1)).build());
+        builder.addAction(new Action.Builder(
+            isPng() ? android.R.drawable.ic_media_pause : android.R.drawable.ic_media_play,
+            isPng() ? "Pause" : "Play",
+            buildServiceAction(context, ACTION_PLAY_PAUSE, 2)).build());
+        builder.addAction(new Action.Builder(
+            android.R.drawable.ic_media_next,
+            "Next",
+            buildServiceAction(context, ACTION_NEXT, 3)).build());
+
+        if (mediaSession != null) {
+            Notification.MediaStyle style = new Notification.MediaStyle()
+                .setMediaSession(mediaSession.getSessionToken())
+                .setShowActionsInCompactView(0, 1, 2);
+            builder.setStyle(style);
+        }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            builder.setForegroundServiceBehavior(Notification.FOREGROUND_SERVICE_IMMEDIATE);
+        }
+
+        return builder.build();
     }
 
     public int getPosn(){
@@ -229,7 +254,11 @@ public class MusicService extends Service implements
     }
 
     public void pausePlayer(){
-        player.pause();
+        if (player != null && player.isPlaying()) {
+            player.pause();
+        }
+        updatePlaybackState(PlaybackState.STATE_PAUSED);
+        updateNotification();
     }
 
     public void stop() {
@@ -238,14 +267,22 @@ public class MusicService extends Service implements
         } catch (Exception e) {}
 
         try {
-            player.release();
+            player.reset();
         } catch (Exception e) {}
 
         setSong(0);
+        songTitle = Tuils.EMPTYSTRING;
+        updatePlaybackState(PlaybackState.STATE_STOPPED);
+        if (foregroundStarted) {
+            stopForeground(true);
+            foregroundStarted = false;
+        }
     }
 
     public void playPlayer() {
         player.start();
+        updatePlaybackState(PlaybackState.STATE_PLAYING);
+        updateNotification();
     }
 
     public void seek(int posn){
@@ -289,13 +326,128 @@ public class MusicService extends Service implements
         super.onDestroy();
 
         player.release();
-        songs.clear();
+        if (songs != null) songs.clear();
+        if (mediaSession != null) {
+            mediaSession.release();
+            mediaSession = null;
+        }
 
         stopForeground(true);
     }
 
     public void setShuffle(boolean shuffle){
         this.shuffle = shuffle;
+    }
+
+    private void initMediaSession() {
+        mediaSession = new MediaSession(this, "TUI-Music");
+        mediaSession.setCallback(new MediaSession.Callback() {
+            @Override
+            public void onPlay() {
+                if (!playbackReady()) return;
+                if (songTitle != null && songTitle.length() > 0 && !isPng()) {
+                    playPlayer();
+                } else {
+                    playSong();
+                }
+            }
+
+            @Override
+            public void onPause() {
+                pausePlayer();
+            }
+
+            @Override
+            public void onSkipToNext() {
+                playNext();
+            }
+
+            @Override
+            public void onSkipToPrevious() {
+                playPrev();
+            }
+        });
+        mediaSession.setActive(true);
+        updatePlaybackState(PlaybackState.STATE_NONE);
+    }
+
+    private void handleTransportAction(String action) {
+        if (ACTION_PLAY_PAUSE.equals(action)) {
+            if (isPng()) {
+                pausePlayer();
+            } else if (songTitle != null && songTitle.length() > 0) {
+                playPlayer();
+            } else {
+                playSong();
+            }
+        } else if (ACTION_NEXT.equals(action)) {
+            playNext();
+        } else if (ACTION_PREVIOUS.equals(action)) {
+            playPrev();
+        }
+    }
+
+    private PendingIntent buildServiceAction(Context context, String action, int requestCode) {
+        Intent intent = new Intent(context, MusicService.class);
+        intent.setAction(action);
+        return PendingIntent.getService(context, requestCode, intent,
+            Tuils.pendingIntentFlags(PendingIntent.FLAG_UPDATE_CURRENT));
+    }
+
+    private void updateNotification() {
+        if (songTitle == null || songTitle.length() == 0) return;
+        Notification notification = buildNotification();
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            startForeground(NOTIFY_ID, notification, android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK);
+        } else {
+            startForeground(NOTIFY_ID, notification);
+        }
+        foregroundStarted = true;
+    }
+
+    private void updateMetadata() {
+        if (mediaSession == null) return;
+        MediaMetadata.Builder builder = new MediaMetadata.Builder()
+            .putString(MediaMetadata.METADATA_KEY_TITLE, songTitle != null ? songTitle : "");
+        Song current = getCurrentSong();
+        if (current != null) {
+            builder.putString(MediaMetadata.METADATA_KEY_DISPLAY_TITLE, current.getTitle());
+        }
+        mediaSession.setMetadata(builder.build());
+    }
+
+    private void updatePlaybackState(int state) {
+        if (mediaSession == null) return;
+        long actions = PlaybackState.ACTION_PLAY
+            | PlaybackState.ACTION_PAUSE
+            | PlaybackState.ACTION_PLAY_PAUSE
+            | PlaybackState.ACTION_SKIP_TO_NEXT
+            | PlaybackState.ACTION_SKIP_TO_PREVIOUS;
+        long position = 0L;
+        try {
+            position = player != null ? player.getCurrentPosition() : 0L;
+        } catch (Exception ignored) {}
+        mediaSession.setPlaybackState(new PlaybackState.Builder()
+            .setActions(actions)
+            .setState(state, position, 1f)
+            .build());
+    }
+
+    private Song getCurrentSong() {
+        if (songs == null || songs.isEmpty() || songPosn < 0 || songPosn >= songs.size()) return null;
+        return songs.get(songPosn);
+    }
+
+    private boolean playbackReady() {
+        return songs != null && !songs.isEmpty();
+    }
+
+    private boolean stoppedState() {
+        try {
+            return player == null || !player.isPlaying();
+        } catch (Exception e) {
+            return true;
+        }
     }
 
 }

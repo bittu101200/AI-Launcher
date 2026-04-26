@@ -76,11 +76,11 @@ import bhupendra.ai.launcher.ai.AndroidToolExecutor;
 import bhupendra.ai.launcher.ai.AITrigger;
 import bhupendra.ai.launcher.ai.providers.MockProvider;
 import bhupendra.ai.launcher.ai.providers.OpenAIProvider;
-import bhupendra.ai.launcher.ai.providers.OpenAIProvider;
 import bhupendra.ai.launcher.managers.xml.options.Ai;
 import bhupendra.ai.launcher.tuils.interfaces.Reloadable;
 
 public class LauncherActivity extends AppCompatActivity implements Reloadable {
+    private static CharSequence pendingReloadMessage;
 
     public static final int COMMAND_REQUEST_PERMISSION = 10;
     public static final int STARTING_PERMISSION = 11;
@@ -99,19 +99,14 @@ public class LauncherActivity extends AppCompatActivity implements Reloadable {
 
     private Set<ReloadMessageCategory> categories;
     private Runnable stopActivity = () -> {
-            dispose();
-            finish();
-
-            Intent startMain = new Intent(Intent.ACTION_MAIN);
-            startMain.addCategory(Intent.CATEGORY_HOME);
-
             CharSequence reloadMessage = Tuils.EMPTYSTRING;
             for (ReloadMessageCategory c : categories) {
                 reloadMessage = TextUtils.concat(reloadMessage, Tuils.NEWLINE, c.text());
             }
-            startMain.putExtra(Reloadable.MESSAGE, reloadMessage);
-
-            startActivity(startMain);
+            pendingReloadMessage = reloadMessage;
+            overridePendingTransition(0, 0);
+            recreate();
+            overridePendingTransition(0, 0);
     };
 
     private Inputable in = new Inputable() {
@@ -393,7 +388,11 @@ public class LauncherActivity extends AppCompatActivity implements Reloadable {
         setContentView(R.layout.base_view);
 
         if(XMLPrefsManager.getBoolean(Ui.show_restart_message)) {
-            CharSequence s = getIntent().getCharSequenceExtra(Reloadable.MESSAGE);
+            CharSequence s = pendingReloadMessage;
+            if (s == null) {
+                s = getIntent().getCharSequenceExtra(Reloadable.MESSAGE);
+            }
+            pendingReloadMessage = null;
             if(s != null) out.onOutput(TextProcessor.span(s, XMLPrefsManager.getColor(Theme.restart_message_color)));
         }
 
@@ -574,6 +573,12 @@ public class LauncherActivity extends AppCompatActivity implements Reloadable {
     }
 
     @Override
+    public boolean applyLiveConfigChange(String key) {
+        if (ui == null) return false;
+        return ui.applyLiveConfigChange(key);
+    }
+
+    @Override
     public void onWindowFocusChanged(boolean hasFocus) {
         super.onWindowFocusChanged(hasFocus);
 
@@ -726,32 +731,9 @@ public class LauncherActivity extends AppCompatActivity implements Reloadable {
     }
 
     private AISubsystem buildAISubsystem(String providerName) {
-        AIProvider provider;
         String key = XMLPrefsManager.get(Ai.api_key);
         android.util.Log.d("AI_INIT", "Building AI subsystem: provider=" + providerName + " key=" + (key != null && !key.isEmpty() ? key.substring(0, Math.min(8, key.length())) + "..." : "empty"));
-        switch (providerName.toLowerCase()) {
-            case "openai":
-            case "ollama": {
-                String baseUrl = XMLPrefsManager.get(Ai.base_url);
-                String model = XMLPrefsManager.get(Ai.model);
-                provider = new OpenAIProvider(key, baseUrl, model);
-                break;
-            }
-            case "gemini": {
-                String model = XMLPrefsManager.get(Ai.model);
-                String geminiModel = (model != null && !model.isEmpty()) ? model : "gemini-flash-latest";
-                android.util.Log.d("AI_INIT", "Gemini: model=" + geminiModel + " baseUrl=https://generativelanguage.googleapis.com/v1beta/openai");
-                provider = new OpenAIProvider(key, "https://generativelanguage.googleapis.com/v1beta/openai", geminiModel);
-                break;
-            }
-            case "claude": {
-                provider = new bhupendra.ai.launcher.ai.providers.ClaudeProvider(key);
-                break;
-            }
-            default:
-                provider = new MockProvider("AI is in mock mode. Set provider in ai.xml.");
-                break;
-        }
+        AIProvider provider = AISubsystem.buildProvider(providerName);
         android.util.Log.d("AI_INIT", "Provider created: " + provider.providerId());
         AndroidToolExecutor executor = new AndroidToolExecutor();
         AISubsystem ai = new AISubsystem(provider, this, executor);

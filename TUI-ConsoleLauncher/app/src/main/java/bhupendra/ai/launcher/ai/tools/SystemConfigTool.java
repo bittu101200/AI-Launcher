@@ -21,6 +21,7 @@ import java.util.Map;
 import bhupendra.ai.launcher.commands.Command;
 import bhupendra.ai.launcher.commands.CommandTuils;
 import bhupendra.ai.launcher.commands.main.MainPack;
+import bhupendra.ai.launcher.managers.ConfigChangeHandler;
 import bhupendra.ai.launcher.managers.xml.XMLPrefsManager;
 import bhupendra.ai.launcher.managers.xml.classes.XMLPrefsSave;
 import bhupendra.ai.launcher.managers.CronManager;
@@ -60,32 +61,54 @@ public class SystemConfigTool extends BaseAITool {
             
             if (mainPack == null) return "[error: mainPack not available]";
 
-            XMLPrefsSave save = null;
-            // Search for the key in all known preference roots
-            for (XMLPrefsManager.XMLPrefsRoot root : XMLPrefsManager.XMLPrefsRoot.values()) {
-                for (XMLPrefsSave s : root.enums) {
-                    if (s.label().equals(key)) {
-                        save = s;
-                        break;
-                    }
-                }
-                if (save != null) break;
-            }
+            XMLPrefsSave save = resolveConfigSave(key);
 
             if (save == null) return "[error: config key not found: " + key + "]";
 
             if ("get".equals(action)) {
-                return key + " = " + XMLPrefsManager.get(String.class, save);
+                String val = XMLPrefsManager.get(String.class, save);
+                if ("api_key".equals(key) && val != null && !val.isEmpty()) {
+                    return key + " = " + val.substring(0, Math.min(4, val.length())) + "..." + (val.length() > 8 ? val.substring(val.length() - 4) : "");
+                }
+                return key + " = " + val;
             } else if ("set".equals(action)) {
                 String value = args.getString("value");
                 save.parent().write(save, value);
-                
-                if (context instanceof bhupendra.ai.launcher.tuils.interfaces.Reloadable) {
-                    ((bhupendra.ai.launcher.tuils.interfaces.Reloadable) context).addMessage(save.parent().path(), save.label() + " -> " + value);
+
+                Context liveContext = mainPack != null ? mainPack.getContext() : context;
+                if (liveContext instanceof bhupendra.ai.launcher.tuils.interfaces.Reloadable) {
+                    ((bhupendra.ai.launcher.tuils.interfaces.Reloadable) liveContext).addMessage(save.parent().path(), save.label() + " -> " + ("api_key".equals(key) ? "****" : value));
                 }
+
+                ConfigChangeHandler.apply(liveContext, save);
                 
-                return "[set " + key + " to " + value + "]";
+                return "[set " + key + " to " + ("api_key".equals(key) ? "****" : value) + "]";
             }
             return "[error: invalid action: " + action + "]";
+    }
+
+    private XMLPrefsSave resolveConfigSave(String key) {
+        if (key == null) return null;
+
+        String normalized = key.trim().toLowerCase().replace('-', '_').replace(' ', '_');
+        ArrayList<XMLPrefsSave> fuzzyMatches = new ArrayList<>();
+
+        for (XMLPrefsManager.XMLPrefsRoot root : XMLPrefsManager.XMLPrefsRoot.values()) {
+            for (XMLPrefsSave s : root.enums) {
+                String label = s.label();
+                String normalizedLabel = label.toLowerCase();
+                if (label.equals(key) || normalizedLabel.equals(normalized)) {
+                    return s;
+                }
+                if (!normalized.startsWith("show_") && normalizedLabel.equals("show_" + normalized)) {
+                    return s;
+                }
+                if (normalizedLabel.contains(normalized)) {
+                    fuzzyMatches.add(s);
+                }
+            }
+        }
+
+        return fuzzyMatches.size() == 1 ? fuzzyMatches.get(0) : null;
     }
 }
