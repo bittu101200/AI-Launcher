@@ -28,7 +28,7 @@ public boolean equals(Object obj) {
 This allows the AI to distinguish between "Reply to John" and "Reply to Sarah" by looking up the specific `PendingIntent` mapped to that name in the cache.
 
 ## 3. Background Execution Logic
-When a command like `reply -to WhatsApp "Hello"` or an AI tool call `system.send_app_message` is issued:
+When a manual command like `reply -to WhatsApp "Hello"` is issued:
 
 1.  **Bundle Preparation:** A new `Bundle` is created.
 2.  **Input Mapping:** The message text is inserted into the bundle using the key found during extraction.

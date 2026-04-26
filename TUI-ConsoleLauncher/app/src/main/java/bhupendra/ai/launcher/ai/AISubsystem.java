@@ -258,8 +258,6 @@ public class AISubsystem {
             smsArgs,
             ToolRiskClass.STATE_CHANGING));
 
-        toolRegistry.register(ToolRegistry.Tier.SYSTEM, new SystemSendAppMessageTool());
-
         toolRegistry.register(ToolRegistry.Tier.SYSTEM, new TermuxExecuteTool(
             "termux.execute",
             "Execute a shell command within the Termux environment.",
