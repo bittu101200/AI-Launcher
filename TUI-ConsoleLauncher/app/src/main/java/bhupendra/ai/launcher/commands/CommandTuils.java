@@ -165,6 +165,8 @@ public class CommandTuils {
             return color(input);
         } else if(type == CommandAbstraction.CONFIG_ENTRY) {
             return configEntry(input);
+        } else if(type == CommandAbstraction.CONFIG_VALUE) {
+            return plainText(input);
         } else if(type == CommandAbstraction.CONFIG_FILE) {
             return configFile(input);
         } else if(type == CommandAbstraction.INT) {

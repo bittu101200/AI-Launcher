@@ -14,9 +14,9 @@ public class kill implements CommandAbstraction {
         AISubsystem ai = AISubsystem.getInstance();
         if (ai != null) {
             ai.hardKill();
-            return "AI processes terminated and history cleared.";
+            return pack.context.getString(R.string.kill_success);
         }
-        return "AI Subsystem not active.";
+        return pack.context.getString(R.string.kill_not_active);
     }
 
     @Override

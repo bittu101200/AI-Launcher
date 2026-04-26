@@ -239,6 +239,7 @@ public class AISubsystem {
             ToolRiskClass.STATE_CHANGING));
 
         toolRegistry.register(ToolRegistry.Tier.SYSTEM, new SystemBeepTool());
+        toolRegistry.register(ToolRegistry.Tier.SYSTEM, new SystemTimerTool());
         toolRegistry.register(ToolRegistry.Tier.SYSTEM, new SystemRequestUserChoiceTool());
         toolRegistry.register(ToolRegistry.Tier.SYSTEM, new SystemRequestUserInputTool());
 

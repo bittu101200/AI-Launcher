@@ -1841,6 +1841,13 @@ public class UIManager implements OnTouchListener {
                 return applyDeviceVisibility(XMLPrefsManager.getBoolean(Ui.show_device_name));
             case "show_battery":
                 return applyBatteryVisibility(XMLPrefsManager.getBoolean(Ui.show_battery));
+            case "notification_whitelist":
+            case "notification_blacklist":
+                if (bhupendra.ai.launcher.managers.notifications.NotificationService.instance != null) {
+                    bhupendra.ai.launcher.managers.notifications.NotificationService.instance.updateFiltering();
+                    return true;
+                }
+                return false;
             default:
                 return false;
         }

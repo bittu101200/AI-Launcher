@@ -879,6 +879,9 @@ public class SuggestionsManager {
             case CommandAbstraction.CONFIG_ENTRY:
                 suggestConfigEntry(suggestions, afterLastSpace, beforeLastSpace );
                 break;
+            case CommandAbstraction.CONFIG_VALUE:
+                suggestConfigValue(suggestions, afterLastSpace, beforeLastSpace);
+                break;
             case CommandAbstraction.CONFIG_FILE:
                 suggestConfigFile(suggestions, afterLastSpace, beforeLastSpace );
                 break;
@@ -1234,6 +1237,35 @@ public class SuggestionsManager {
         }
     }
 
+    private void suggestConfigValue(List<Suggestion> suggestions, String afterLastSpace, String beforeLastSpace) {
+        Command cmd;
+        try {
+            cmd = CommandTuils.parse(beforeLastSpace, pack);
+        } catch (Exception e) {
+            return;
+        }
+
+        if (cmd == null || cmd.mArgs == null || cmd.mArgs.length == 0) return;
+
+        XMLPrefsSave save = null;
+        for (Object arg : cmd.mArgs) {
+            if (arg instanceof XMLPrefsSave) {
+                save = (XMLPrefsSave) arg;
+                break;
+            }
+        }
+
+        if (save == Notifications.notification_whitelist || save == Notifications.notification_blacklist) {
+            // suggest apps
+            suggestApp(pack, suggestions, afterLastSpace, beforeLastSpace, false);
+        } else {
+            // fallback to default if it's a boolean or something we know
+            if (save != null && save.type().equals(XMLPrefsSave.BOOLEAN)) {
+                suggestBoolean(suggestions, beforeLastSpace);
+            }
+        }
+    }
+
     private void suggestConfigEntry(List<Suggestion> suggestions, String afterLastSpace, String beforeLastSpace ) {
         if(xmlPrefsEntrys == null) {
             xmlPrefsEntrys = new ArrayList<>();
@@ -1507,6 +1539,13 @@ public class SuggestionsManager {
                         (appendLastWord ? lastWord : Tuils.EMPTYSTRING) +
                         (appendQuotesBeforeFile && !appendLastWord ? SINGLE_QUOTE : Tuils.EMPTYSTRING) +
                         text;
+            }
+
+            if (type == Suggestion.TYPE_APP && object instanceof AppsManager.LaunchInfo) {
+                // If it's a config set command, we might want the package ID instead of label
+                if (textBefore != null && (textBefore.contains("config set notification_") || textBefore.contains("config append notification_"))) {
+                    return textBefore + Tuils.SPACE + ((AppsManager.LaunchInfo) object).componentName.getPackageName();
+                }
             }
 
             if(textBefore == null || textBefore.length() == 0) {

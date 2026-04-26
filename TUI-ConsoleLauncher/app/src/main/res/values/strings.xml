@@ -442,4 +442,18 @@
     <string name="help_cleararchive">cleararchive — delete archived compaction history</string>
     <string name="help_integrate">integrate — discover installed apps and add as AI tools</string>
     <string name="help_kill">kill — immediately terminate all AI processes and clear history</string>
+    <string name="kill_success">AI processes terminated and history cleared.</string>
+    <string name="kill_not_active">AI Subsystem not active.</string>
+
+    <!-- timer -->
+    <string name="help_timer">Set a timer with the given value.
+        \n\nUsage
+        \n$ timer 5s/5m/5h (5s : 5 seconds, 5m : 5 minutes, 5h : 5 hours)
+        \n $ timer 5s Timer_Title
+    </string>
+    <string name="timer_arg_error">Timer must have at least one argument</string>
+    <string name="timer_format_error">The time: %s is invalid. Expected format is 5m or 5s or 5h</string>
+    <string name="timer_limit_error">The timer cannot be longer than 24 hours</string>
+    <string name="timer_default_title">started from tui</string>
+    <string name="timer_started">Timer started for %s</string>
 </resources>

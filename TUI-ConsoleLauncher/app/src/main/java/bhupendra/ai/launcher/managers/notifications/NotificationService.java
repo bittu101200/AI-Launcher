@@ -24,6 +24,7 @@ import androidx.core.app.NotificationCompat;
 import android.text.TextUtils;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -62,6 +63,8 @@ public class NotificationService extends NotificationListenerService {
     String format;
     int color, maxOptionalDepth;
     boolean enabled, click, longClick, active;
+
+    List<String> whitelist, blacklist;
 
     ArrayBlockingQueue<StatusBarNotification> queue;
     private final Map<String, String> appLabelCache = new HashMap<>();
@@ -137,6 +140,14 @@ public class NotificationService extends NotificationListenerService {
                         }
 
                         String pack = displaySbn.getPackageName();
+
+                        if (blacklist != null && blacklist.contains(pack)) {
+                            continue;
+                        }
+
+                        if (whitelist != null && !whitelist.isEmpty() && !whitelist.contains(pack)) {
+                            continue;
+                        }
 
                         String appName = resolveAppName(pack);
 
@@ -305,6 +316,22 @@ public class NotificationService extends NotificationListenerService {
         click = XMLPrefsManager.getBoolean(Notifications.click_notification);
         longClick = XMLPrefsManager.getBoolean(Notifications.long_click_notification);
 
+        String wl = XMLPrefsManager.get(Notifications.notification_whitelist);
+        if (wl != null && wl.length() > 0) {
+            whitelist = new ArrayList<>(Arrays.asList(wl.split(",")));
+            for (int i = 0; i < whitelist.size(); i++) whitelist.set(i, whitelist.get(i).trim());
+        } else {
+            whitelist = null;
+        }
+
+        String bl = XMLPrefsManager.get(Notifications.notification_blacklist);
+        if (bl != null && bl.length() > 0) {
+            blacklist = new ArrayList<>(Arrays.asList(bl.split(",")));
+            for (int i = 0; i < blacklist.size(); i++) blacklist.set(i, blacklist.get(i).trim());
+        } else {
+            blacklist = null;
+        }
+
         maxOptionalDepth = XMLPrefsManager.getInt(Behavior.max_optional_depth);
 
         queue = new ArrayBlockingQueue<>(QUEUE_CAPACITY);
@@ -364,6 +391,24 @@ public class NotificationService extends NotificationListenerService {
         if (!queue.offer(sbn)) {
             queue.poll();
             queue.offer(sbn);
+        }
+    }
+
+    public void updateFiltering() {
+        String wl = XMLPrefsManager.get(Notifications.notification_whitelist);
+        if (wl != null && wl.length() > 0) {
+            whitelist = new ArrayList<>(Arrays.asList(wl.split(",")));
+            for (int i = 0; i < whitelist.size(); i++) whitelist.set(i, whitelist.get(i).trim());
+        } else {
+            whitelist = null;
+        }
+
+        String bl = XMLPrefsManager.get(Notifications.notification_blacklist);
+        if (bl != null && bl.length() > 0) {
+            blacklist = new ArrayList<>(Arrays.asList(bl.split(",")));
+            for (int i = 0; i < blacklist.size(); i++) blacklist.set(i, blacklist.get(i).trim());
+        } else {
+            blacklist = null;
         }
     }
 

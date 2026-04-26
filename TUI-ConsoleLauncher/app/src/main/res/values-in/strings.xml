@@ -1,0 +1,459 @@
+<resources>
+
+    <!-- various text -->
+    <string name="app_name">T-UI</string>
+    <string name="location_off">Aktifkan GPS</string>
+    <string name="share_label">Bagikan</string>
+    <string name="output_about">Bahasa Indonesia \n\nFrancesco Andreuzzi (Italy)\n\t-> Programmer\n\nTerima kasih kepada Luke Winward atas ide aslinya</string>
+    <string name="output_refresh">Segarkan: aplikasi, alias, musik, kontak, rss feed</string>
+    <string name="output_rate">Terima kasih!</string>
+    <string name="start_notification">T-UI dimulai</string>
+    <string name="tui_running">T-UI sedang berjalan</string>
+    <string name="admin_permission">Kunci layar dengan ketuk dua kali</string>
+    <string name="tui_reset">t-ui disetel ulang ke pengaturan awal</string>
+    <string name="copied">Disalin:</string>
+    <string name="tui_busy">t-ui sedang sibuk, gunakan \"ctrlc\" untuk menghentikan proses</string>
+    <string name="donate">Apakah Anda menyukai karya saya? Anda bisa menawari saya kopi (cmd: $ donate). Terima kasih!</string>
+    <string name="open_file_chooser">Buka file dengan...</string>
+
+    <!-- weather -->
+    <string name="weather_cant_update">Anda tidak dapat melakukan pembaruan manual dengan kunci default. Anda harus membuat kunci khusus di situs web</string>
+    <string name="weather_error">API cuaca sedang sibuk. Mencoba lagi di:</string>
+    <string name="weather_disabled">Cuaca tidak diaktifkan</string>
+    <string name="weather_updated">Cuaca diperbarui pada</string>
+
+    <!-- shortcuts -->
+    <string name="shortcut_index_greater">Indeks lebih besar dari jumlah pintasan</string>
+
+    <!-- reload message -->
+    <string name="theme_applied">Tema diterapkan:</string>
+
+    <!-- balasan -->
+    <string name="reply_id_not_found">Tidak ditemukan aplikasi terikat dengan ID:</string>
+    <string name="reply_notification_not_found">0 notifikasi dari aplikasi ini</string>
+    <string name="reply_notification_found_active">Notifikasi aktif ditemukan, mencoba membalas...</string>
+
+    <!-- menu notifikasi -->
+    <string name="open_notification">Buka</string>
+    <string name="exclude_notification">Kecualikan notifikasi</string>
+    <string name="exclude_app">Kecualikan aplikasi</string>
+    <string name="reply_notification">Membalas notifikasi terakhir</string>
+    <string name="notification_service_not_running">Layanan notifikasi tidak berjalan</string>
+
+    <!-- ekspresi reguler -->
+    <string name="invalid_regex">Regex tidak valid:</string>
+
+    <!-- tema -->
+    <string name="theme_not_found">Tema tidak ditemukan</string>
+    <string name="theme_invalid">Tema tidak valid</string>
+    <string name="theme_old_not_found">Anda tidak memiliki tema lama</string>
+    <string name="theme_reverted">Dikembalikan ke tema sebelumnya</string>
+    <string name="theme_unable">Tidak dapat menerapkan tema ini</string>
+
+    <!-- file -->
+    <string name="output_isdirectory">Ini adalah direktori</string>
+    <string name="output_filenotfound">File tidak ditemukan</string>
+
+    <!-- pemberitahuan -->
+    <string name="notification_reader">Pembaca notifikasi T-UI</string>
+    <string name="no_notification_access">Sayangnya t-ui tidak dapat mengarahkan Anda ke halaman \"Akses notifikasi\" pada pengaturan sistem Anda</string>
+    <string name="notification_low_api">Notifikasi hanya didukung di Android 4.3+. Gunakan \'config -set show_notifications false\' untuk menonaktifkan pesan ini</string>
+
+    <!-- helps texts -->
+    <string name="firsthelp_text">Pertama kali menggunakan t-ui?\n\ttutorial -> lihat tutorial di GitHub\n\thelp     -> temukan daftar perintah yang tersedia</string>
+    <string name="permissions_toast">Anda harus memberikan izin ke Penyimpanan</string>
+    <string name="output_usedefapp">Anda dapat menggunakan \"apps -default_app\" sebagai gantinya</string>
+
+    <!-- folder tui tidak ditemukan -->
+    <string name="tuinotfound_app">Preferensi aplikasi Anda saat ini tidak dapat dimuat karena folder \"t-ui\" tidak dapat dibaca (coba menggunakan perintah \"restart\")</string>
+    <string name="tuinotfound_rss">Preferensi rss Anda saat ini tidak dapat dimuat karena folder \"t-ui\" tidak dapat dibaca (coba menggunakan perintah \"restart\")</string>
+    <string name="tuinotfound_notifications">Preferensi notifikasi Anda saat ini tidak dapat dimuat karena folder \"t-ui\" tidak dapat dibaca (coba menggunakan perintah \"restart\")</string>
+    <string name="tuinotfound_xmlprefs">Preferensi xml Anda saat ini tidak dapat dimuat karena folder \"t-ui\" Anda tidak dapat dibaca (coba menggunakan perintah \"restart\")</string>
+
+    <!-- petunjuk -->
+    <string-array name="hints">
+        <item name="hint_tutorial">Sudahkah Anda membaca tutorialnya? (\"$ tutorial\")</item>
+        <item name="hint_theme">Tahukah Anda bahwa Anda dapat mengganti tema dengan mudah? Lihat cmd \"$ theme\"</item>
+        <item name="hint_theme2">Tahukah Anda? Anda dapat membuat tema khusus dan membaginya dengan pengguna lain. Lihat cmd \"$ theme -create\"</item>
+        <item name="hint_help">Meragukan perintah? Gunakan \"$ help Namacmd\"</item>
+        <item name="hint_music">Tahukah Anda? Anda dapat mendengarkan musik menggunakan t-ui. Lihat cmd \"$ music\"</item>
+        <item name="hint_appgroups">Tahukah Anda? t-ui 6.4 memperkenalkan Grup Aplikasi.\nAnda bisa mendapatkan detail selengkapnya dengan cmd \"$ apps -tutorial\"</item>
+        <item name="hint_notifications">Tahukah Anda? Anda dapat melihat notifikasi di t-ui. Jika tertarik, lihat tutorialnya: \"$ notifications -tutorial\"</item>
+        <item name="hint_clear">Apakah Anda bosan membersihkan layar? Lihat opsi \"clear_after_cmds\", \"clear_after_seconds\" dan \"maxlines\"</item>
+        <item name="hint_wallpaper">Apakah Anda ingin menggunakan wallpaper sebagai latar belakang t-ui? Gunakan cmd: \"$ config -set system_wallpaper true\"</item>
+        <item name="hint_config">Meragukan opsi konfigurasi apa pun? Gunakan cmd \"$ config -info [opsi]\"</item>
+        <item name="hint_alias">Tahukah Anda bahwa t-ui mendukung alias? Untuk info lebih lanjut, gunakan cmd \"$ alias -tutorial\"</item>
+        <item name="hint_excludenotification">Tahukah Anda? Anda dapat mengecualikan notifikasi yang tidak diinginkan dengan mengkliknya lama</item>
+        <item name="hint_disable">Anda dapat menonaktifkan pesan ini dengan cmd \"$ config -set show_hints false\"</item>
+    </string-array>
+
+
+    <string-array name="tutorial">
+        <item>Gunakan perintah \"help\" untuk mendapatkan daftar perintah yang tersedia</item>
+        <item>Jika Anda ingin mendapatkan info tentang perilaku suatu perintah, ketik \"help Namacmd\"</item>
+        <item>Luncurkan aplikasi Anda dengan mengetikkan namanya</item>
+        <item>Anda dapat menghubungi kontak Anda dengan cmd \"call NamaKontak\"</item>
+        <item>t-ui sangat dapat disesuaikan. Periksa \"config -ls\" atau gunakan cmd \"config -tutorial\" untuk melihat apa yang dapat Anda ubah</item>
+        <item>Anda dapat memilih tema yang diunggah oleh pengguna t-ui. Periksa cmd \"theme -view\"</item>
+    </string-array>
+
+    <!-- aplikasi -->
+    <string name="output_appnotfound">Aplikasi tidak ditemukan</string>
+    <string name="activity_not_found">Aktivitas tidak ditemukan</string>
+    <string name="app_installed">Aplikasi terpasang:</string>
+    <string name="app_uninstalled">Aplikasi di-uninstall:</string>
+    <string name="app_shortcut_not_found">Pintasan tidak ditemukan</string>
+
+    <!-- operasi tertunda -->
+    <string name="calling">Panggilan:</string>
+    <string name="restarting">t-ui akan ditutup dalam beberapa detik. Klik tombol beranda untuk memulai ulang</string>
+
+    <!-- berbagai kesalahan -->
+    <string name="output_nopermissions">Anda tidak memberikan izin</string>
+    <string name="output_waitingpermission">Menunggu izin</string>
+    <string name="output_problemcamera">Terjadi masalah saat menghubungkan ke perangkat kamera</string>
+    <string name="output_invalidarg">Argumen tidak valid</string>
+    <string name="output_lessarg">Argumen lebih sedikit dari yang diharapkan</string>
+    <string name="invalid_integer">Bilangan bulat tidak valid</string>
+    <string name="output_nothing_found">Tidak ditemukan</string>
+    <string name="output_xmlproblem1">Ada masalah dengan file XML</string>
+    <string name="output_xmlproblem2">, t-ui akan menggunakan nilai default.\nPerbaiki atau hapus file untuk memulihkan opsi Anda</string>
+    <string name="output_errorlabel">Kesalahan:</string>
+    <string name="output_invalidcolor">Warna tidak valid</string>
+    <string name="output_groupnotfound">Grup tidak ditemukan</string>
+    <string name="output_groupexists">Grup ini sudah ada</string>
+    <string name="output_groupspace">Spasi tidak diperbolehkan di dalam nama grup</string>
+    <string name="output_notification_error">Layanan notifikasi tidak dapat dimulai:</string>
+    <string name="reply_app_not_found">Tidak dapat menemukan aplikasi terkait:</string>
+    <string name="no_internet">Tidak ada akses internet</string>
+    <string name="invalid_number">Nomor tidak valid</string>
+    <string name="output_error">Terjadi kesalahan yang tidak diketahui</string>
+    <string name="internet_error">Kesalahan internet. Kode respons:</string>
+    <string name="no_result">Tidak ada hasil</string>
+    <string name="unavailable_name">Nama tidak tersedia</string>
+    <string name="invalid_name">Nama tidak valid</string>
+    <string name="api_low">Versi Android rendah</string>
+    <string name="invalid_datastoretype">Jenis tidak valid</string>
+    <string name="location_error">Tidak dapat mengetahui lokasi Anda</string>
+
+    <!-- catatan -->
+    <string name="note_not_found">Catatan tidak ditemukan</string>
+    <string name="row_used">Baris ini sibuk</string>
+    <string name="note_max_reached">Catatan Anda mencapai nilai yang ditetapkan di note_max_lines. Anda dapat menggulir untuk melihat semuanya, mengubah nilainya, atau menonaktifkan pesan ini (ui.xml: show_scroll_notes_message).</string>
+
+    <!-- id -->
+    <string name="id_already">ID sibuk</string>
+    <string name="id_notfound">ID tidak valid</string>
+
+    <!-- rss -->
+    <string name="rss_not_found">ID tidak valid: tidak ditemukan umpan RSS</string>
+    <string name="rss_never_checked">RSS ini belum diperiksa</string>
+    <string name="rss_invalid_timeformat">Format waktu tidak dapat diuraikan</string>
+    <string name="rss_invalid_date">Tag tanggal publikasi tidak valid:</string>
+    <string name="rss_invalid_entry_tag">Tag entri tidak valid:</string>
+    <string name="rss_invalid_empty">RSS tidak valid: file kosong:</string>
+
+    <!-- alias -->
+    <string name="output_aliasnotfound">Alias tidak ditemukan:</string>
+    <string name="output_problemaddingalias">Ada masalah dengan alias Anda</string>
+    <string name="output_notaddingalias1">Nama alias Anda:</string>
+    <string name="output_notaddingalias2">sama dengan nilai. Hal ini dapat mengarah pada perilaku buruk, sehingga berakibat buruk. Anda harus mengedit nama untuk menggunakannya</string>
+    <string name="output_notaddingalias3">sama dengan bagian penambahan sebelum spasi pertama (yaitu NamaAlias=play ; aliasValue = play store). Hal ini dapat menyebabkan crash dan kemacetan, sehingga hal ini mustahil. Anda harus mengedit nama untuk menggunakannya</string>
+
+    <!-- tuixt -->
+    <string name="help_tuixt_help">Cetak daftar perintah, atau info tentang suatu perintah
+        \n\nPenggunaan:
+        \nhelp [perintah]
+        \n\nContoh:
+        \n$ help exit
+    </string>
+    <string name="help_tuixt_exit">Keluar dari tuixt</string>
+    <string name="help_tuixt_save">Menyesuaikan perubahan</string>
+    <string name="tuixt_back_pressed">Anda menekan tombol kembali</string>
+    <string name="tuixt_saved">Disimpan</string>
+    <string name="tuixt_reading">Membaca</string>
+    <string name="tuixt_label">TUIXT</string>
+    <string name="tuixt_error">File ini terlalu besar, tidak memungkinkan untuk dibuka dengan editor teks lain</string>
+
+    <!-- telepon -->
+    <string name="output_wifi">WiFi aktif:</string>
+    <string name="output_data">Data Seluler aktif:</string>
+    <string name="output_bluetooth">Bluetooth aktif:</string>
+    <string name="output_bluetooth_unavailable">Bluetooth tidak tersedia di perangkat ini</string>
+    <string name="output_airplane">Mode pesawat aktif:</string>
+
+    <!-- musik -->
+    <string name="output_playing">Memutar:</string>
+    <string name="output_stopped">Berhenti</string>
+    <string name="output_songnotfound">Lagu tidak ditemukan</string>
+    <string name="output_musicdisabled">enable_music is false</string>
+    <string name="no_songs">0 lagu ditemukan</string>
+
+    <!-- perintah/argumen -->
+    <string name="output_commandnotfound">Perintah tidak ditemukan.\nCoba gunakan \"$ help\" atau \"$ tutorial\"</string>
+    <string name="output_invalid_param">Opsi tidak valid:</string>
+
+    <!-- kilatan -->
+    <string name="output_flashon">Senter AKTIF</string>
+    <string name="output_flashoff">Senter MATI</string>
+    <string name="output_flashlightnotavailable">Perangkat Anda tidak mendukung senter</string>
+
+    <!-- status -->
+    <string name="battery_label">Baterai:</string>
+    <string name="mobile_data_label">Data seluler:</string>
+    <string name="wifi_label">WiFi:</string>
+    <string name="location_label">Lokasi:</string>
+    <string name="brightness_label">Kecerahan:</string>
+    <string name="bluetooth_label">Bluetooth:</string>
+
+    <!-- kontak -->
+    <string name="sms_hint">tulis SMS Anda atau biarkan kosong untuk membatalkan</string>
+    <string name="output_numbernotfound">Kontak tidak ditemukan</string>
+    <string name="output_smsnotsent">SMS tidak terkirim</string>
+    <string name="output_smssent">SMS terkirim</string>
+    <string name="output_backup_success">Cadangan dibuat di: %s</string>
+    <string name="output_restore_success">Cadangan berhasil dipulihkan. Memulai ulang...</string>
+    <string name="restore_hint">Pilih nomor cadangan atau masukkan jalur</string>
+    <string name="help_restore">Pulihkan konfigurasi dari cadangan di Downloads/TUI_Backup</string>
+
+
+    <string name="help_airplane">Alihkan mode pesawat</string>
+    <string name="help_backup">Salin semua file konfigurasi TUI ke Downloads/TUI_Backup</string>
+    <string name="help_alias">-add [NamaAlias] [konten alias] -> tambahkan alias baru
+        \n-rm [NamaAlias] -> hapus alias yang ada
+        \n-ls -> daftar alias
+        \n-file -> buka alias.xml
+    </string>
+    <string name="help_apps">-ls -> daftar aplikasi
+        \n-lsh -> daftar aplikasi tersembunyi
+        \n-show [namaAplikasi] -> tampilkan kembali aplikasi tersembunyi
+        \n-hide [namaAplikasi] -> sembunyikan aplikasi
+        \n-l [NamaAplikasi] -> menampilkan detail tentang sebuah aplikasi
+        \n-ps [namaAplikasi] -> tampilkan halaman Google Play Store untuk sebuah aplikasi
+        \n-st [namaAplikasi] -> tampilkan detail Pengaturan untuk aplikasi
+        \n-default_app [index] [NamaAplikasi atau most_used atau null] -> atur default_app pada indeks yang ditentukan
+        \n-frc [NamaAplikasi] -> memaksa t-ui untuk meluncurkan aplikasi
+        \n-file -> buka apps.xml
+        \n-reset [NamaAplikasi] -> reset nilai \"launched_times\" dari aplikasi yang diberikan ke 0
+        \n-mkgp [Namagrup] -> buat grup baru dengan nama yang diberikan
+        \n-rmgp [Namagrup] -> hapus grup dengan nama yang diberikan
+        \n-gpcolor [Namagrup] [color] -> atur warna untuk grup tertentu
+        \n-addtogp [Namagrup] [NamaAplikasi] -> tambahkan aplikasi tertentu ke grup tertentu
+        \n-rmfromgp [Namagrup] [NamaAplikasi] -> hapus aplikasi tertentu dari grup tertentu
+        \n-lsgp [OPTIONAL: Namagrup] -> daftar grup Anda, atau daftar konten grup yang diberikan
+    </string>
+    <string name="help_bluetooth">Alihkan bluetooth</string>
+    <string name="help_brightness">Setel kecerahan perangkat Anda
+        \n$ brightness [0-100]</string>
+    <string name="help_clear">Hapus layar</string>
+    <string name="help_calc" formatted="false">Lakukan operasi dasar (+ - * / % ^ sqrt)
+        \nContoh:
+        \n\n$ calc 4+2-5
+        \n1
+        \n\n$ calc 2 ^ (2*2)
+        \n16
+        \n\n$ calc sqrt25
+        \n5
+    </string>
+    <string name="help_call">Telepon seseorang
+        \n\nPenggunaan:
+        \n$ call [nomor] ATAU [NamaKontak]
+    </string>
+    <string name="help_changelog">Tampilkan log perubahan versi saat ini</string>
+    <string name="help_config">-set [pilihan] [nilai] -> atur nilai suatu opsi
+        \n-append [pilihan] [nilai] -> tambahkan string yang diberikan ke nilai opsi yang dipilih
+        \n-file [file] -> buka file konfigurasi (behavior.xml, ui.xml, theme.xml, ...)
+        \n-erase [opsi] -> atur nilai opsi menjadi \"\"
+        \n-setr [pilihan] [nilai] -> sama dengan \"-set\", tetapi memulai ulang t-ui secara otomatis
+        \n-get [opsi] -> dapatkan nilai opsi
+        \n-fontsize [value] -> mengubah ukuran font global
+        \n-reset [opsi] -> setel ulang nilai opsi
+        \n-info [opsi] -> meminta info tentang opsi yang diberikan
+        \n-apply [file] -> pindahkan file ke direktori t-ui
+        \n-tutorial -> buka halaman tutorial
+    </string>
+    <string name="help_data">Alihkan data seluler</string>
+    <string name="help_devutils">Tidak ada yang menarik di sana</string>
+    <string name="help_donate">Tawarkan kopi kepada pengembang (khusus PayPal)</string>
+    <string name="help_flash">Aktifkan senter</string>
+    <string name="help_help">Cetak perintah yang tersedia, atau info tentang suatu perintah
+        \n\nPenggunaan:
+        \n$ help [perintah]
+    </string>
+    <string name="help_htmlextract">Ekstrak teks dari halaman HTML
+        \n-query [ID filter] [opsional: ID format] [URL] -> parsing entri XPath yang ditentukan dengan URL yang ditentukan
+        \n-add [tipe] [ID] [ekspresi] -> tambahkan ekspresi baru dari tipe tertentu (json, xpath, atau format)
+        \n-rm [ID] -> hapus ekspresi yang ada
+        \n-edit [ID] [ekspresi] -> mengubah ekspresi yang ada
+        \n-ls [type] -> menampilkan ekspresi tipe tertentu
+        \n-tutorial -> tampilkan tutorial di GitHub
+        \n-file -> buka file htmlextract.xml</string>
+    <string name="help_music">-next -> putar lagu berikutnya
+        \n-previous -> putar lagu sebelumnya
+        \n-play -> putar/jeda pemutar
+        \n-stop -> hentikan pemutar
+        \n-ls -> daftar trek Anda
+        \n-select [lagu] -> putar lagu yang dipilih
+        \n-info -> info tentang lagu saat ini
+        \n-seekto [detik] -> cari bagian yang dipilih dari lagu saat ini</string>
+    <string name="help_notes">-add [opsional: kunci {true/false}] [teks] -> tambahkan catatan baru
+        \n-rm [baris] ATAU [teks] -> menghapus catatan yang ada
+        \n-cp [baris] ATAU [teks] -> menyalin catatan yang ada ke papan klip
+        \n-ls -> daftar semua catatan Anda
+        \n-clear -> hapus semua catatan (kecuali yang terkunci)
+        \n-lock [id] OR [text] -> mengunci catatan yang ada
+        \n-unlock [id] ATAU [teks] -> buka kunci catatan yang ada
+        \n-tutorial -> buka halaman tutorial di GitHub</string>
+    <string name="help_rate">Tinggalkan masukan di halaman Play Store</string>
+    <string name="help_refresh">Segarkan aplikasi, alias, musik, kontak</string>
+    <string name="help_regex">-add [ID] [regex] -> tambahkan regex (ekspresi reguler) baru dengan ID yang diberikan
+        \n-rm [ID] -> hapus regex dengan ID yang diberikan
+        \n-test [ID] [string] -> uji regex yang sesuai pada string yang diberikan</string>
+    <string name="help_reply">-to [ID atau nama paket] [apa] -> membalas notifikasi terakhir dari aplikasi yang terikat dengan ID yang diberikan
+        \n-bind [NamaAplikasi] -> ikat aplikasi
+        \n-unbind [NamaAplikasi] -> lepaskan ikatan aplikasi
+        \n-ls -> tampilkan aplikasi terikat Anda
+        \n-check [ID atau nama paket] -> periksa notifikasi terakhir dari aplikasi yang terikat dengan ID yang diberikan
+        \n-tutorial -> buka halaman tutorial di GitHub</string>
+    <string name="help_restart">Mulai ulang t-ui dan muat nilai yang diubah</string>
+    <string name="help_search">-gg [cari ini...] -> Pencarian Google
+        \n-ps [cari ini...] -> Google Play Store
+        \n-u [URL] -> buka URL
+        \n-yt [telusuri ini...] -> YouTube
+        \n-dd [cari ini...] -> DuckDuck Go
+    </string>
+    <string name="help_share">$ share [jalurKeFile]
+    </string>
+    <string name="help_shortcut">-ls [NamaAplikasi] -> tampilkan pintasan aplikasi ini
+        \n-use [shortcutID ATAU indeks pintasan] [opsional: NamaAplikasi] -> gunakan pintasan yang ditentukan
+        \n-cp [index] [NamaAplikasi] -> salin ke clipboard pintasan ke-n dari aplikasi yang dipilih (pertama: 0)</string>
+    <string name="help_status">Dapatkan info tentang pengisian daya baterai, status wifi, dan data seluler</string>
+    <string name="help_theme">-apply [jalur] -> terapkan tema dari file lokal
+        \n-set [elemen] [warna] -> atur warna secara manual
+        \n-preset [nama] -> terapkan prasetel bawaan (blue, red, green, pink, bw, cyberpunk)
+        \n-old -> terapkan kembali tema yang telah diganti dengan tema saat ini
+        \n-standard -> terapkan tema standar</string>
+    <string name="help_time">Cetak waktu saat ini dengan format yang diberikan
+        \n\nPenggunaan:
+        \n$ time [indeks] (indeks berarti indeks format_waktu yang diinginkan</string>
+    <string name="help_tuixt">Buka editor teks.
+        \n\nPenggunaan:
+        \n$ tuixt [file teks]
+    </string>
+    <string name="help_tui">-rm -> hapus instalan t-ui
+        \n-about -> tampilkan info tentang pengembang dan versi saat ini
+        \n-reset -> menghapus folder t-ui dan mengatur ulang pengaturan default (diperlukan restart)
+        \n-log [namafile] -> mencatat teks di layar ke sebuah file
+        \n-priority [command] [int] -> atur prioritas perintah yang dipilih
+        \n-sourcecode -> buka halaman GitHub
+        \n-folder -> cetak jalur folder t-ui</string>
+    <string name="help_tuinotes">-add [baris] [teks] -> tambahkan catatan baru pada baris yang ditentukan (catatan akan ditambahkan jika baris dihilangkan)
+        \n-rm [line] -> hapus catatan pada baris yang ditentukan
+        \n-clear -> hapus semua catatan</string>
+    <string name="help_tutorial">Buka halaman tutorial di GitHub</string>
+    <string name="help_uninstall">Copot pemasangan aplikasi
+        \n\nPenggunaan:
+        \n$ uninstall [namaAplikasi]
+    </string>
+    <string name="help_wifi">Alihkan wifi</string>
+    <string name="help_sms">Kirim SMS.
+        \n\nPenggunaan:
+        \n$ sms [NamaKontak/nomor]
+        \n$ [teks]
+    </string>
+    <string name="help_vibrate">Buat perangkat Anda bergetar.
+        \n\nPenggunaan:
+        \n$ vibrate [milidetik]
+        \n$ vibrate [pola: tunggu, getar, tunggu, getar, tunggu, ...]
+        \n\nContoh:
+        \n$ vibrate 300
+        \n$ vibrate 0,300,500,300</string>
+    <string name="help_volume">-set [stream] [volume: 0-100] -> atur volume untuk streaming yang dipilih
+        \n-profile [mode] -> atur mode profil
+        \n-get [aliran] -> dapatkan info tentang aliran yang dipilih
+        \n\naliran:
+        \n\t* panggilan suara -> 0
+        \n\t* sistem -> 1
+        \n\t* dering -> 2
+        \n\t* media -> 3
+        \n\t* alarm -> 4
+        \n\t* pemberitahuan -> 5
+        \n\nmode:
+        \n\t* diam -> 0
+        \n\t* getar -> 1
+        \n\t* biasa -> 2</string>
+    <string name="help_weather">- update -> lakukan pembaruan manual (ini tidak akan berfungsi kecuali Anda menyetel kunci cuaca khusus)
+        \n-enable -> aktifkan cuaca
+        \n-disable -> nonaktifkan cuaca
+        \n-tutorial -> buka halaman web tutorial cuaca
+        \n-set_key [key] -> atur kunci cuaca khusus</string>
+    <string name="help_beep">Membunyikan \"bip\".
+        \n\nPenggunaan:
+        \n$ beep</string>
+    <string name="help_notifications">-inc [NamaAplikasi] -> sertakan aplikasi
+        \n-exc [namaaplikasi] -> kecualikan aplikasi
+        \n-color [color] [NamaAplikasi] -> atur warna yang akan digunakan untuk aplikasi
+        \n-format [ID] [NamaAplikasi] -> terapkan format dengan ID yang diberikan ke aplikasi terkait
+        \n-add_filter [ID] [filter] -> buat filter baru dengan ID yang diberikan
+        \n-add_format [ID] [format] -> buat format baru dengan ID yang diberikan
+        \n-rm_filter [ID] -> hapus filter yang memiliki ID yang diberikan
+        \n-rm_format [ID] -> hapus format yang memiliki ID yang diberikan
+        \n-access -> tampilkan halaman pengaturan sistem yang didedikasikan untuk Akses Pemberitahuan
+        \n-file -> buka notifikasi.xml
+        \n-tutorial -> tampilkan halaman tutorial</string>
+    <string name="help_location">Tampilkan lokasi Anda saat ini</string>
+    <string name="help_exit">Tutup T-UI dan setel ulang peluncur default</string>
+    <string name="help_rss">-add [ID] [update_time_in_seconds] [url] -> tambahkan umpan RSS baru. t-ui akan mencoba mendapatkan konten baru setiap [update_time_in_seconds] detik
+        \n-rm [ID] -> hapus umpan RSS ini
+        \n-ls -> daftar umpan RSS Anda
+        \n-l [ID] -> tampilkan seluruh konten umpan RSS yang sesuai
+        \n-show [ID] [boolean] -> alihkan properti [show] dari feed RSS tersimpan tertentu
+        \n-update_time [ID] [update_time_in_seconds] -> atur waktu pembaruan feed RSS yang sesuai
+        \n-format [ID] [format] -> mengatur format RSS feed yang sesuai ([format] dapat berupa string atau ID dari format yang ada)
+        \n-color [ID] [color] -> atur warna dasar feed RSS yang sesuai
+        \n-wifi_only [ID] [boolean] -> jika [boolean] benar, feed terkait hanya akan diperbarui jika perangkat Anda terhubung ke jaringan WiFi
+        \n-last_check [ID] -> tampilkan terakhir kali t-ui memeriksa RSS feed ini
+        \n-entry_tag [ID] -> atur tag dasar untuk setiap entri (default: \"item\")
+        \n-date_tag [ID] [tag] -> atur tag yang menyimpan informasi tentang tanggal publikasi (default: \"pubDate\")
+        \n-add_command [ID] [ID (dipisahkan koma)] [regex] [cmd] -> buat perintah regex baru yang akan diterapkan pada umpan RSS yang sesuai dengan ID
+        \n-rm_command [ID] -> hapus perintah regex yang sesuai
+        \n-frc [ID] -> perbarui umpan RSS yang sesuai
+        \n-info [ID] -> tampilkan info tentang pengaturan umpan RSS yang sesuai
+        \n-include_if_matches [ID] [regex] -> jika regex yang diberikan cocok dengan item umpan RSS, regex tersebut akan ditampilkan ([regex] dapat berupa string atau ID regex yang disimpan di dalam regex.xml)
+        \n-exclude_if_matches [ID] [regex] -> jika regex yang diberikan cocok dengan item umpan RSS, regex tersebut tidak akan ditampilkan ([regex] dapat berupa string atau ID regex yang disimpan di dalam regex.xml )
+        \n-add_format [ID] [format] -> buat format baru yang dapat Anda gunakan untuk lebih dari satu RSS feed
+        \n-rm_format [ID] [format] -> hapus format yang ada
+        \n-file -> buka file rss.xml</string>
+
+    <!-- linux -->
+    <string name="help_ctrlc">Hentikan proses shell saat ini dan buat yang baru</string>
+    <string name="help_open">Buka file
+        \nPenggunaan:
+        \n$ open [jalurKeFile]
+    </string>
+
+    <string name="help_username">Ubah nama pengguna dan nama perangkat: username [pengguna_baru] [perangkat_baru]</string>
+    <string name="help_termux">Jalankan perintah di lingkungan Termux. Penggunaan: termux [perintah] [argumen]</string>
+    <string name="help_ai">ai [kueri] — kirim kueri langsung ke AI</string>
+    <string name="help_compact">compact — memadatkan riwayat percakapan AI secara manual</string>
+    <string name="help_pin">pin — sematkan tanggapan AI terbaru</string>
+    <string name="help_clearhistory">clearhistory — hapus semua riwayat percakapan AI</string>
+    <string name="help_cleararchive">cleararchive — hapus riwayat pemadatan yang diarsipkan</string>
+    <string name="help_integrate">integrate — temukan aplikasi yang terpasang dan tambahkan sebagai alat AI</string>
+    <string name="help_kill">kill — segera hentikan semua proses AI dan hapus riwayat</string>
+    <string name="kill_success">Proses AI dihentikan dan riwayat dihapus.</string>
+    <string name="kill_not_active">Subsystem AI tidak aktif.</string>
+
+    <!-- timer -->
+    <string name="help_timer">Menyetel pengatur waktu dengan nilai yang ditentukan.
+        \n\nPenggunaan
+        \n$ timer 5s/5m/5h (5s : 5 detik, 5m : 5 menit, 5h : 5 jam)
+        \n $ timer 5s Judul_Pengatur_Waktu
+    </string>
+    <string name="timer_arg_error">Timer harus memiliki setidaknya satu argumen</string>
+    <string name="timer_format_error">Waktu: %s tidak valid. Format yang diharapkan adalah 5m atau 5s atau 5h</string>
+    <string name="timer_limit_error">Timer tidak boleh lebih dari 24 jam</string>
+    <string name="timer_default_title">dimulai dari tui</string>
+    <string name="timer_started">Timer dimulai selama %s</string>
+
+</resources>

@@ -47,13 +47,33 @@ public class config extends ParamCommand {
         set {
             @Override
             public int[] args() {
-                return new int[] {CommandAbstraction.CONFIG_ENTRY, CommandAbstraction.PLAIN_TEXT};
+                return new int[] {CommandAbstraction.CONFIG_ENTRY, CommandAbstraction.CONFIG_VALUE};
             }
 
             @Override
             public String exec(ExecutePack pack) {
                 XMLPrefsSave save = pack.getPrefsSave();
                 String value = pack.getString();
+
+                if (save == Notifications.notification_whitelist || save == Notifications.notification_blacklist) {
+                    AppsManager apps = ((MainPack) pack).appsManager;
+                    String[] items = value.split(",");
+                    StringBuilder resolved = new StringBuilder();
+                    for (int i = 0; i < items.length; i++) {
+                        String item = items[i].trim();
+                        AppsManager.LaunchInfo info = apps.findLaunchInfoWithLabel(item, AppsManager.SHOWN_APPS);
+                        if (info == null) info = apps.findLaunchInfoWithLabel(item, AppsManager.HIDDEN_APPS);
+                        
+                        if (info != null) {
+                            resolved.append(info.componentName.getPackageName());
+                        } else {
+                            resolved.append(item);
+                        }
+                        if (i < items.length - 1) resolved.append(",");
+                    }
+                    value = resolved.toString();
+                }
+
                 save.parent().write(save, value);
 
                 ((Reloadable) pack.getContext()).addMessage(save.parent().path(), save.label() + " -> " + value);
@@ -125,7 +145,7 @@ public class config extends ParamCommand {
         append {
             @Override
             public int[] args() {
-                return new int[] {CommandAbstraction.CONFIG_ENTRY, CommandAbstraction.PLAIN_TEXT};
+                return new int[] {CommandAbstraction.CONFIG_ENTRY, CommandAbstraction.CONFIG_VALUE};
             }
 
             @Override

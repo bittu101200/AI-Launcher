@@ -133,6 +133,38 @@ public enum Notifications implements XMLPrefsSave {
         public String type() {
             return XMLPrefsSave.BOOLEAN;
         }
+    },
+    notification_whitelist {
+        @Override
+        public String defaultValue() {
+            return "";
+        }
+
+        @Override
+        public String info() {
+            return "Comma-separated list of package names to whitelist. If not empty, only these apps will show notifications.";
+        }
+
+        @Override
+        public String type() {
+            return XMLPrefsSave.TEXT;
+        }
+    },
+    notification_blacklist {
+        @Override
+        public String defaultValue() {
+            return "";
+        }
+
+        @Override
+        public String info() {
+            return "Comma-separated list of package names to blacklist. Notifications from these apps will always be hidden.";
+        }
+
+        @Override
+        public String type() {
+            return XMLPrefsSave.TEXT;
+        }
     };
 
     @Override
