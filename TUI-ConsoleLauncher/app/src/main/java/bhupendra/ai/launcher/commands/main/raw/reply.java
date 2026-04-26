@@ -25,73 +25,17 @@ public class reply extends ParamCommand implements APICommand {
         to {
             @Override
             public int[] args() {
-                return new int[] {CommandAbstraction.VISIBLE_PACKAGE, CommandAbstraction.PLAIN_TEXT};
+                return new int[] {CommandAbstraction.BOUND_REPLY_APP, CommandAbstraction.PLAIN_TEXT};
             }
 
             @Override
             public String exec(ExecutePack pack) {
                 Intent intent = new Intent(ReplyManager.ACTION);
 
-                AppsManager.LaunchInfo launchInfo = pack.getLaunchInfo();
-                intent.putExtra(ReplyManager.ID, launchInfo.componentName.getPackageName());
+                // Use the string directly from pack (which is the package name from suggestion)
+                intent.putExtra(ReplyManager.ID, pack.getString());
                 intent.putExtra(ReplyManager.WHAT, pack.getString());
 
-                LocalBroadcastManager.getInstance(pack.getContext()).sendBroadcast(intent);
-                return null;
-            }
-        },
-        bind {
-            @Override
-            public int[] args() {
-                return new int[] {CommandAbstraction.VISIBLE_PACKAGE};
-            }
-
-            @Override
-            public String exec(ExecutePack pack) {
-                String output = ReplyManager.bind(pack.getLaunchInfo().componentName.getPackageName());
-                LocalBroadcastManager.getInstance(pack.getContext()).sendBroadcast(new Intent(ReplyManager.ACTION_UPDATE));
-                return output;
-            }
-        },
-        check {
-            @Override
-            public int[] args() {
-                return new int[] {CommandAbstraction.BOUND_REPLY_APP};
-            }
-
-            @Override
-            public String exec(ExecutePack pack) {
-                Intent intent = new Intent(ReplyManager.ACTION);
-                intent.putExtra(ReplyManager.ID, pack.getString());
-
-                LocalBroadcastManager.getInstance(pack.getContext()).sendBroadcast(intent);
-                return null;
-            }
-        },
-        unbind {
-            @Override
-            public int[] args() {
-                return new int[] {CommandAbstraction.VISIBLE_PACKAGE};
-            }
-
-            @Override
-            public String exec(ExecutePack pack) {
-                String output = ReplyManager.unbind(pack.getLaunchInfo().componentName.getPackageName());
-                LocalBroadcastManager.getInstance(pack.getContext()).sendBroadcast(new Intent(ReplyManager.ACTION_UPDATE));
-
-                if(output != null && output.length() == 0) return pack.getContext().getString(R.string.reply_app_not_found) + pack.getLaunchInfo().componentName.getPackageName();
-                return output;
-            }
-        },
-        ls {
-            @Override
-            public int[] args() {
-                return new int[0];
-            }
-
-            @Override
-            public String exec(ExecutePack pack) {
-                Intent intent = new Intent(ReplyManager.ACTION_LS);
                 LocalBroadcastManager.getInstance(pack.getContext()).sendBroadcast(intent);
                 return null;
             }

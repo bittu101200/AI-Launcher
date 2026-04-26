@@ -50,7 +50,6 @@ import bhupendra.ai.launcher.managers.RssManager;
 import bhupendra.ai.launcher.managers.TerminalManager;
 import bhupendra.ai.launcher.managers.music.Song;
 import bhupendra.ai.launcher.managers.notifications.NotificationManager;
-import bhupendra.ai.launcher.managers.notifications.reply.BoundApp;
 import bhupendra.ai.launcher.managers.notifications.reply.ReplyManager;
 import bhupendra.ai.launcher.managers.xml.XMLPrefsManager;
 import bhupendra.ai.launcher.managers.xml.classes.XMLPrefsSave;
@@ -1383,22 +1382,38 @@ public class SuggestionsManager {
     }
 
     private boolean suggestBoundReplyApp(List<Suggestion> suggestions, String afterLastSpace, String beforeLastSpace) {
-        List<BoundApp> apps = new ArrayList<>(ReplyManager.boundApps);
-        if(apps.size() == 0) return false;
+        ReplyManager rm = ReplyManager.instance;
+        if (rm == null) return false;
 
+        List<String> pkgs = rm.getQuickReplyAppPackages();
+        if (pkgs == null || pkgs.isEmpty()) return false;
+
+        List<AppsManager.LaunchInfo> apps = new ArrayList<>();
+        for (String p : pkgs) {
+            AppsManager.LaunchInfo info = pack.appsManager.findLaunchInfoWithPackage(p);
+            if (info != null) {
+                apps.add(info);
+            }
+        }
+
+        if (apps.isEmpty()) return false;
+
+        int canInsert = counts[Suggestion.TYPE_APP];
         if (afterLastSpace == null || afterLastSpace.length() == 0) {
-            for (BoundApp b : apps) {
-                suggestions.add(new Suggestion(beforeLastSpace, b.label, false, Suggestion.TYPE_APP));
+            for (AppsManager.LaunchInfo b : apps) {
+                if (canInsert == 0) break;
+                canInsert--;
+                suggestions.add(new Suggestion(beforeLastSpace, b.componentName.getPackageName(), false, Suggestion.TYPE_APP));
             }
         }
         else {
-            int counter = quickCompare(afterLastSpace, apps, suggestions, beforeLastSpace, suggestionsPerCategory, false, Suggestion.TYPE_APP, false);
-            if(suggestionsPerCategory - counter <= 0) return true;
+            int counter = quickCompare(afterLastSpace, apps, suggestions, beforeLastSpace, canInsert, false, Suggestion.TYPE_APP, false);
+            if(canInsert - counter <= 0) return true;
 
-            BoundApp[] b = CompareObjects.topMatchesWithDeadline(BoundApp.class, afterLastSpace, apps.size(), apps, suggestionsPerCategory - counter, suggestionsDeadline, SPLITTERS, algInstance, alg);
-            for(BoundApp ba : b) {
+            AppsManager.LaunchInfo[] b = CompareObjects.topMatchesWithDeadline(AppsManager.LaunchInfo.class, afterLastSpace, apps.size(), apps, canInsert - counter, suggestionsDeadline, SPLITTERS, algInstance, alg);
+            for(AppsManager.LaunchInfo ba : b) {
                 if(ba == null) break;
-                suggestions.add(new Suggestion(beforeLastSpace, ba.label, false, Suggestion.TYPE_APP));
+                suggestions.add(new Suggestion(beforeLastSpace, ba.componentName.getPackageName(), false, Suggestion.TYPE_APP));
             }
         }
 

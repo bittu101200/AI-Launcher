@@ -17,18 +17,12 @@ import android.os.Bundle;
 import android.service.notification.StatusBarNotification;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
-import org.xml.sax.SAXParseException;
-
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashSet;
+import java.util.HashMap;
 import java.util.List;
-import java.util.Set;
+import java.util.Map;
 
 import bhupendra.ai.launcher.BuildConfig;
 import bhupendra.ai.launcher.R;
@@ -42,11 +36,6 @@ import bhupendra.ai.launcher.tuils.Tuils;
 
 import static bhupendra.ai.launcher.managers.xml.XMLPrefsManager.VALUE_ATTRIBUTE;
 import static bhupendra.ai.launcher.managers.xml.XMLPrefsManager.set;
-import static bhupendra.ai.launcher.managers.xml.XMLPrefsManager.writeTo;
-
-/**
- * Created by francescoandreuzzi on 17/01/2018.
- */
 
 public class ReplyManager implements XMLPrefsElement {
 
@@ -56,12 +45,9 @@ public class ReplyManager implements XMLPrefsElement {
     public static String ID = "id";
     public static String WHAT = "what";
     public static String ACTION_UPDATE = BuildConfig.APPLICATION_ID + ".update";
-    public static String ACTION_LS = BuildConfig.APPLICATION_ID + ".lsreplies";
 
-    private static final String ID_ATTRIBUTE = "id";
-
-    private Set<NotificationWear> notificationWears;
-    public static List<BoundApp> boundApps;
+    // Map: PackageName -> last seen NotificationWear
+    private Map<String, NotificationWear> notificationWears;
 
     private BroadcastReceiver receiver;
 
@@ -72,8 +58,6 @@ public class ReplyManager implements XMLPrefsElement {
 
     private Context context;
 
-    public static int nextUsableId;
-
     @Override
     public String path() {
         return PATH;
@@ -83,56 +67,36 @@ public class ReplyManager implements XMLPrefsElement {
         enabled = Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT_WATCH;
         if(!enabled) return;
 
-        notificationWears = new HashSet<>();
+        notificationWears = new HashMap<>();
         values = new XMLPrefsList();
         this.context = context;
 
         instance = this;
 
-        load(true);
+        load();
 
         enabled = Boolean.parseBoolean(values.get(Reply.reply_enabled).value);
         if(!enabled) {
             notificationWears = null;
-            boundApps = null;
         } else {
             IntentFilter filter = new IntentFilter();
             filter.addAction(ACTION);
             filter.addAction(ACTION_UPDATE);
-            filter.addAction(ACTION_LS);
 
             receiver = new BroadcastReceiver() {
                 @Override
                 public void onReceive(Context context, Intent intent) {
                     if(intent.getAction().equals(ACTION)) {
-                        String app = intent.getStringExtra(ID);
+                        String pkg = intent.getStringExtra(ID);
                         String what = intent.getStringExtra(WHAT);
 
-                        int id = -1;
-                        String pkg = null;
-                        try {
-                            id = Integer.parseInt(app);
-                        } catch (Exception e) {
-                            BoundApp bapp = findApp(app);
-                            if(bapp == null) {
-                                // If not found in boundApps, treat as package name directly
-                                pkg = app;
-                            } else {
-                                id = bapp.applicationId;
-                            }
-                        }
-
                         if(what == null) {
-                            if (id != -1) check(id);
-                            else check(pkg);
+                            check(pkg);
                         } else {
-                            if(id != -1) replyTo(ReplyManager.this.context, id, what);
-                            else replyTo(ReplyManager.this.context, pkg, what);
+                            replyTo(ReplyManager.this.context, pkg, what);
                         }
                     } else if(intent.getAction().equals(ACTION_UPDATE)) {
-                        load(false);
-                    } else if(intent.getAction().equals(ACTION_LS)) {
-                        ls(context);
+                        load();
                     }
                 }
             };
@@ -141,10 +105,7 @@ public class ReplyManager implements XMLPrefsElement {
         }
     }
 
-    private void load(boolean loadPrefs) {
-        if(boundApps != null) boundApps.clear();
-        else boundApps = new ArrayList<>();
-
+    private void load() {
         List<Reply> enums = new ArrayList<>(Arrays.asList(Reply.values()));
 
         File file = new File(FileSystemManager.getFolder(), PATH);
@@ -153,74 +114,51 @@ public class ReplyManager implements XMLPrefsElement {
         try {
             o = XMLPrefsManager.buildDocument(file, NAME);
             if(o == null) {
-                Tuils.sendXMLParseError(context, PATH);
                 return;
             }
-        } catch (SAXParseException e) {
-            Tuils.sendXMLParseError(context, PATH, e);
-            return;
         } catch (Exception e) {
             Tuils.log(e);
             return;
         }
 
-        Document d = (Document) o[0];
-        Element root = (Element) o[1];
+        org.w3c.dom.Document d = (org.w3c.dom.Document) o[0];
+        org.w3c.dom.Element root = (org.w3c.dom.Element) o[1];
 
-        NodeList nodes = root.getElementsByTagName("*");
-
-        PackageManager mgr = context.getPackageManager();
+        org.w3c.dom.NodeList nodes = root.getElementsByTagName("*");
 
         try {
             for (int count = 0; count < nodes.getLength(); count++) {
-                final Node node = nodes.item(count);
+                final org.w3c.dom.Node node = nodes.item(count);
                 String nn = node.getNodeName();
 
                 if (Tuils.find(nn, enums) != -1) {
-                    if(loadPrefs) {
-                        values.add(nn, node.getAttributes().getNamedItem(VALUE_ATTRIBUTE).getNodeValue());
+                    values.add(nn, node.getAttributes().getNamedItem(VALUE_ATTRIBUTE).getNodeValue());
 
-                        for (int en = 0; en < enums.size(); en++) {
-                            if (enums.get(en).label().equals(nn)) {
-                                enums.remove(en);
-                                break;
-                            }
+                    for (int en = 0; en < enums.size(); en++) {
+                        if (enums.get(en).label().equals(nn)) {
+                            enums.remove(en);
+                            break;
                         }
                     }
-                } else {
-                    int id = XMLPrefsManager.getIntAttribute((Element) node, ID_ATTRIBUTE);
-
-                    ApplicationInfo info;
-                    try {
-                        info = mgr.getApplicationInfo(nn, 0);
-                    } catch (Exception e) {
-                        Tuils.log(e);
-                        continue;
-                    }
-
-                    String label = info.loadLabel(mgr).toString();
-                    if (id != -1) boundApps.add(new BoundApp(id, nn, label));
                 }
             }
 
-            if (loadPrefs && enums.size() > 0) {
+            if (enums.size() > 0) {
                 for (XMLPrefsSave s : enums) {
                     String value = s.defaultValue();
 
-                    Element em = d.createElement(s.label());
+                    org.w3c.dom.Element em = d.createElement(s.label());
                     em.setAttribute(VALUE_ATTRIBUTE, value);
                     root.appendChild(em);
 
                     values.add(s.label(), value);
                 }
 
-                writeTo(d, file);
+                XMLPrefsManager.writeTo(d, file);
             }
         } catch (Exception e) {
             Tuils.log(e);
         }
-
-        nextUsableId = nextUsableId();
     }
 
     @TargetApi(Build.VERSION_CODES.JELLY_BEAN_MR2)
@@ -231,71 +169,15 @@ public class ReplyManager implements XMLPrefsElement {
         NotificationWear w = extractWearNotification(notification);
         if(w == null) return;
 
-        BoundApp app = findApp(pkg);
-        if(app == null) {
-            // Temporary bound app for unbound notifications so we can still reply by package name
-            app = new BoundApp(-1, pkg, pkg);
-        }
-
-        w.title = title;
-        w.text = text;
-        w.app = app;
-
-        // Remove old entry for same person if exists to update with new PendingIntent
-        notificationWears.remove(w);
-        notificationWears.add(w);
+        notificationWears.put(pkg, w);
     }
 
-    private void replyTo(Context context, int applicationId, String what) {
-        replyTo(context, applicationId, null, what);
-    }
-
-    public void replyTo(Context context, int applicationId, String contact, String what) {
-        if(!enabled) return;
-
-        BoundApp app = findApp(applicationId);
-        if(app == null) {
-            Tuils.sendOutput(context, context.getString(R.string.reply_id_not_found) + Tuils.SPACE + applicationId);
-            return;
-        }
-
-        NotificationWear wear = null;
-        if (contact != null) {
-            wear = findNotificationWear(app.packageName, contact);
-        }
-        
-        if (wear == null) {
-            wear = findNotificationWear(applicationId);
-        }
-
-        if(wear == null) {
-            // Search system notifications
-            wear = findActiveNotification(app.packageName, contact);
-        }
-
-        if(wear != null) replyTo(context, wear, what);
-        else Tuils.sendOutput(context, R.string.reply_notification_not_found);
-    }
-
-    private void replyTo(Context context, String pkg, String what) {
-        replyTo(context, pkg, null, what);
-    }
-
-    public void replyTo(Context context, String pkg, String contact, String what) {
+    public void replyTo(Context context, String pkg, String what) {
         if(!enabled || pkg == null) return;
 
-        NotificationWear wear = null;
-        if (contact != null) {
-            wear = findNotificationWear(pkg, contact);
-        }
-
-        if (wear == null) {
-            wear = findNotificationWear(pkg);
-        }
-
+        NotificationWear wear = notificationWears.get(pkg);
         if(wear == null) {
-            // Search system notifications
-            wear = findActiveNotification(pkg, contact);
+            wear = findActiveNotification(pkg);
         }
 
         if(wear != null) replyTo(context, wear, what);
@@ -303,10 +185,6 @@ public class ReplyManager implements XMLPrefsElement {
     }
 
     private NotificationWear findActiveNotification(String pkg) {
-        return findActiveNotification(pkg, null);
-    }
-
-    private NotificationWear findActiveNotification(String pkg, String contact) {
         bhupendra.ai.launcher.managers.notifications.NotificationService service = 
             bhupendra.ai.launcher.managers.notifications.NotificationService.instance;
         if (service == null) return null;
@@ -314,41 +192,14 @@ public class ReplyManager implements XMLPrefsElement {
         StatusBarNotification[] sbns = service.getActiveNotifications();
         if (sbns == null) return null;
 
-        StatusBarNotification best = null;
         for (StatusBarNotification sbn : sbns) {
             if (sbn.getPackageName().equals(pkg)) {
-                if (contact != null) {
-                    bhupendra.ai.launcher.managers.notifications.NotificationContentResolver.ResolvedContent res = 
-                        bhupendra.ai.launcher.managers.notifications.NotificationContentResolver.resolve(sbn);
-                    if (res != null && contact.equalsIgnoreCase(res.title)) {
-                        NotificationWear w = extractWearNotification(sbn);
-                        if (w != null) {
-                            w.title = res.title;
-                            w.app = findApp(pkg);
-                            if (w.app == null) w.app = new BoundApp(-1, pkg, pkg);
-                            return w;
-                        }
-                    }
-                } else {
-                    if (best == null || sbn.getPostTime() > best.getPostTime()) {
-                        best = sbn;
-                    }
+                NotificationWear w = extractWearNotification(sbn);
+                if (w != null) {
+                    return w;
                 }
             }
         }
-
-        if (best != null && contact == null) {
-            NotificationWear w = extractWearNotification(best);
-            if (w != null) {
-                bhupendra.ai.launcher.managers.notifications.NotificationContentResolver.ResolvedContent res = 
-                    bhupendra.ai.launcher.managers.notifications.NotificationContentResolver.resolve(best);
-                w.title = res != null ? res.title : null;
-                w.app = findApp(pkg);
-                if (w.app == null) w.app = new BoundApp(-1, pkg, pkg);
-                return w;
-            }
-        }
-
         return null;
     }
 
@@ -378,14 +229,12 @@ public class ReplyManager implements XMLPrefsElement {
             RemoteInput[] rs = action.getRemoteInputs();
             if(rs != null && rs.length > 0) {
                 notificationWear.remoteInputs = rs;
-//                Actually I assume that there's only one action
                 notificationWear.pendingIntent = action.actionIntent;
                 break;
             }
         }
 
         if (notificationWear.pendingIntent == null) {
-            // Check for direct reply actions in modern Android notifications if wearable extender fails
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
                 Notification n = statusBarNotification.getNotification();
                 if (n.actions != null) {
@@ -404,57 +253,9 @@ public class ReplyManager implements XMLPrefsElement {
 
         notificationWear.bundle = statusBarNotification.getNotification().extras;
         notificationWear.id = statusBarNotification.getId();
+        notificationWear.text = notificationWear.bundle.getCharSequence(Notification.EXTRA_TEXT);
 
         return notificationWear;
-    }
-
-    private BoundApp findApp(int applicationId) {
-        if(boundApps != null) {
-            for(BoundApp a : boundApps) {
-                if(a.applicationId == applicationId) return a;
-            }
-        }
-
-        return null;
-    }
-
-    private BoundApp findApp(String pkg) {
-        if(boundApps != null) {
-            for(BoundApp a : boundApps) {
-                if(a.packageName.equals(pkg)) return a;
-            }
-        }
-
-        return null;
-    }
-
-    private NotificationWear findNotificationWear(BoundApp bapp) {
-        return findNotificationWear(bapp.packageName);
-    }
-
-    private NotificationWear findNotificationWear(String pkg) {
-        NotificationWear best = null;
-        for(NotificationWear h : notificationWears) {
-            if(h.app != null && h.app.packageName.equals(pkg)) {
-                best = h;
-            }
-        }
-        return best;
-    }
-
-    private NotificationWear findNotificationWear(String pkg, String contact) {
-        if (contact == null) return findNotificationWear(pkg);
-        for(NotificationWear h : notificationWears) {
-            if(h.app != null && h.app.packageName.equals(pkg) && contact.equalsIgnoreCase(h.title)) return h;
-        }
-        return null;
-    }
-
-    private NotificationWear findNotificationWear(int id) {
-        for(NotificationWear h : notificationWears) {
-            if(h.app != null && h.app.applicationId == id) return h;
-        }
-        return null;
     }
 
     public void dispose(Context context) {
@@ -465,10 +266,6 @@ public class ReplyManager implements XMLPrefsElement {
         if(notificationWears != null) {
             notificationWears.clear();
             notificationWears = null;
-        }
-        if(boundApps != null) {
-            boundApps.clear();
-            boundApps = null;
         }
         if(values != null) {
             values.list.clear();
@@ -493,35 +290,11 @@ public class ReplyManager implements XMLPrefsElement {
         return null;
     }
 
-    public void check(int id) {
-        if(!enabled) return;
-
-        BoundApp app = findApp(id);
-        if(app == null) {
-            Tuils.sendOutput(context, context.getString(R.string.reply_id_not_found) + Tuils.SPACE + id);
-            return;
-        }
-
-        NotificationWear wear = findNotificationWear(app);
-        if(wear == null) {
-            // Search system notifications
-            wear = findActiveNotification(app.packageName);
-        }
-
-        if(wear == null) {
-            Tuils.sendOutput(context, R.string.reply_notification_not_found);
-            return;
-        }
-
-        Tuils.sendOutput(context, wear.text != null ? wear.text : context.getString(R.string.reply_notification_found_active));
-    }
-
     public void check(String pkg) {
         if(!enabled || pkg == null) return;
 
-        NotificationWear wear = findNotificationWear(pkg);
+        NotificationWear wear = notificationWears.get(pkg);
         if(wear == null) {
-            // Search system notifications
             wear = findActiveNotification(pkg);
         }
 
@@ -533,45 +306,28 @@ public class ReplyManager implements XMLPrefsElement {
         Tuils.sendOutput(context, wear.text != null ? wear.text : context.getString(R.string.reply_notification_found_active));
     }
 
-    public static String bind(String pkg) {
-        return XMLPrefsManager.set(new File(FileSystemManager.getFolder(), PATH), pkg, new String[] {ID_ATTRIBUTE}, new String[] {String.valueOf(nextUsableId)});
-    }
-
-    public static String unbind(String pkg) {
-        return XMLPrefsManager.removeNode(new File(FileSystemManager.getFolder(), PATH), pkg);
-    }
-
-    private int nextUsableId() {
-        int nextUsableID = 0;
-        while (true) {
-            boolean shouldRestart = false;
-
-            if (boundApps != null) {
-                for(BoundApp b : boundApps) {
-                    if(b.applicationId == nextUsableID) {
-                        shouldRestart = true;
-                        break;
+    public List<String> getQuickReplyAppPackages() {
+        List<String> pkgs = new ArrayList<>();
+        if (notificationWears != null) {
+            pkgs.addAll(notificationWears.keySet());
+        }
+        
+        bhupendra.ai.launcher.managers.notifications.NotificationService service = 
+            bhupendra.ai.launcher.managers.notifications.NotificationService.instance;
+        if (service != null) {
+            StatusBarNotification[] sbns = service.getActiveNotifications();
+            if (sbns != null) {
+                for (StatusBarNotification sbn : sbns) {
+                    String p = sbn.getPackageName();
+                    if (!pkgs.contains(p)) {
+                        if (extractWearNotification(sbn) != null) {
+                            pkgs.add(p);
+                        }
                     }
                 }
             }
-
-            if(!shouldRestart) return nextUsableID;
-
-            nextUsableID++;
         }
-    }
-
-    public void ls(Context c) {
-        if(!enabled) return;
-
-        StringBuilder builder = new StringBuilder();
-        if(boundApps != null) {
-            for(BoundApp a : boundApps) builder.append(a.packageName).append(" -> ").append(a.applicationId).append(Tuils.NEWLINE);
-        }
-        String s = builder.toString();
-        if(s.length() == 0) s = "[]";
-
-        Tuils.sendOutput(context, s);
+        return pkgs;
     }
 
 }

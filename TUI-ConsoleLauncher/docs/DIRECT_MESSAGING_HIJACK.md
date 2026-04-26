@@ -13,19 +13,8 @@ Android's `Notification.Action` API allows apps to include a `RemoteInput` for "
     *   **RemoteInput Key:** The specific field name (e.g., `"direct_reply"`) the app expects for the text body.
     *   **Contact Identity:** The resolved notification title (e.g., "John Doe").
 
-## 2. Multi-Contact Resolution
-Previously, the system only stored the last received notification. The current implementation uses a `HashSet` of `NotificationWear` objects with a custom `equals()` and `hashCode()` override:
-
-```java
-// Logic implemented in NotificationWear.java
-public boolean equals(Object obj) {
-    // Two notification tokens are considered "same" if:
-    // 1. They belong to the same package (com.whatsapp)
-    // 2. They have the identical contact title (John Doe)
-}
-```
-
-This allows the AI to distinguish between "Reply to John" and "Reply to Sarah" by looking up the specific `PendingIntent` mapped to that name in the cache.
+## 2. Suggestion Filtering
+The `reply -to` command now dynamically filters suggestions. Only apps that currently have an active notification with `RemoteInput` support (Quick Reply) will appear in the suggestions list. This ensures the user only attempts to reply to apps that can actually process the ghost message.
 
 ## 3. Background Execution Logic
 When a manual command like `reply -to WhatsApp "Hello"` is issued:

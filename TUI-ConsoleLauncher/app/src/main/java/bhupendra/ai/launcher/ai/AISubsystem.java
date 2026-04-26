@@ -30,13 +30,10 @@ import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
 public class AISubsystem {
     private static final String PROMPT_APPENDIX =
-        "\nTASK EXECUTION POLICY:\n" +
-        "1. Classify the request before using tools: TUI command, config change, app action, communication, web lookup, or clarification.\n" +
-        "2. Use the fewest tools possible. Do not probe unrelated tools to guess intent.\n" +
-        "3. If the user names an exact or obvious config target, call system.config directly. Use system.search_config only when the exact key is genuinely unknown.\n" +
-        "4. For UI visibility requests such as notes, ram, battery, time, weather, storage, unlock, or device name, prefer the matching show_* config key.\n" +
-        "5. Only inspect notifications when the task is actually about notifications.\n" +
-        "6. If the target is ambiguous, ask one short clarifying question before exploratory tool calls.\n";
+        "\nFINAL EXECUTION RULES:\n" +
+        "1. No preamble: execute tool first, then report. No 'Sure' or 'I will'.\n" +
+        "2. Direct Path: call system.config directly for known visibility keys (e.g. show_ram=true).\n" +
+        "3. Ambiguity: If intent is unclear, ask one short question before tool use.\n";
 
     private static volatile AISubsystem instance;
 
