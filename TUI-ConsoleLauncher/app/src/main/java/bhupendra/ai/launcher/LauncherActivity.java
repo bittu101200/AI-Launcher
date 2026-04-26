@@ -10,7 +10,6 @@ import bhupendra.ai.launcher.managers.FileSystemManager;
 
 
 import android.Manifest;
-import android.net.Uri;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -22,20 +21,16 @@ import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
-import androidx.core.app.ActivityCompat;
-import androidx.core.content.ContextCompat;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 import androidx.appcompat.app.AppCompatActivity;
 import android.text.TextUtils;
 import android.view.ContextMenu;
-import android.window.OnBackInvokedDispatcher;
 import android.view.KeyEvent;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
 import android.view.WindowManager;
-import android.widget.Toast;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -73,9 +68,6 @@ import bhupendra.ai.launcher.tuils.interfaces.Outputable;
 import bhupendra.ai.launcher.ai.AIProvider;
 import bhupendra.ai.launcher.ai.AISubsystem;
 import bhupendra.ai.launcher.ai.AndroidToolExecutor;
-import bhupendra.ai.launcher.ai.AITrigger;
-import bhupendra.ai.launcher.ai.providers.MockProvider;
-import bhupendra.ai.launcher.ai.providers.OpenAIProvider;
 import bhupendra.ai.launcher.managers.xml.options.Ai;
 import bhupendra.ai.launcher.tuils.interfaces.Reloadable;
 
@@ -96,8 +88,9 @@ public class LauncherActivity extends AppCompatActivity implements Reloadable {
     private PublicIOReceiver publicIOReceiver;
 
     private boolean openKeyboardOnStart, canApplyTheme, backButtonEnabled;
+    private boolean initialized = false;
 
-    private Set<ReloadMessageCategory> categories;
+    private Set<ReloadMessageCategory> categories = new HashSet<>();
     private Runnable stopActivity = () -> {
             CharSequence reloadMessage = Tuils.EMPTYSTRING;
             for (ReloadMessageCategory c : categories) {
@@ -141,16 +134,16 @@ public class LauncherActivity extends AppCompatActivity implements Reloadable {
             @Override
             public void run() {
                 if(ui == null) {
-                    handler.postDelayed(this, DELAY);
+                    if(handler != null) handler.postDelayed(this, DELAY);
                     return;
                 }
 
                 SimpleMutableEntry<CharSequence,Integer> sm;
-                while ((sm = textCategory.poll()) != null) {
+                while (textCategory != null && (sm = textCategory.poll()) != null) {
                     ui.setOutput(sm.getKey(), sm.getValue());
                 }
 
-                while ((sm = textColor.poll()) != null) {
+                while (textColor != null && (sm = textColor.poll()) != null) {
                     ui.setOutput(sm.getValue(), sm.getKey());
                 }
 
@@ -169,7 +162,7 @@ public class LauncherActivity extends AppCompatActivity implements Reloadable {
 
                 if(!charged) {
                     charged = true;
-                    handler.postDelayed(r, DELAY);
+                    if(handler != null) handler.postDelayed(r, DELAY);
                 }
             }
         }
@@ -182,7 +175,7 @@ public class LauncherActivity extends AppCompatActivity implements Reloadable {
 
                 if(!charged) {
                     charged = true;
-                    handler.postDelayed(r, DELAY);
+                    if(handler != null) handler.postDelayed(r, DELAY);
                 }
             }
         }
@@ -195,7 +188,7 @@ public class LauncherActivity extends AppCompatActivity implements Reloadable {
 
                 if(!charged) {
                     charged = true;
-                    handler.postDelayed(r, DELAY);
+                    if(handler != null) handler.postDelayed(r, DELAY);
                 }
             }
         }
@@ -216,63 +209,17 @@ public class LauncherActivity extends AppCompatActivity implements Reloadable {
             return;
         }
 
-        List<String> permissionsToRequest = new ArrayList<>();
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            // Android 13+ (API 33+) doesn't use READ/WRITE_EXTERNAL_STORAGE for general files
-            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
-                if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
-                    permissionsToRequest.add(Manifest.permission.READ_EXTERNAL_STORAGE);
-                }
-                if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
-                    permissionsToRequest.add(Manifest.permission.WRITE_EXTERNAL_STORAGE);
-                }
-            }
-
-            if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_PHONE_STATE) != PackageManager.PERMISSION_GRANTED) {
-                permissionsToRequest.add(Manifest.permission.READ_PHONE_STATE);
-            }
-            if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-                permissionsToRequest.add(Manifest.permission.ACCESS_FINE_LOCATION);
-            }
-            if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-                permissionsToRequest.add(Manifest.permission.ACCESS_COARSE_LOCATION);
-            }
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
-                    permissionsToRequest.add(Manifest.permission.POST_NOTIFICATIONS);
-                }
-            }
-        }
-
-        // Special check for MANAGE_EXTERNAL_STORAGE (API 30+)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            if (!android.os.Environment.isExternalStorageManager()) {
-                try {
-                    Intent intent = new Intent(android.provider.Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION);
-                    intent.addCategory("android.intent.category.DEFAULT");
-                    intent.setData(android.net.Uri.parse(String.format("package:%s", getApplicationContext().getPackageName())));
-                    startActivityForResult(intent, 100);
-                } catch (Exception e) {
-                    Intent intent = new Intent();
-                    intent.setAction(android.provider.Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION);
-                    startActivityForResult(intent, 100);
-                }
-                Toast.makeText(this, "Please grant storage permissions to T-UI", Toast.LENGTH_LONG).show();
-            }
-        }
-
-        if (!permissionsToRequest.isEmpty()) {
-            ActivityCompat.requestPermissions(this, permissionsToRequest.toArray(new String[0]), LauncherActivity.STARTING_PERMISSION);
-        } else {
-            canApplyTheme = true;
-            finishOnCreate();
-        }
+        canApplyTheme = true;
+        finishOnCreate();
     }
 
     private void finishOnCreate() {
+        if (initialized) return;
+        initialized = true;
 
         Thread.currentThread().setUncaughtExceptionHandler(new CustomExceptionHandler());
 
+        // CRITICAL: Initialize Managers before anything else
         XMLPrefsManager.loadCommons(this);
         new RegexManager(LauncherActivity.this);
         new TimeManager(this);
@@ -315,13 +262,16 @@ public class LauncherActivity extends AppCompatActivity implements Reloadable {
         }
 
         backButtonEnabled = XMLPrefsManager.getBoolean(Behavior.back_button_enabled);
-        registerPredictiveBack();
 
         boolean showNotification = XMLPrefsManager.getBoolean(Behavior.tui_notification);
         Intent keeperIntent = new Intent(this, KeeperService.class);
         if (showNotification) {
             keeperIntent.putExtra(KeeperService.PATH_KEY, XMLPrefsManager.get(Behavior.home_path));
-            startService(keeperIntent);
+            if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                startForegroundService(keeperIntent);
+            } else {
+                startService(keeperIntent);
+            }
         } else {
             try {
                 stopService(keeperIntent);
@@ -355,15 +305,6 @@ public class LauncherActivity extends AppCompatActivity implements Reloadable {
                     PackageManager pm = getPackageManager();
                     pm.setComponentEnabledSetting(notificationComponent, PackageManager.COMPONENT_ENABLED_STATE_ENABLED, PackageManager.DONT_KILL_APP);
 
-                    if (!DeviceStateManager.hasNotificationAccess(this)) {
-                        Intent i = new Intent("android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS");
-                        if (i.resolveActivity(getPackageManager()) == null) {
-                            Toast.makeText(this, R.string.no_notification_access, Toast.LENGTH_LONG).show();
-                        } else {
-                            startActivity(i);
-                        }
-                    }
-
                     Intent monitor = new Intent(this, NotificationMonitorService.class);
                     startService(monitor);
 
@@ -396,8 +337,6 @@ public class LauncherActivity extends AppCompatActivity implements Reloadable {
             if(s != null) out.onOutput(TextProcessor.span(s, XMLPrefsManager.getColor(Theme.restart_message_color)));
         }
 
-        categories = new HashSet<>();
-
         main = new MainManager(this);
 
         try {
@@ -410,10 +349,6 @@ public class LauncherActivity extends AppCompatActivity implements Reloadable {
         }
 
         ViewGroup mainView = (ViewGroup) findViewById(R.id.mainview);
-
-//        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !XMLPrefsManager.getBoolean(Ui.ignore_bar_color) && !XMLPrefsManager.getBoolean(Ui.statusbar_light_icons)) {
-//            mainView.setSystemUiVisibility(0);
-//        }
 
         if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !XMLPrefsManager.getBoolean(Ui.ignore_bar_color) && !XMLPrefsManager.getBoolean(Ui.statusbar_light_icons)) {
             mainView.setSystemUiVisibility(mainView.getSystemUiVisibility() | View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR);
@@ -448,108 +383,46 @@ public class LauncherActivity extends AppCompatActivity implements Reloadable {
     }
 
     @Override
-    protected void onRestart() {
-        super.onRestart();
-
-        LocalBroadcastManager.getInstance(this.getApplicationContext()).sendBroadcast(new Intent(UIManager.ACTION_UPDATE_SUGGESTIONS));
-    }
-
-    @Override
     protected void onPause() {
         super.onPause();
-
-        if (ui != null && main != null) {
-            ui.pause();
-            main.dispose();
-        }
-    }
-
-    private boolean disposed = false;
-    private void dispose() {
-        if(disposed) return;
-
-        try {
-            LocalBroadcastManager.getInstance(this.getApplicationContext()).unregisterReceiver(privateIOReceiver);
-            getApplicationContext().unregisterReceiver(publicIOReceiver);
-        } catch (Exception e) {}
-
-        try {
-            stopService(new Intent(this, NotificationMonitorService.class));
-        } catch (NoClassDefFoundError | Exception e) {
-            Tuils.log(e);
-        }
-
-        try {
-            stopService(new Intent(this, KeeperService.class));
-        } catch (NoClassDefFoundError | Exception e) {
-            Tuils.log(e);
-        }
-
-        try {
-            Intent notificationIntent = new Intent(this, NotificationService.class);
-            notificationIntent.putExtra(NotificationService.DESTROY, true);
-            startService(notificationIntent);
-        } catch (Throwable e) {
-            Tuils.log(e);
-        }
-
-        overridePendingTransition(0,0);
-
-        if(main != null) main.destroy();
-        if(ui != null) ui.dispose();
-
-        if(main != null && main.getMainPack() != null && main.getMainPack().aiSubsystem != null) {
-            main.getMainPack().aiSubsystem.dispose();
-        }
-
-        XMLPrefsManager.dispose();
-        RegexManager.instance.dispose();
-        TimeManager.instance.dispose();
-
-        disposed = true;
+        if(ui != null) ui.pause();
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
 
-        dispose();
+        try {
+            LocalBroadcastManager.getInstance(getApplicationContext()).unregisterReceiver(privateIOReceiver);
+        } catch (Exception e) {}
+
+        if(main != null) main.destroy();
+        if(ui != null) ui.dispose();
     }
 
-    @SuppressWarnings("deprecation")
     @Override
     public void onBackPressed() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            return;
-        }
-        if (backButtonEnabled && main != null) {
-            ui.onBackPressed();
-        }
-    }
-
-    private void handleBackInvocation() {
-        if (backButtonEnabled && main != null) {
-            ui.onBackPressed();
-        }
-    }
-
-    private void registerPredictiveBack() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            getOnBackInvokedDispatcher().registerOnBackInvokedCallback(
-                OnBackInvokedDispatcher.PRIORITY_DEFAULT,
-                this::handleBackInvocation
-            );
+        if(backButtonEnabled) {
+            if(ui != null) ui.onBackPressed();
         }
     }
 
     @Override
-    public boolean onKeyLongPress(int keyCode, KeyEvent event) {
-        if (keyCode != KeyEvent.KEYCODE_BACK)
-            return super.onKeyLongPress(keyCode, event);
+    public void addMessage(String header, String message) {
+        ReloadMessageCategory category = null;
+        for (ReloadMessageCategory c : categories) {
+            if (c.header.equals(header)) {
+                category = c;
+                break;
+            }
+        }
 
-        if (main != null)
-            main.onLongBack();
-        return true;
+        if (category == null) {
+            category = new ReloadMessageCategory(header);
+            categories.add(category);
+        }
+
+        category.lines.add(message);
     }
 
     @Override
@@ -558,86 +431,11 @@ public class LauncherActivity extends AppCompatActivity implements Reloadable {
     }
 
     @Override
-    public void addMessage(String header, String message) {
-        for(ReloadMessageCategory cs : categories) {
-            Tuils.log(cs.header, header);
-            if(cs.header.equals(header)) {
-                cs.lines.add(message);
-                return;
-            }
-        }
-
-        ReloadMessageCategory c = new ReloadMessageCategory(header);
-        if(message != null) c.lines.add(message);
-        categories.add(c);
-    }
-
-    @Override
-    public boolean applyLiveConfigChange(String key) {
-        if (ui == null) return false;
-        return ui.applyLiveConfigChange(key);
-    }
-
-    @Override
-    public void onWindowFocusChanged(boolean hasFocus) {
-        super.onWindowFocusChanged(hasFocus);
-
-        if (hasFocus && ui != null) {
-            ui.focusTerminal();
-            ui.reapplyBackground();
-        }
-    }
-
-    SuggestionsManager.Suggestion suggestion;
-    @Override
-    public void onCreateContextMenu(ContextMenu menu, View v, ContextMenu.ContextMenuInfo menuInfo) {
-        super.onCreateContextMenu(menu, v, menuInfo);
-
-        suggestion = (SuggestionsManager.Suggestion) v.getTag(R.id.suggestion_id);
-
-        if(suggestion.type == SuggestionsManager.Suggestion.TYPE_CONTACT) {
-            ContactManager.Contact contact = (ContactManager.Contact) suggestion.object;
-
-            menu.setHeaderTitle(contact.name);
-            for(int count = 0; count < contact.numbers.size(); count++) {
-                menu.add(0, count, count, contact.numbers.get(count));
-            }
-        }
-    }
-
-    @Override
-    public boolean onContextItemSelected(MenuItem item) {
-        if(suggestion != null) {
-            if(suggestion.type == SuggestionsManager.Suggestion.TYPE_CONTACT) {
-                ContactManager.Contact contact = (ContactManager.Contact) suggestion.object;
-                contact.setSelectedNumber(item.getItemId());
-
-                Tuils.sendInput(this, suggestion.getText());
-
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-
-        if(requestCode == TUIXT_REQUEST && resultCode != 0) {
-            if(resultCode == TuixtActivity.BACK_PRESSED) {
-                Tuils.sendOutput(this, R.string.tuixt_back_pressed);
-            } else {
-                Tuils.sendOutput(this, data.getStringExtra(TuixtActivity.ERROR_KEY));
-            }
-        }
-    }
-
-    @Override
-    public void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults) {
-        if(permissions.length > 0 && permissions[0].equals(Manifest.permission.READ_CONTACTS) && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-            LocalBroadcastManager.getInstance(this.getApplicationContext()).sendBroadcast(new Intent(ContactManager.ACTION_REFRESH));
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (permissions.length > 0 && Manifest.permission.READ_CONTACTS.equals(permissions[0]) &&
+                grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+            LocalBroadcastManager.getInstance(getApplicationContext()).sendBroadcast(new Intent(ContactManager.ACTION_REFRESH));
         }
 
         try {
@@ -652,92 +450,60 @@ public class LauncherActivity extends AppCompatActivity implements Reloadable {
                     }
                     break;
                 case STARTING_PERMISSION:
-                    int count = 0;
-                    while(count < permissions.length && count < grantResults.length) {
-                        if(grantResults[count] == PackageManager.PERMISSION_DENIED) {
-                            Toast.makeText(this, R.string.permissions_toast, Toast.LENGTH_LONG).show();
-                            new Thread() {
-                                @Override
-                                public void run() {
-                                    super.run();
-
-                                    try {
-                                        sleep(2000);
-                                    } catch (InterruptedException e) {}
-
-                                    runOnUiThread(stopActivity);
-                                }
-                            }.start();
-                            return;
-                        }
-                        count++;
-                    }
-                    canApplyTheme = false;
+                    canApplyTheme = true;
                     finishOnCreate();
                     break;
                 case COMMAND_SUGGESTION_REQUEST_PERMISSION:
-                    if (grantResults.length == 0 && grantResults[0] != PackageManager.PERMISSION_GRANTED) {
+                    if (grantResults.length == 0 || grantResults[0] != PackageManager.PERMISSION_GRANTED) {
                         ui.setOutput(getString(R.string.output_nopermissions), TerminalManager.CATEGORY_OUTPUT);
                     }
                     break;
                 case LOCATION_REQUEST_PERMISSION:
-//                    Intent i = new Intent(UIManager.ACTION_WEATHER_GOT_PERMISSION);
-//                    i.putExtra(XMLPrefsManager.VALUE_ATTRIBUTE, grantResults[0]);
-//                    LocalBroadcastManager.getInstance(this.getApplicationContext()).sendBroadcast(i);
-
                     Intent i = new Intent(TuiLocationManager.ACTION_GOT_PERMISSION);
-                    i.putExtra(XMLPrefsManager.VALUE_ATTRIBUTE, grantResults[0]);
-                    LocalBroadcastManager.getInstance(this.getApplicationContext()).sendBroadcast(i);
-
+                    i.putExtra(XMLPrefsManager.VALUE_ATTRIBUTE, grantResults.length > 0 ? grantResults[0] : PackageManager.PERMISSION_DENIED);
+                    LocalBroadcastManager.getInstance(getApplicationContext()).sendBroadcast(i);
                     break;
             }
-        } catch (Exception e) {}
-    }
-
-    @Override
-    protected void onNewIntent(Intent intent) {
-        super.onNewIntent(intent);
-
-        if (intent.getData() != null && "tui-ai".equals(intent.getData().getScheme())) {
-            Uri data = intent.getData();
-            if ("callback".equals(data.getHost())) {
-                String token = data.getQueryParameter("token");
-                if (token != null && !token.isEmpty()) {
-                    Ai.provider.parent().write(Ai.provider, "openai");
-                    Ai.api_key.parent().write(Ai.api_key, token);
-                    Toast.makeText(this, "Logged in via ChatGPT successfully!", Toast.LENGTH_SHORT).show();
-                    reload();
-                    return;
-                }
-            }
-        }
-
-        String cmd = intent.getStringExtra(PrivateIOReceiver.TEXT);
-        if(cmd != null) {
-            Intent i = new Intent(MainManager.ACTION_EXEC);
-            i.putExtra(MainManager.CMD_COUNT, MainManager.commandCount);
-            i.putExtra(MainManager.CMD, cmd);
-            i.putExtra(MainManager.NEED_WRITE_INPUT, true);
-            LocalBroadcastManager.getInstance(getApplicationContext()).sendBroadcast(i);
+        } catch (Exception e) {
+            Tuils.log(e);
         }
     }
 
-    @Override
-    public void onConfigurationChanged(Configuration newConfig) {
-        super.onConfigurationChanged(newConfig);
-        if (ui != null) {
-            ui.reapplyBackground();
-        }
-    }
-
-    private AISubsystem buildAISubsystem(String providerName) {
-        String key = XMLPrefsManager.get(Ai.api_key);
-        android.util.Log.d("AI_INIT", "Building AI subsystem: provider=" + providerName + " key=" + (key != null && !key.isEmpty() ? key.substring(0, Math.min(8, key.length())) + "..." : "empty"));
-        AIProvider provider = AISubsystem.buildProvider(providerName);
-        android.util.Log.d("AI_INIT", "Provider created: " + provider.providerId());
+    private AISubsystem buildAISubsystem(String providerId) {
+        AIProvider provider = AISubsystem.buildProvider(providerId);
         AndroidToolExecutor executor = new AndroidToolExecutor();
         AISubsystem ai = new AISubsystem(provider, this, executor);
         if (main != null) executor.setMainPack(main.getMainPack());
         return ai;
+    }
+
+    private static class ReloadMessageCategory {
+        String header;
+        List<String> lines;
+
+        public ReloadMessageCategory(String header) {
+            this.header = header;
+            lines = new ArrayList<>();
+        }
+
+        public CharSequence text() {
+            CharSequence sequence = TextUtils.concat(header, Tuils.NEWLINE);
+
+            StringBuilder builder = new StringBuilder();
+            final String dash = "-";
+            for(int c = 0; c < lines.size(); c++) builder.append(Tuils.SPACE).append(dash).append(Tuils.SPACE).append(lines.get(c)).append(Tuils.NEWLINE);
+
+            return TextUtils.concat(sequence, builder.toString());
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            return obj instanceof ReloadMessageCategory && ((ReloadMessageCategory) obj).header.equals(header);
+        }
+
+        @Override
+        public int hashCode() {
+            return header.hashCode();
+        }
     }
 }

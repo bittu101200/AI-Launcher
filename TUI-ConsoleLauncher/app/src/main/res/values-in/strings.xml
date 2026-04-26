@@ -441,6 +441,7 @@
     <string name="help_cleararchive">cleararchive — hapus riwayat pemadatan yang diarsipkan</string>
     <string name="help_integrate">integrate — temukan aplikasi yang terpasang dan tambahkan sebagai alat AI</string>
     <string name="help_kill">kill — segera hentikan semua proses AI dan hapus riwayat</string>
+    <string name="help_requirements">requirements — periksa dan minta izin yang hilang (Notifikasi, penyimpanan, dll.)</string>
     <string name="kill_success">Proses AI dihentikan dan riwayat dihapus.</string>
     <string name="kill_not_active">Subsystem AI tidak aktif.</string>
 

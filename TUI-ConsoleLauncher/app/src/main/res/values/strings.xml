@@ -442,6 +442,7 @@
     <string name="help_cleararchive">cleararchive — delete archived compaction history</string>
     <string name="help_integrate">integrate — discover installed apps and add as AI tools</string>
     <string name="help_kill">kill — immediately terminate all AI processes and clear history</string>
+    <string name="help_requirements">requirements — check and request missing permissions (Notifications, storage, etc.)</string>
     <string name="kill_success">AI processes terminated and history cleared.</string>
     <string name="kill_not_active">AI Subsystem not active.</string>
 

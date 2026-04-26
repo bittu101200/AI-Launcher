@@ -153,8 +153,9 @@ public class AISubsystem {
     public static AIProvider buildProvider(String providerName) {
         String key = XMLPrefsManager.get(Ai.api_key);
         String model = XMLPrefsManager.get(Ai.model);
+        String normalizedProvider = providerName != null ? providerName.trim().toLowerCase(Locale.US) : "";
 
-        switch (providerName.toLowerCase()) {
+        switch (normalizedProvider) {
             case "opencode_zen": {
                 String zenModel = (model != null && !model.isEmpty()) ? model : "minimax-m2.5-free";
                 return new bhupendra.ai.launcher.ai.providers.OpenCodeZenProvider(key, zenModel);

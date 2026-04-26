@@ -263,6 +263,8 @@ public class TerminalManager {
         this.mScrollView = (ScrollView) v;
 
         this.mInputView = inputView;
+        this.mInputView.setFocusable(true);
+        this.mInputView.setFocusableInTouchMode(true);
         this.mInputView.setTextSize(ioSize);
         this.mInputView.setTextColor(XMLPrefsManager.getColor(Theme.input_color));
         this.mInputView.setTypeface(Tuils.getTypeface(context));
