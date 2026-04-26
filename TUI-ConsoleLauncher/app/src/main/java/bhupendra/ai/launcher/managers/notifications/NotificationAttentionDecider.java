@@ -149,9 +149,9 @@ public class NotificationAttentionDecider {
         Notification notification = sbn.getNotification();
         if (notification == null) return false;
 
-        Bundle extras = notification.extras;
-        String title = extras != null ? normalize(extras.getCharSequence(Notification.EXTRA_TITLE)) : "";
-        String text = extras != null ? normalize(extras.getCharSequence(Notification.EXTRA_TEXT)) : "";
+        NotificationContentResolver.ResolvedContent resolved = NotificationContentResolver.resolve(sbn);
+        String title = resolved.title;
+        String text = resolved.text;
 
         Candidate candidate = new Candidate.Builder()
             .setSource("system")
@@ -161,7 +161,7 @@ public class NotificationAttentionDecider {
             .setTitle(title)
             .setText(text)
             .setRenderedText(renderedText)
-            .setGroupSummary(isGroupSummary(notification, title, text))
+            .setGroupSummary(isGroupSummary(notification, title, text) && !resolved.resolvedFromMessages)
             .setHasProgress(hasProgress(notification))
             .setHasReplyAction(hasReplyAction(notification))
             .build();
@@ -190,15 +190,16 @@ public class NotificationAttentionDecider {
         String category = safeLower(candidate.category);
 
         if (!candidate.isInternal && HARD_BLACKLIST.contains(packageName)) return false;
+        if (candidate.isGroupSummary) return false;
+
+        if (MESSAGING_ALLOWLIST.contains(packageName)) {
+            return shouldDisplayMessaging(candidate, title, text);
+        }
+
         if (candidate.hasProgress) return false;
         if ("progress".equals(category) || "transport".equals(category)
                 || "service".equals(category) || "status".equals(category)) {
             return false;
-        }
-        if (candidate.isGroupSummary) return false;
-
-        if (MESSAGING_ALLOWLIST.contains(packageName)) {
-            return !isLowSignal(candidate, title, text);
         }
 
         if (candidate.hasReplyAction) return true;
@@ -208,6 +209,15 @@ public class NotificationAttentionDecider {
             return false;
         }
 
+        return !isLowSignal(candidate, title, text);
+    }
+
+    private boolean shouldDisplayMessaging(Candidate candidate, String title, String text) {
+        if (title.length() == 0 && text.length() == 0) return false;
+        if (GROUP_SUMMARY_PATTERN.matcher(text).matches() || GROUP_SUMMARY_PATTERN.matcher(title).matches()) {
+            return false;
+        }
+        if (candidate.hasReplyAction) return true;
         return !isLowSignal(candidate, title, text);
     }
 

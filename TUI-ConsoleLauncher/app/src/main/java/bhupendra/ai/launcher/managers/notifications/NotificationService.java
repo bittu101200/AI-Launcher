@@ -24,7 +24,6 @@ import androidx.core.app.NotificationCompat;
 import android.text.TextUtils;
 
 import java.util.ArrayList;
-import java.util.ConcurrentModificationException;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -48,15 +47,16 @@ import bhupendra.ai.launcher.tuils.Tuils;
 public class NotificationService extends NotificationListenerService {
 
     private static final String TAG = "NotificationService";
+    private static final String DEBUG_TAG = "TUI_NOTIFY";
     public static NotificationService instance;
     public static final String DESTROY = "destroy";
 
     private final int UPDATE_TIME = 2000;
+    private static final int QUEUE_CAPACITY = 32;
     private String LINES_LABEL = "Lines";
     private String ANDROID_LABEL_PREFIX = "android.";
     private String NULL_LABEL = "null";
 
-    HashMap<String, List<Notification>> pastNotifications;
     Handler handler = new Handler();
 
     String format;
@@ -115,7 +115,8 @@ public class NotificationService extends NotificationListenerService {
                         StatusBarNotification sbn;
                         while ((sbn = queue.poll()) != null) {
 
-                            android.app.Notification notification = sbn.getNotification();
+                            StatusBarNotification displaySbn = pickDisplayNotification(sbn);
+                            android.app.Notification notification = displaySbn.getNotification();
                             if (notification == null) {
                                 continue;
                             }
@@ -129,7 +130,7 @@ public class NotificationService extends NotificationListenerService {
                                 ai.getJourneyManager().processNotification(sbn);
                             }
 
-                            String pack = sbn.getPackageName();
+                            String pack = displaySbn.getPackageName();
 
                             String appName;
                             try {
@@ -158,6 +159,8 @@ public class NotificationService extends NotificationListenerService {
                             CharSequence s = TextProcessor.span(f, textColor);
 
                             Bundle bundle = NotificationCompat.getExtras(notification);
+                            NotificationContentResolver.ResolvedContent resolvedContent =
+                                NotificationContentResolver.resolve(displaySbn);
 
                             if(bundle != null) {
                                 Matcher m = formatPattern.matcher(s);
@@ -192,8 +195,13 @@ public class NotificationService extends NotificationListenerService {
                                         if(stopAt > 1) stopAt--;
 
                                         CharSequence text = null;
+                                        String requestedField = split.length > 0 ? split[0] : "";
                                         for(int j = 0; j < stopAt; j++) {
-                                            if(split[j].contains(LINES_LABEL)) {
+                                            if("title".equalsIgnoreCase(split[j])) {
+                                                text = resolvedContent.title;
+                                            } else if("text".equalsIgnoreCase(split[j])) {
+                                                text = resolvedContent.text;
+                                            } else if(split[j].contains(LINES_LABEL)) {
                                                 CharSequence[] array = bundle.getCharSequenceArray(ANDROID_LABEL_PREFIX + split[j]);
                                                 if(array != null) {
                                                     for(CharSequence c : array) {
@@ -209,7 +217,17 @@ public class NotificationService extends NotificationListenerService {
                                         }
 
                                         if(text == null || text.length() == 0) {
-                                            text = split.length == 1 ? NULL_LABEL : split[split.length - 1];
+                                            if ("title".equalsIgnoreCase(requestedField)) {
+                                                text = firstNonEmpty(resolvedContent.title, resolvedContent.originalTitle);
+                                            } else if ("text".equalsIgnoreCase(requestedField)) {
+                                                text = firstNonEmpty(resolvedContent.text, resolvedContent.originalText);
+                                            }
+                                        }
+
+                                        if(text == null || text.length() == 0) {
+                                            text = split.length == 1
+                                                ? ("title".equalsIgnoreCase(requestedField) || "text".equalsIgnoreCase(requestedField) ? "" : NULL_LABEL)
+                                                : split[split.length - 1];
                                         }
 
                                         String stringed = text.toString().trim();
@@ -234,23 +252,7 @@ public class NotificationService extends NotificationListenerService {
 
                             if(notificationManager.match(text)) continue;
 
-                            int found = isInPastNotifications(pack, text);
-//                        if(found == 0) {
-//                            Tuils.log("app " + pack, pastNotifications.get(pack).toString());
-//                        }
-
-                            if(found == 2) continue;
-
-//                        else
                             Notification n = new Notification(System.currentTimeMillis(), text, pack, notification.contentIntent);
-
-                            if(found == 1) {
-                                List<Notification> ns = new ArrayList<>();
-                                ns.add(n);
-                                pastNotifications.put(pack, ns);
-                            } else if(found == 0) {
-                                pastNotifications.get(pack).add(n);
-                            }
 
                             s = TextUtils.replace(s, new String[]{PKG, APP, NEWLINE}, new CharSequence[]{pack, appName, Tuils.NEWLINE});
                             String st = s.toString();
@@ -267,9 +269,20 @@ public class NotificationService extends NotificationListenerService {
                                 Tuils.log(e);
                             }
 
+                            if (NotificationContentResolver.isMessagingPackage(pack)) {
+                                Log.d(
+                                    DEBUG_TAG,
+                                    "candidate pkg=" + pack
+                                        + " key=" + displaySbn.getKey()
+                                        + " title=" + resolvedContent.title
+                                        + " text=" + resolvedContent.text
+                                        + " rendered=" + s
+                                );
+                            }
+
                             if (notificationDisplayManager != null) {
                                 notificationDisplayManager.dispatchSystemNotification(
-                                    sbn,
+                                    displaySbn,
                                     s,
                                     click ? notification.contentIntent : null,
                                     longClick ? n : null
@@ -294,8 +307,6 @@ public class NotificationService extends NotificationListenerService {
         enabled = XMLPrefsManager.getBoolean(Notifications.show_notifications) || XMLPrefsManager.get(Notifications.show_notifications).equalsIgnoreCase("enabled");
         Log.d(TAG, "NotificationService enabled: " + enabled);
 
-        pastNotifications = new HashMap<>();
-
         format = XMLPrefsManager.get(Notifications.notification_format);
         color = XMLPrefsManager.getColor(Notifications.default_notification_color);
 
@@ -304,25 +315,7 @@ public class NotificationService extends NotificationListenerService {
 
         maxOptionalDepth = XMLPrefsManager.getInt(Behavior.max_optional_depth);
 
-        handler.post(new Runnable() {
-            @Override
-            public void run() {
-                long now = System.currentTimeMillis();
-
-                for (Map.Entry<String, List<Notification>> entry : pastNotifications.entrySet()) {
-                    List<Notification> notifications = entry.getValue();
-
-                    Iterator<Notification> it = notifications.iterator();
-                    while (it.hasNext()) {
-                        if (now - it.next().time >= UPDATE_TIME) it.remove();
-                    }
-                }
-
-                handler.postDelayed(this, UPDATE_TIME);
-            }
-        });
-
-        queue = new ArrayBlockingQueue<>(5);
+        queue = new ArrayBlockingQueue<>(QUEUE_CAPACITY);
         bgThread.start();
 
         active = true;
@@ -356,11 +349,6 @@ public class NotificationService extends NotificationListenerService {
         bgThread.interrupt();
         bgThread = null;
 
-        if(pastNotifications != null) {
-            pastNotifications.clear();
-            pastNotifications = null;
-        }
-
         if(queue != null) {
             queue.clear();
             queue = null;
@@ -381,19 +369,59 @@ public class NotificationService extends NotificationListenerService {
         Log.d(TAG, "onNotificationPosted: " + (sbn != null ? sbn.getPackageName() : "null"));
         if(!enabled) return;
 
-        queue.offer(sbn);
+        if (!queue.offer(sbn)) {
+            queue.poll();
+            queue.offer(sbn);
+        }
     }
 
-//    0 = not found
-//    1 = the app wasnt found -> this is the first notification from this app
-//    2 = found
-    private int isInPastNotifications(String pkg, String text) {
+    private StatusBarNotification pickDisplayNotification(StatusBarNotification sbn) {
+        if (!NotificationContentResolver.isMessagingSummary(sbn)) {
+            return sbn;
+        }
+
         try {
-            List<Notification> notifications = pastNotifications.get(pkg);
-            if(notifications == null) return 1;
-            for(Notification n : notifications) if(n.text.equals(text)) return 2;
-        } catch (ConcurrentModificationException e) {}
-        return 0;
+            StatusBarNotification[] activeNotifications = getActiveNotifications();
+            if (activeNotifications == null || activeNotifications.length == 0) {
+                return sbn;
+            }
+
+            String packageName = sbn.getPackageName();
+            String groupKey = sbn.getGroupKey();
+            StatusBarNotification best = null;
+
+            for (StatusBarNotification candidate : activeNotifications) {
+                if (candidate == null) continue;
+                if (!packageName.equals(candidate.getPackageName())) continue;
+                if (NotificationContentResolver.isGroupSummary(candidate)) continue;
+                if (groupKey != null && candidate.getGroupKey() != null && !groupKey.equals(candidate.getGroupKey())) {
+                    continue;
+                }
+
+                if (best == null || candidate.getPostTime() > best.getPostTime()) {
+                    best = candidate;
+                }
+            }
+
+            if (best != null) {
+                Log.d(DEBUG_TAG, "promoted summary pkg=" + packageName + " summaryKey=" + sbn.getKey() + " childKey=" + best.getKey());
+                return best;
+            }
+        } catch (Exception e) {
+            Tuils.log(e);
+        }
+
+        return sbn;
+    }
+
+    private String firstNonEmpty(String... values) {
+        if (values == null) return "";
+        for (String value : values) {
+            if (value != null && value.trim().length() > 0) {
+                return value.trim();
+            }
+        }
+        return "";
     }
 
     @Override

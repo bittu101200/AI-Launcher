@@ -270,7 +270,11 @@ public class MainManager {
                         onCommand(cmd, aliasName, intent.getBooleanExtra(MainManager.MUSIC_SERVICE, false));
                     }
                 } else if(action.equals(location.ACTION_LOCATION_CMD_GOT)) {
-                    Tuils.sendOutput(context, "Lat: " + intent.getDoubleExtra(TuiLocationManager.LATITUDE, 0) + "; Long: " + intent.getDoubleExtra(TuiLocationManager.LONGITUDE, 0));
+                    if (intent.getBooleanExtra(TuiLocationManager.FAIL, false)) {
+                        Tuils.sendOutput(context, context.getString(R.string.location_error));
+                    } else {
+                        Tuils.sendOutput(context, "Lat: " + intent.getDoubleExtra(TuiLocationManager.LATITUDE, 0) + "; Long: " + intent.getDoubleExtra(TuiLocationManager.LONGITUDE, 0));
+                    }
                     TuiLocationManager.instance(context).rm(location.ACTION_LOCATION_CMD_GOT);
                 }
             }

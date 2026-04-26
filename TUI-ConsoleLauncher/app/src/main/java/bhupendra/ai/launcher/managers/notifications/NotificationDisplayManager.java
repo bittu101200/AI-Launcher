@@ -8,6 +8,7 @@ import android.os.Bundle;
 import android.os.Parcelable;
 import android.service.notification.StatusBarNotification;
 import android.text.TextUtils;
+import android.util.Log;
 
 import java.util.HashMap;
 import java.util.Iterator;
@@ -19,6 +20,7 @@ import bhupendra.ai.launcher.tuils.Tuils;
 public class NotificationDisplayManager {
 
     private static final long DUPLICATE_WINDOW_MS = 15_000L;
+    private static final String DEBUG_TAG = "TUI_NOTIFY";
 
     private static volatile NotificationDisplayManager instance;
 
@@ -39,8 +41,15 @@ public class NotificationDisplayManager {
     }
 
     public boolean dispatchSystemNotification(StatusBarNotification sbn, CharSequence renderedText, PendingIntent action, Parcelable longAction) {
-        if (!attentionDecider.shouldDisplay(sbn, renderedText)) return false;
-        if (shouldSuppressDuplicate(buildSystemFingerprint(sbn, renderedText))) return false;
+        if (!attentionDecider.shouldDisplay(sbn, renderedText)) {
+            debug("suppressed attention", sbn, renderedText);
+            return false;
+        }
+        if (shouldSuppressDuplicate(buildSystemFingerprint(sbn, renderedText))) {
+            debug("suppressed duplicate", sbn, renderedText);
+            return false;
+        }
+        debug("dispatch", sbn, renderedText);
         Tuils.sendOutput(appContext, renderedText, TerminalManager.CATEGORY_NO_COLOR, action, longAction);
         return true;
     }
@@ -121,5 +130,21 @@ public class NotificationDisplayManager {
     private String safe(CharSequence value) {
         if (value == null) return "";
         return TextUtils.isEmpty(value) ? "" : value.toString().trim();
+    }
+
+    private void debug(String stage, StatusBarNotification sbn, CharSequence renderedText) {
+        if (sbn == null) return;
+        String packageName = sbn.getPackageName();
+        if (!NotificationContentResolver.isMessagingPackage(packageName)) return;
+        NotificationContentResolver.ResolvedContent resolved = NotificationContentResolver.resolve(sbn);
+        Log.d(
+            DEBUG_TAG,
+            stage
+                + " pkg=" + packageName
+                + " key=" + sbn.getKey()
+                + " title=" + resolved.title
+                + " text=" + resolved.text
+                + " rendered=" + safe(renderedText)
+        );
     }
 }

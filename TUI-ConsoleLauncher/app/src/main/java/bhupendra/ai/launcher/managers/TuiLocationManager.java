@@ -63,21 +63,7 @@ public class TuiLocationManager {
         locationListener = new LocationListener() {
             @Override
             public void onLocationChanged(Location location) {
-                clearHandler();
-
-                latitude = location.getLatitude();
-                longitude = location.getLongitude();
-
-                locationAvailable = true;
-
-                LocalBroadcastManager localBroadcastManager = LocalBroadcastManager.getInstance(context.getApplicationContext());
-
-                for(String s : actionsPool) {
-                    Intent i = new Intent(s);
-                    i.putExtra(LATITUDE, location.getLatitude());
-                    i.putExtra(LONGITUDE, location.getLongitude());
-                    localBroadcastManager.sendBroadcast(i);
-                }
+                publishLocation(location);
             }
 
             @Override
@@ -128,16 +114,26 @@ public class TuiLocationManager {
         if(registered) return;
         registered = true;
 
+        LocationManager manager = (LocationManager) context.getSystemService(Context.LOCATION_SERVICE);
+        if (manager == null) {
+            broadcastFailureAndReset();
+            return;
+        }
+
+        Location lastKnown = getBestLastKnownLocation(manager);
+        if (lastKnown != null) {
+            publishLocation(lastKnown);
+            return;
+        }
+
         Criteria c = new Criteria();
         c.setAltitudeRequired(false);
-        c.setAccuracy(Criteria.ACCURACY_COARSE);
+        c.setAccuracy(Criteria.ACCURACY_FINE);
         c.setBearingRequired(false);
         c.setCostAllowed(false);
         c.setHorizontalAccuracy(Criteria.NO_REQUIREMENT);
         c.setPowerRequirement(Criteria.POWER_LOW);
         c.setSpeedRequired(false);
-
-        LocationManager manager = (LocationManager) context.getSystemService(Context.LOCATION_SERVICE);
 
         try {
             manager.requestLocationUpdates(XMLPrefsManager.getInt(Behavior.location_update_mintime) * 60 * 1000, XMLPrefsManager.getInt(Behavior.location_update_mindistance),
@@ -145,21 +141,20 @@ public class TuiLocationManager {
         } catch (Exception e) {
             Tuils.log(e);
             FileSystemManager.toFile(e);
+            broadcastFailureAndReset();
+            return;
         }
 
         handler = new Handler(Looper.getMainLooper());
         handler.postDelayed(new Runnable() {
             @Override
             public void run() {
-                LocalBroadcastManager localBroadcastManager = LocalBroadcastManager.getInstance(context.getApplicationContext());
-
-                for(String s : actionsPool) {
-                    Intent i = new Intent(s);
-                    i.putExtra(FAIL, true);
-                    localBroadcastManager.sendBroadcast(i);
+                Location fallback = getBestLastKnownLocation(manager);
+                if (fallback != null) {
+                    publishLocation(fallback);
+                } else {
+                    broadcastFailureAndReset();
                 }
-
-                dispose();
             }
         }, MAX_DELAY);
     }
@@ -176,12 +171,15 @@ public class TuiLocationManager {
 
     private void dispose() {
         actionsPool.clear();
+        stopActiveLocationUpdates();
         LocalBroadcastManager.getInstance(context.getApplicationContext()).unregisterReceiver(receiver);
+    }
 
+    private void stopActiveLocationUpdates() {
         LocationManager manager = (LocationManager) context.getSystemService(Context.LOCATION_SERVICE);
         if(manager != null) manager.removeUpdates(locationListener);
-
         clearHandler();
+        registered = false;
     }
 
     public static void disposeStatic() {
@@ -194,5 +192,58 @@ public class TuiLocationManager {
             handler.removeCallbacksAndMessages(null);
             handler = null;
         }
+    }
+
+    private void publishLocation(Location location) {
+        clearHandler();
+
+        latitude = location.getLatitude();
+        longitude = location.getLongitude();
+        locationAvailable = true;
+
+        LocalBroadcastManager localBroadcastManager = LocalBroadcastManager.getInstance(context.getApplicationContext());
+        for(String s : new ArrayList<>(actionsPool)) {
+            Intent i = new Intent(s);
+            i.putExtra(LATITUDE, latitude);
+            i.putExtra(LONGITUDE, longitude);
+            localBroadcastManager.sendBroadcast(i);
+        }
+
+        stopActiveLocationUpdates();
+    }
+
+    private void broadcastFailureAndReset() {
+        LocalBroadcastManager localBroadcastManager = LocalBroadcastManager.getInstance(context.getApplicationContext());
+        for(String s : new ArrayList<>(actionsPool)) {
+            Intent i = new Intent(s);
+            i.putExtra(FAIL, true);
+            localBroadcastManager.sendBroadcast(i);
+        }
+        stopActiveLocationUpdates();
+    }
+
+    @SuppressLint("MissingPermission")
+    private Location getBestLastKnownLocation(LocationManager manager) {
+        Location best = null;
+        String[] providers = new String[] {
+            LocationManager.FUSED_PROVIDER,
+            LocationManager.GPS_PROVIDER,
+            LocationManager.NETWORK_PROVIDER,
+            LocationManager.PASSIVE_PROVIDER
+        };
+
+        for (String provider : providers) {
+            try {
+                Location candidate = manager.getLastKnownLocation(provider);
+                if (candidate == null) continue;
+                if (best == null || candidate.getTime() > best.getTime()) {
+                    best = candidate;
+                }
+            } catch (Exception e) {
+                Tuils.log(e);
+            }
+        }
+
+        return best;
     }
 }
