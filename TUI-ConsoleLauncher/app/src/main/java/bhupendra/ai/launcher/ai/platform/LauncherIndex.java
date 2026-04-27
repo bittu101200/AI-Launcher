@@ -5,6 +5,8 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
+import bhupendra.ai.launcher.managers.suggestions.SuggestionScorer;
+
 public class LauncherIndex {
 
     public static class Entry {
@@ -26,12 +28,35 @@ public class LauncherIndex {
     }
 
     public synchronized List<Entry> search(String query, int limit) {
-        String q = query.toLowerCase();
-        List<Entry> matches = new ArrayList<>();
+        List<ScoredEntry> matches = new ArrayList<>();
+        int minScore = SuggestionScorer.minimumScore(query);
         for (Entry entry : entries) {
-            if (entry.label.toLowerCase().contains(q)) matches.add(entry);
+            int score = Math.max(
+                    SuggestionScorer.score(query, entry.label),
+                    SuggestionScorer.score(query, entry.id));
+            if (score >= minScore) matches.add(new ScoredEntry(entry, score));
         }
-        Collections.sort(matches, Comparator.comparing(e -> e.label.toLowerCase()));
-        return matches.subList(0, Math.min(limit, matches.size()));
+        Collections.sort(matches, new Comparator<ScoredEntry>() {
+            @Override
+            public int compare(ScoredEntry a, ScoredEntry b) {
+                int byScore = b.score - a.score;
+                if (byScore != 0) return byScore;
+                return a.entry.label.compareToIgnoreCase(b.entry.label);
+            }
+        });
+
+        List<Entry> result = new ArrayList<>();
+        for (int i = 0; i < matches.size() && i < limit; i++) result.add(matches.get(i).entry);
+        return result;
+    }
+
+    private static final class ScoredEntry {
+        final Entry entry;
+        final int score;
+
+        ScoredEntry(Entry entry, int score) {
+            this.entry = entry;
+            this.score = score;
+        }
     }
 }

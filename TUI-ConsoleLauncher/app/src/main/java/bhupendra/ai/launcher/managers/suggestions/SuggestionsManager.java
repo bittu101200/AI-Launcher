@@ -147,6 +147,16 @@ public class SuggestionsManager {
         }
     }
 
+    private static class ScoredAlias {
+        final AliasManager.Alias alias;
+        final int score;
+
+        ScoredAlias(AliasManager.Alias alias, int score) {
+            this.alias = alias;
+            this.score = score;
+        }
+    }
+
     public SuggestionsManager(LinearLayout suggestionsView, MainPack mainPack, TerminalManager mTerminalAdapter) {
         this.suggestionsView = suggestionsView;
         this.pack = mainPack;
@@ -815,13 +825,35 @@ public class SuggestionsManager {
     private void suggestAlias(AliasManager aliasManager, List<Suggestion> suggestions, String lastWord) {
         int canInsert = lastWord == null || lastWord.length() == 0 ? noInputCounts[Suggestion.TYPE_ALIAS] : counts[Suggestion.TYPE_ALIAS];
 
-        for(AliasManager.Alias a : aliasManager.getAliases(true)) {
-            if (lastWord.length() == 0 || a.name.startsWith(lastWord)) {
+        List<AliasManager.Alias> aliases = new ArrayList<>(aliasManager.getAliases(true));
+        if (lastWord == null || lastWord.length() == 0) {
+            for(AliasManager.Alias a : aliases) {
                 if (canInsert == 0) return;
-                canInsert--;
-
                 suggestions.add(new Suggestion(Tuils.EMPTYSTRING, a.name, clickToLaunch && !a.isParametrized, Suggestion.TYPE_ALIAS));
+                canInsert--;
             }
+            return;
+        }
+
+        List<ScoredAlias> ranked = new ArrayList<>();
+        int minScore = SuggestionScorer.minimumScore(lastWord);
+        for (AliasManager.Alias alias : aliases) {
+            int score = SuggestionScorer.score(lastWord, alias.name);
+            if (score >= minScore) ranked.add(new ScoredAlias(alias, score));
+        }
+        Collections.sort(ranked, new Comparator<ScoredAlias>() {
+            @Override
+            public int compare(ScoredAlias a, ScoredAlias b) {
+                int byScore = b.score - a.score;
+                if (byScore != 0) return byScore;
+                return a.alias.name.compareToIgnoreCase(b.alias.name);
+            }
+        });
+        for (ScoredAlias scored : ranked) {
+            if (canInsert == 0) return;
+            suggestions.add(new Suggestion(Tuils.EMPTYSTRING, scored.alias.name, clickToLaunch && !scored.alias.isParametrized, Suggestion.TYPE_ALIAS)
+                    .withScore(scored.score));
+            canInsert--;
         }
     }
 
@@ -843,8 +875,12 @@ public class SuggestionsManager {
                 Param p = cmd.getParam(pack, s).getValue();
                 if(p == null) continue;
 
-                if (s.startsWith(lastWord) || s.replace("-", Tuils.EMPTYSTRING).startsWith(lastWord)) {
-                    suggestions.add(new Suggestion(beforeLastSpace , s, p.args().length == 0 && clickToLaunch, 0));
+                int score = Math.max(
+                        SuggestionScorer.score(lastWord, s),
+                        SuggestionScorer.score(lastWord, s.replace("-", Tuils.EMPTYSTRING)));
+                if (score >= SuggestionScorer.minimumScore(lastWord)) {
+                    suggestions.add(new Suggestion(beforeLastSpace , s, p.args().length == 0 && clickToLaunch, 0)
+                            .withScore(score));
                 }
             }
         }
@@ -912,8 +948,13 @@ public class SuggestionsManager {
     private void suggestThemePresets(List<Suggestion> suggestions, String afterLastSpace, String beforeLastSpace) {
         String[] presets = {"blue", "red", "green", "pink", "bw", "cyberpunk"};
         for (String p : presets) {
-            if (afterLastSpace == null || afterLastSpace.length() == 0 || p.startsWith(afterLastSpace)) {
+            if (afterLastSpace == null || afterLastSpace.length() == 0) {
                 suggestions.add(new Suggestion(beforeLastSpace, p, true, Suggestion.TYPE_PERMANENT));
+            } else {
+                int score = SuggestionScorer.score(afterLastSpace, p);
+                if (score >= SuggestionScorer.minimumScore(afterLastSpace)) {
+                    suggestions.add(new Suggestion(beforeLastSpace, p, true, Suggestion.TYPE_PERMANENT).withScore(score));
+                }
             }
         }
     }
@@ -1012,52 +1053,82 @@ public class SuggestionsManager {
 
         String[] fs = CompareStrings.topMatchesWithDeadline(temp, files, suggestionsPerCategory - counter, suggestionsDeadline, FILE_SPLITTERS, algInstance, alg);
         for(String f : fs) {
-            suggestions.add(new Suggestion(beforeLastSpace, f, false, Suggestion.TYPE_FILE, afterLastSpaceWithoutALS));
+            if (f == null) break;
+            int score = SuggestionScorer.score(temp, f);
+            if (score >= SuggestionScorer.minimumScore(temp)) {
+                suggestions.add(new Suggestion(beforeLastSpace, f, false, Suggestion.TYPE_FILE, afterLastSpaceWithoutALS).withScore(score));
+            }
         }
     }
 
     private int quickCompare(String s1, String[] ss, List<Suggestion> suggestions, String beforeLastSpace, int max, boolean exec, int type, Object tag) {
-        if(s1.length() > quickCompare) return 0;
-
         int counter = 0;
-
-        for(int c = 0; c < ss.length; c++) {
+        List<String> ranked = SuggestionScorer.rankStrings(s1, ss, max);
+        for (String value : ranked) {
             if(counter >= max) break;
 
-            if(s1.length() <= quickCompare && ss[c].toLowerCase().startsWith(s1)) {
-                suggestions.add(new Suggestion(beforeLastSpace, ss[c], exec, type, tag instanceof Boolean ? ((boolean) tag ? ss[c] : null) : tag));
-
-                ss[c] = Tuils.EMPTYSTRING;
-
-                counter++;
+            suggestions.add(new Suggestion(beforeLastSpace, value, exec, type, tag instanceof Boolean ? ((boolean) tag ? value : null) : tag)
+                    .withScore(SuggestionScorer.score(s1, value)));
+            for (int c = 0; c < ss.length; c++) {
+                if (value.equals(ss[c])) {
+                    ss[c] = Tuils.EMPTYSTRING;
+                    break;
+                }
             }
+            counter++;
         }
 
         return counter;
     }
 
     private int quickCompare(String s1, List<? extends StringableObject> ss, List<Suggestion> suggestions, String beforeLastSpace, int max, boolean exec, int type, Object tag) {
-        if(s1.length() > quickCompare) return 0;
-
         int counter = 0;
 
-        Iterator<? extends StringableObject> it = ss.iterator();
-
-        while(it.hasNext()) {
+        List<SuggestionScorer.ScoredObject<? extends StringableObject>> ranked = rankStringableObjects(s1, ss, max);
+        for (SuggestionScorer.ScoredObject<? extends StringableObject> scored : ranked) {
             if(counter >= max) break;
 
-            StringableObject o = it.next();
+            StringableObject o = scored.value;
+            suggestions.add(new Suggestion(beforeLastSpace, o.getString(), exec, type, tag instanceof Boolean ? ((boolean) tag ? o : null) : tag)
+                    .withScore(scored.score));
 
-            if(s1.length() <= quickCompare && o.getLowercaseString().startsWith(s1)) {
-                suggestions.add(new Suggestion(beforeLastSpace, o.getString(), exec, type, tag instanceof Boolean ? ((boolean) tag ? o : null) : tag));
-
-                it.remove();
-
-                counter++;
+            Iterator<? extends StringableObject> it = ss.iterator();
+            while (it.hasNext()) {
+                if (it.next() == o) {
+                    it.remove();
+                    break;
+                }
             }
+            counter++;
         }
 
         return counter;
+    }
+
+    private List<SuggestionScorer.ScoredObject<? extends StringableObject>> rankStringableObjects(String query, List<? extends StringableObject> values, int limit) {
+        List<SuggestionScorer.ScoredObject<? extends StringableObject>> scored = new ArrayList<>();
+        if (values == null) return scored;
+
+        int minScore = SuggestionScorer.minimumScore(query);
+        for (StringableObject value : values) {
+            if (value == null) continue;
+            int score = SuggestionScorer.score(query, value.getString());
+            if (score >= minScore) {
+                scored.add(new SuggestionScorer.ScoredObject<StringableObject>(value, score));
+            }
+        }
+
+        Collections.sort(scored, new Comparator<SuggestionScorer.ScoredObject<? extends StringableObject>>() {
+            @Override
+            public int compare(SuggestionScorer.ScoredObject<? extends StringableObject> a, SuggestionScorer.ScoredObject<? extends StringableObject> b) {
+                int byScore = b.score - a.score;
+                if (byScore != 0) return byScore;
+                return a.value.getString().compareToIgnoreCase(b.value.getString());
+            }
+        });
+
+        if (scored.size() <= limit) return scored;
+        return new ArrayList<>(scored.subList(0, limit));
     }
 
     private void suggestFilesInDir(String afterLastSpaceHolder, List<Suggestion> suggestions, File dir, String beforeLastSpace) {
@@ -1100,7 +1171,10 @@ public class SuggestionsManager {
             ContactManager.Contact[] cts = CompareObjects.topMatchesWithDeadline(ContactManager.Contact.class, afterLastSpace, contacts.size(), contacts, suggestionsPerCategory - counter, suggestionsDeadline, SPLITTERS, algInstance, alg);
             for(ContactManager.Contact c : cts) {
                 if(c == null) break;
-                suggestions.add(new Suggestion(beforeLastSpace , c.name, clickToLaunch, Suggestion.TYPE_CONTACT, c));
+                int score = SuggestionScorer.score(afterLastSpace, c.name);
+                if (score >= SuggestionScorer.minimumScore(afterLastSpace)) {
+                    suggestions.add(new Suggestion(beforeLastSpace , c.name, clickToLaunch, Suggestion.TYPE_CONTACT, c).withScore(score));
+                }
             }
         }
     }
@@ -1129,7 +1203,10 @@ public class SuggestionsManager {
             Song[] ss = CompareObjects.topMatchesWithDeadline(Song.class, afterLastSpace, songs.size(), songs, suggestionsPerCategory - counter, suggestionsDeadline, SPLITTERS, algInstance, alg);
             for(Song s : ss) {
                 if(s == null) break;
-                suggestions.add(new Suggestion(beforeLastSpace , s.getTitle(), clickToLaunch, Suggestion.TYPE_SONG));
+                int score = SuggestionScorer.score(afterLastSpace, s.getTitle());
+                if (score >= SuggestionScorer.minimumScore(afterLastSpace)) {
+                    suggestions.add(new Suggestion(beforeLastSpace , s.getTitle(), clickToLaunch, Suggestion.TYPE_SONG).withScore(score));
+                }
             }
         }
     }
@@ -1140,24 +1217,20 @@ public class SuggestionsManager {
             return;
         }
 
-        if(afterLastSpace.length() <= FIRST_INTERVAL) {
-            afterLastSpace = afterLastSpace.toLowerCase().trim();
+        String[] cmds = info.commandGroup.getCommandNames();
+        if(cmds == null) return;
 
-            String[] cmds = info.commandGroup.getCommandNames();
-            if(cmds == null) return;
+        int canInsert = counts[Suggestion.TYPE_COMMAND];
+        List<String> ranked = SuggestionScorer.rankStrings(afterLastSpace, cmds, canInsert);
+        for (String s : ranked) {
+            if(canInsert == 0 || Thread.currentThread().isInterrupted()) return;
 
-            int canInsert = counts[Suggestion.TYPE_COMMAND];
-            for (String s : cmds) {
-                if(canInsert == 0 || Thread.currentThread().isInterrupted()) return;
-
-                if(s.startsWith(afterLastSpace)) {
-                    CommandAbstraction cmd = info.commandGroup.getCommandByName(s);
-                    int[] args = cmd.argType();
-                    boolean exec = args == null || args.length == 0;
-                    suggestions.add(new Suggestion(beforeLastSpace , s, exec && clickToLaunch, Suggestion.TYPE_COMMAND));
-                    canInsert--;
-                }
-            }
+            CommandAbstraction cmd = info.commandGroup.getCommandByName(s);
+            int[] args = cmd.argType();
+            boolean exec = args == null || args.length == 0;
+            suggestions.add(new Suggestion(beforeLastSpace , s, exec && clickToLaunch, Suggestion.TYPE_COMMAND)
+                    .withScore(SuggestionScorer.score(afterLastSpace, s)));
+            canInsert--;
         }
     }
 
@@ -1230,9 +1303,12 @@ public class SuggestionsManager {
                 if(i == null) break;
 
                 if(canInsert == 0) return;
-                canInsert--;
-
-                suggestions.add(new Suggestion(beforeLastSpace , i.publicLabel, canClickToLaunch && clickToLaunch, Suggestion.TYPE_APP, canClickToLaunch && clickToLaunch ? i : null));
+                int score = SuggestionScorer.score(afterLastSpace, i.publicLabel) + Math.min(80, i.launchedTimes * 4);
+                if (score >= SuggestionScorer.minimumScore(afterLastSpace)) {
+                    suggestions.add(new Suggestion(beforeLastSpace , i.publicLabel, canClickToLaunch && clickToLaunch, Suggestion.TYPE_APP, canClickToLaunch && clickToLaunch ? i : null)
+                            .withScore(score));
+                    canInsert--;
+                }
             }
         }
     }
@@ -1292,7 +1368,11 @@ public class SuggestionsManager {
 
             XMLPrefsSave[] saves = CompareObjects.topMatchesWithDeadline(XMLPrefsSave.class, afterLastSpace, list.size(), list, suggestionsPerCategory - counter, suggestionsDeadline, XML_PREFS_SPLITTERS, algInstance, alg);
             for (XMLPrefsSave s : saves) {
-                suggestions.add(new Suggestion(beforeLastSpace , s.label(), false, Suggestion.TYPE_COMMAND));
+                if (s == null) break;
+                int score = SuggestionScorer.score(afterLastSpace, s.label());
+                if (score >= SuggestionScorer.minimumScore(afterLastSpace)) {
+                    suggestions.add(new Suggestion(beforeLastSpace , s.label(), false, Suggestion.TYPE_COMMAND).withScore(score));
+                }
             }
         }
     }
@@ -1313,14 +1393,12 @@ public class SuggestionsManager {
                 Suggestion sg = new Suggestion(beforeLastSpace , s, false, Suggestion.TYPE_CONFIGFILE, afterLastSpace);
                 suggestions.add(sg);
             }
-        } else if(afterLastSpace.length() <= FIRST_INTERVAL) {
-            afterLastSpace = afterLastSpace.trim().toLowerCase();
-            for (String s : xmlPrefsFiles) {
+        } else {
+            List<String> ranked = SuggestionScorer.rankStrings(afterLastSpace, xmlPrefsFiles.toArray(new String[0]), suggestionsPerCategory);
+            for (String s : ranked) {
                 if(Thread.currentThread().isInterrupted()) return;
-
-                if(s.startsWith(afterLastSpace)) {
-                    suggestions.add(new Suggestion(beforeLastSpace , s, false, Suggestion.TYPE_CONFIGFILE, afterLastSpace));
-                }
+                suggestions.add(new Suggestion(beforeLastSpace , s, false, Suggestion.TYPE_CONFIGFILE, afterLastSpace)
+                        .withScore(SuggestionScorer.score(afterLastSpace, s)));
             }
         }
     }
@@ -1349,7 +1427,10 @@ public class SuggestionsManager {
             AppsManager.Group[] gps = CompareObjects.topMatchesWithDeadline(AppsManager.Group.class, afterLastSpace, groups.size(), groups, canInsert, suggestionsDeadline, SPLITTERS, algInstance, alg);
             for(AppsManager.Group g : gps) {
                 if(g == null) break;
-                suggestions.add(new Suggestion(beforeLastSpace , g.name(), false, Suggestion.TYPE_APPGP, g));
+                int score = SuggestionScorer.score(afterLastSpace, g.name());
+                if (score >= SuggestionScorer.minimumScore(afterLastSpace)) {
+                    suggestions.add(new Suggestion(beforeLastSpace , g.name(), false, Suggestion.TYPE_APPGP, g).withScore(score));
+                }
             }
         }
     }
@@ -1477,6 +1558,7 @@ public class SuggestionsManager {
 
         public boolean exec;
         public int type;
+        public int score;
 
         public Object object;
         public Integer overrideBgColor;
@@ -1508,6 +1590,11 @@ public class SuggestionsManager {
             this(beforeLastSpace, text, exec, type, tag);
             this.overrideBgColor = overrideBgColor;
             this.overrideTextColor = overrideTextColor;
+        }
+
+        public Suggestion withScore(int score) {
+            this.score = score;
+            return this;
         }
 
         public String getText() {
@@ -1574,7 +1661,14 @@ public class SuggestionsManager {
 
         @Override
         public int compare(Suggestion o1, Suggestion o2) {
-            if(o1.type == o2.type) return 0;
+            if(o1.type == o2.type) {
+                if (o1.score != 0 || o2.score != 0) {
+                    int byScore = o2.score - o1.score;
+                    if (byScore != 0) return byScore;
+                    return o1.text.compareToIgnoreCase(o2.text);
+                }
+                return 0;
+            }
 
             if(noInput) {
                 return noInputIndexes[o1.type] - noInputIndexes[o2.type];
