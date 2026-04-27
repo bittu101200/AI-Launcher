@@ -14,11 +14,16 @@
 **/*.p12
 release.jks
 
-# Local Configuration
+# Local Configuration / Helper Files
 **/local.properties
 signing.properties
 keystore.properties
 google-services.json
+AGENTS.md
+batch_metadata.py
+help_strings.txt
+errors/
+graphify-out/
 
 # IDE Files
 **/.idea/
