@@ -24,6 +24,10 @@ batch_metadata.py
 help_strings.txt
 errors/
 graphify-out/
+CLAUDE.md
+ARCHITECTURAL_GOLDEN_CONTEXT.md
+USER_MANUAL.md
+docs/
 
 # IDE Files
 **/.idea/
