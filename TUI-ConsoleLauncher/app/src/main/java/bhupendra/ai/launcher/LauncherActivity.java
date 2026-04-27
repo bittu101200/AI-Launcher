@@ -23,7 +23,9 @@ import android.os.Bundle;
 import android.os.Handler;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 import androidx.appcompat.app.AppCompatActivity;
+import android.text.SpannableStringBuilder;
 import android.text.TextUtils;
+import android.text.Spanned;
 import android.view.ContextMenu;
 import android.view.KeyEvent;
 import android.view.MenuItem;
@@ -48,7 +50,6 @@ import bhupendra.ai.launcher.managers.TimeManager;
 import bhupendra.ai.launcher.managers.TuiLocationManager;
 import bhupendra.ai.launcher.managers.notifications.KeeperService;
 import bhupendra.ai.launcher.managers.notifications.NotificationManager;
-import bhupendra.ai.launcher.managers.notifications.NotificationMonitorService;
 import bhupendra.ai.launcher.managers.notifications.NotificationService;
 import bhupendra.ai.launcher.managers.suggestions.SuggestionsManager;
 import bhupendra.ai.launcher.managers.xml.XMLPrefsManager;
@@ -65,6 +66,7 @@ import bhupendra.ai.launcher.tuils.SimpleMutableEntry;
 import bhupendra.ai.launcher.tuils.Tuils;
 import bhupendra.ai.launcher.tuils.interfaces.Inputable;
 import bhupendra.ai.launcher.tuils.interfaces.Outputable;
+import bhupendra.ai.launcher.terminal.TerminalEventBus;
 import bhupendra.ai.launcher.ai.AIProvider;
 import bhupendra.ai.launcher.ai.AISubsystem;
 import bhupendra.ai.launcher.ai.AndroidToolExecutor;
@@ -86,6 +88,7 @@ public class LauncherActivity extends AppCompatActivity implements Reloadable {
 
     private PrivateIOReceiver privateIOReceiver;
     private PublicIOReceiver publicIOReceiver;
+    private TerminalEventBus.Listener terminalEventListener;
 
     private boolean openKeyboardOnStart, canApplyTheme, backButtonEnabled;
     private boolean initialized = false;
@@ -208,6 +211,22 @@ public class LauncherActivity extends AppCompatActivity implements Reloadable {
         }
     };
 
+    private void dispatchTerminalEvent(TerminalEventBus.TerminalEvent event) {
+        if (event instanceof TerminalEventBus.InputEvent) {
+            in.in(((TerminalEventBus.InputEvent) event).text);
+        } else if (event instanceof TerminalEventBus.OutputEvent) {
+            TerminalEventBus.OutputEvent output = (TerminalEventBus.OutputEvent) event;
+            CharSequence text = output.text;
+            if (output.action != null || output.longAction != null) {
+                SpannableStringBuilder builder = new SpannableStringBuilder(text);
+                builder.setSpan(new LongClickableSpan(output.action, output.longAction), 0, text.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                text = builder;
+            }
+            if (output.color != Integer.MAX_VALUE) out.onOutput(output.color, text);
+            else out.onOutput(text, output.type);
+        }
+    }
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -240,6 +259,8 @@ public class LauncherActivity extends AppCompatActivity implements Reloadable {
 
         privateIOReceiver = new PrivateIOReceiver(this, out, in);
         LocalBroadcastManager.getInstance(getApplicationContext()).registerReceiver(privateIOReceiver, filter);
+        terminalEventListener = this::dispatchTerminalEvent;
+        TerminalEventBus.get().register(terminalEventListener);
 
         IntentFilter filter1 = new IntentFilter();
         filter1.addAction(PublicIOReceiver.ACTION_CMD);
@@ -307,9 +328,6 @@ public class LauncherActivity extends AppCompatActivity implements Reloadable {
                 PackageManager pm = getPackageManager();
                 pm.setComponentEnabledSetting(notificationComponent, PackageManager.COMPONENT_ENABLED_STATE_ENABLED, PackageManager.DONT_KILL_APP);
 
-                Intent monitor = new Intent(this, NotificationMonitorService.class);
-                startService(monitor);
-
                 Intent notificationIntent = new Intent(this, NotificationService.class);
                 startService(notificationIntent);
             } catch (NoClassDefFoundError er) {
@@ -370,8 +388,6 @@ public class LauncherActivity extends AppCompatActivity implements Reloadable {
         ui.focusTerminal();
 
         if(fullscreen) Assist.assistActivity(this);
-
-        System.gc();
     }
 
     @Override
@@ -394,6 +410,13 @@ public class LauncherActivity extends AppCompatActivity implements Reloadable {
         try {
             LocalBroadcastManager.getInstance(getApplicationContext()).unregisterReceiver(privateIOReceiver);
         } catch (Exception e) {}
+        try {
+            getApplicationContext().unregisterReceiver(publicIOReceiver);
+        } catch (Exception e) {}
+        if (terminalEventListener != null) {
+            TerminalEventBus.get().unregister(terminalEventListener);
+            terminalEventListener = null;
+        }
 
         if(main != null) main.destroy();
         if(ui != null) ui.dispose();

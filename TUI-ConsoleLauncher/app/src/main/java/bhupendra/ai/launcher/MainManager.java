@@ -75,7 +75,7 @@ limitations under the License.*/
 public class MainManager {
 
     public static String ACTION_EXEC = BuildConfig.APPLICATION_ID + ".main_exec";
-    public static String CMD = "cmd", NEED_WRITE_INPUT = "writeInput", ALIAS_NAME = "aliasName", PARCELABLE = "parcelable", CMD_COUNT = "cmdCount", MUSIC_SERVICE = "musicService";
+    public static String CMD = "cmd", NEED_WRITE_INPUT = "writeInput", ALIAS_NAME = "aliasName", PARCELABLE = "parcelable", CMD_COUNT = "cmdCount", MUSIC_SERVICE = "musicService", REQUEST_ID = "requestId";
 
     private RedirectCommand redirect;
     private Redirectator redirectator = new Redirectator() {
@@ -139,6 +139,8 @@ public class MainManager {
     private HTMLExtractManager htmlExtractManager;
 
     private BroadcastReceiver receiver;
+    private String activeRequestId;
+    private boolean platformReceiverRegistered;
 
     public static int commandCount = 0;
 
@@ -255,20 +257,24 @@ public class MainManager {
                     if (cmdCount < commandCount && cmdCount != -1) return;
                     commandCount++;
 
-                    String aliasName = intent.getStringExtra(ALIAS_NAME);
-                    boolean needWriteInput = intent.getBooleanExtra(NEED_WRITE_INPUT, false);
-                    Parcelable p = intent.getParcelableExtra(PARCELABLE);
+                    String previousRequestId = activeRequestId;
+                    activeRequestId = intent.getStringExtra(REQUEST_ID);
+                    try {
+                        String aliasName = intent.getStringExtra(ALIAS_NAME);
+                        boolean needWriteInput = intent.getBooleanExtra(NEED_WRITE_INPUT, false);
+                        Parcelable p = intent.getParcelableExtra(PARCELABLE);
 
-                    if(needWriteInput) {
-                        Intent i = new Intent(PrivateIOReceiver.ACTION_INPUT);
-                        i.putExtra(PrivateIOReceiver.TEXT, cmd);
-                        LocalBroadcastManager.getInstance(context.getApplicationContext()).sendBroadcast(i);
-                    }
+                        if(needWriteInput) {
+                            Tuils.sendInput(context.getApplicationContext(), cmd);
+                        }
 
-                    if(p != null && p instanceof AppsManager.LaunchInfo) {
-                        onCommand(cmd, (AppsManager.LaunchInfo) p, intent.getBooleanExtra(MainManager.MUSIC_SERVICE, false));
-                    } else {
-                        onCommand(cmd, aliasName, intent.getBooleanExtra(MainManager.MUSIC_SERVICE, false));
+                        if(p != null && p instanceof AppsManager.LaunchInfo) {
+                            onCommand(cmd, (AppsManager.LaunchInfo) p, intent.getBooleanExtra(MainManager.MUSIC_SERVICE, false));
+                        } else {
+                            onCommand(cmd, aliasName, intent.getBooleanExtra(MainManager.MUSIC_SERVICE, false));
+                        }
+                    } finally {
+                        activeRequestId = previousRequestId;
                     }
                 } else if(action.equals(location.ACTION_LOCATION_CMD_GOT)) {
                     if (intent.getBooleanExtra(TuiLocationManager.FAIL, false)) {
@@ -286,6 +292,15 @@ public class MainManager {
             mContext.registerReceiver(receiver, filter, Context.RECEIVER_EXPORTED);
         } else {
             mContext.registerReceiver(receiver, filter);
+        }
+        platformReceiverRegistered = true;
+    }
+
+    private void logCommandFinished(String requestId) {
+        if (requestId == null || requestId.length() == 0) {
+            android.util.Log.i("AI_OUTPUT", "CMD_FINISHED");
+        } else {
+            android.util.Log.i("AI_OUTPUT", "CMD_FINISHED requestId=" + requestId);
         }
     }
 
@@ -456,6 +471,14 @@ public class MainManager {
         htmlExtractManager.dispose(mContext);
         aliasManager.dispose();
         LocalBroadcastManager.getInstance(mContext.getApplicationContext()).unregisterReceiver(receiver);
+        if (platformReceiverRegistered) {
+            try {
+                mContext.unregisterReceiver(receiver);
+            } catch (Exception e) {
+                Tuils.log(e);
+            }
+            platformReceiverRegistered = false;
+        }
 
         new StoppableThread() {
             @Override
@@ -624,6 +647,7 @@ public class MainManager {
 
         @Override
         public boolean trigger(final MainPack info, final String input) throws Exception {
+            final String requestId = activeRequestId;
             final String trimmed = input.trim();
             final String cmd = trimmed.split(" ")[0];
 
@@ -636,7 +660,7 @@ public class MainManager {
                         bhupendra.ai.launcher.tuils.TermuxManager.runCommand(mContext, cmd, finalArgs, null, false);
                         
                         if (mainPack.aiSubsystem == null || !mainPack.aiSubsystem.isInFlight()) {
-                            android.util.Log.i("AI_OUTPUT", "CMD_FINISHED");
+                            logCommandFinished(requestId);
                         }
                         
                         return true;
@@ -665,7 +689,7 @@ public class MainManager {
 
                     // Suppress CMD_FINISHED for ALWAYS-ON AI turns that fallback to shell
                     if (mainPack.aiSubsystem == null || !mainPack.aiSubsystem.isInFlight()) {
-                        android.util.Log.i("AI_OUTPUT", "CMD_FINISHED");
+                        logCommandFinished(requestId);
                     }
                 }
             }.start();
@@ -687,6 +711,7 @@ public class MainManager {
 
         @Override
         public boolean trigger(final MainPack info, final String input) throws Exception {
+            final String requestId = activeRequestId;
 
             final Command command = CommandTuils.parse(input, info);
             if(command == null) return false;
@@ -708,7 +733,7 @@ public class MainManager {
                         // AI commands will log AI_TURN_FINISHED themselves when truly done.
                         boolean isAI = command.getClass().getSimpleName().equals("ai") || input.trim().startsWith("ai ");
                         if (!isAI) {
-                            android.util.Log.i("AI_OUTPUT", "CMD_FINISHED");
+                            logCommandFinished(requestId);
                         }
                     } catch (Exception e) {
                         Tuils.sendOutput(mContext, Tuils.getStackTrace(e));

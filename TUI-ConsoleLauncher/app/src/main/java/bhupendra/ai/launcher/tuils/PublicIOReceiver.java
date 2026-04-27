@@ -10,6 +10,8 @@ import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 import bhupendra.ai.launcher.BuildConfig;
 import bhupendra.ai.launcher.MainManager;
 
+import java.util.UUID;
+
 /**
  * Created by francescoandreuzzi on 04/02/2018.
  */
@@ -37,6 +39,9 @@ public class PublicIOReceiver extends BroadcastReceiver {
             action = MainManager.ACTION_EXEC;
 
             intent.putExtra(MainManager.CMD_COUNT, MainManager.commandCount);
+            if (!intent.hasExtra(MainManager.REQUEST_ID)) {
+                intent.putExtra(MainManager.REQUEST_ID, UUID.randomUUID().toString());
+            }
         } else if(intent.getAction().equals(ACTION_OUTPUT)) {
             action = PrivateIOReceiver.ACTION_OUTPUT;
         } else return;

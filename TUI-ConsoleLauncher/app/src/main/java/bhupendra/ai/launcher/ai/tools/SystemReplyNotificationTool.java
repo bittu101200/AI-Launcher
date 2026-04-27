@@ -81,7 +81,6 @@ public class SystemReplyNotificationTool extends BaseAITool {
         i.putExtra(PrivateIOReceiver.TEXT, text);
         i.putExtra(PrivateIOReceiver.PENDING_INTENT, replyAction.actionIntent);
         i.putExtra(PrivateIOReceiver.ID, sbn.getId());
-        i.putExtra(PrivateIOReceiver.CURRENT_ID, PrivateIOReceiver.currentId);
 
         LocalBroadcastManager.getInstance(context.getApplicationContext()).sendBroadcast(i);
 

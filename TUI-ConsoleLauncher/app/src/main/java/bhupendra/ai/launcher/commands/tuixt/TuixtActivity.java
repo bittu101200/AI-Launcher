@@ -226,8 +226,6 @@ public class TuixtActivity extends Activity {
                     finish();
                 } catch (Error er) {
                     runOnUiThread(() -> {
-                        System.gc();
-
                         fileView.setText(Tuils.EMPTYSTRING);
                         Toast.makeText(TuixtActivity.this, R.string.tuixt_error, Toast.LENGTH_LONG).show();
                     });

@@ -212,7 +212,6 @@ public class ReplyManager implements XMLPrefsElement {
         i.putExtra(PrivateIOReceiver.TEXT, what);
         i.putExtra(PrivateIOReceiver.PENDING_INTENT, notificationWear.pendingIntent);
         i.putExtra(PrivateIOReceiver.ID, notificationWear.id);
-        i.putExtra(PrivateIOReceiver.CURRENT_ID, PrivateIOReceiver.currentId);
 
         LocalBroadcastManager.getInstance(context.getApplicationContext()).sendBroadcast(i);
     }

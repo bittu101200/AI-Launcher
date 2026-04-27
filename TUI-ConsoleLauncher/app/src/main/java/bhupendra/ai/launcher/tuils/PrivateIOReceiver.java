@@ -5,8 +5,6 @@ import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
-import android.graphics.Color;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.Parcelable;
 import androidx.core.app.RemoteInput;
@@ -16,6 +14,7 @@ import android.text.Spanned;
 
 import bhupendra.ai.launcher.BuildConfig;
 import bhupendra.ai.launcher.MainManager;
+import bhupendra.ai.launcher.managers.notifications.reply.ReplyDispatcher;
 import bhupendra.ai.launcher.managers.TerminalManager;
 import bhupendra.ai.launcher.tuils.interfaces.Inputable;
 import bhupendra.ai.launcher.tuils.interfaces.Outputable;
@@ -62,9 +61,11 @@ public class PrivateIOReceiver extends BroadcastReceiver {
     @Override
     public void onReceive(Context context, Intent intent) {
 //        to avoid double onReceive calls
-        int cId = intent.getIntExtra(CURRENT_ID, -1);
-        if(cId != -1 && cId != currentId) return;
-        currentId++;
+        if (!ACTION_REPLY.equals(intent.getAction())) {
+            int cId = intent.getIntExtra(CURRENT_ID, -1);
+            if(cId != -1 && cId != currentId) return;
+            currentId++;
+        }
 
         Bundle remoteInput = RemoteInput.getResultsFromIntent(intent);
         if(remoteInput == null || remoteInput.size() == 0) {
@@ -103,41 +104,7 @@ public class PrivateIOReceiver extends BroadcastReceiver {
                 Parcelable[] ps = intent.getParcelableArrayExtra(REMOTE_INPUTS);
                 PendingIntent pi = intent.getParcelableExtra(PENDING_INTENT);
                 int id = intent.getIntExtra(ID, 0);
-
-                if(b == null) {
-                    Tuils.sendOutput(Color.RED, context, "The bundle is null");
-                    return;
-                }
-
-                if(ps == null || ps.length == 0) {
-                    Tuils.sendOutput(Color.RED, context, "No remote inputs");
-                    return;
-                }
-
-                if(pi == null) {
-                    Tuils.sendOutput(Color.RED, context, "The pending intent couldn\'t be found");
-                    return;
-                }
-
-                android.app.RemoteInput[] rms = new android.app.RemoteInput[ps.length];
-                for(int j = 0; j < rms.length; j++) {
-                    rms[j] = (android.app.RemoteInput) ps[j];
-                }
-
-                Intent localIntent = new Intent();
-                localIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-
-                for(android.app.RemoteInput remoteIn : rms) {
-                    b.putCharSequence(remoteIn.getResultKey(), text);
-                }
-
-                android.app.RemoteInput.addResultsToIntent(rms, localIntent, b);
-                try {
-                    pi.send(context.getApplicationContext(), id, localIntent);
-                } catch (PendingIntent.CanceledException e) {
-                    Tuils.sendOutput(Color.RED, context, e.toString());
-                    Tuils.log(e);
-                }
+                ReplyDispatcher.dispatch(context, text, b, ps, pi, id);
             }
         } else {
             String cmd = remoteInput.getString(TEXT);

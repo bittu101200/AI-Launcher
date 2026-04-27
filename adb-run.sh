@@ -5,10 +5,13 @@ if [ -z "$1" ]; then
     exit 1
 fi
 
+REQUEST_ID="$(uuidgen 2>/dev/null || date +%s%N)"
+
 # Send command via broadcast
 # We wrap the whole command in quotes for adb shell to prevent 'am' from misparsing flags like -l
-adb shell "am broadcast -a bhupendra.ai.launcher.main_exec --es cmd \"$1\"" > /dev/null
+adb shell "am broadcast -a bhupendra.ai.launcher.main_exec --es cmd \"$1\" --es requestId \"$REQUEST_ID\"" > /dev/null
 echo "Sent: $1"
+echo "Request: $REQUEST_ID"
 echo "--- Output (Streaming) ---"
 
 # Stream the logcat
@@ -21,7 +24,7 @@ adb logcat -v raw -T 1 -s AI_OUTPUT | while read -r line; do
         pkill -P $$ adb 2>/dev/null
         break
     fi
-    if [[ "$line" == *"CMD_FINISHED"* ]]; then
+    if [[ "$line" == *"CMD_FINISHED"* && "$line" == *"$REQUEST_ID"* ]]; then
         echo "--- Finished (CMD_FINISHED) ---"
         pkill -P $$ adb 2>/dev/null
         break

@@ -347,12 +347,23 @@ public class SuggestionsManager {
 
     private void stop() {
         handler.removeCallbacksAndMessages(null);
-        suggestionWorkerHandler.removeCallbacksAndMessages(null);
+        if (suggestionWorkerHandler != null) {
+            suggestionWorkerHandler.removeCallbacksAndMessages(null);
+        }
         suggestionGeneration++;
     }
 
     public void dispose() {
         stop();
+        if (suggestionWorkerThread != null) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
+                suggestionWorkerThread.quitSafely();
+            } else {
+                suggestionWorkerThread.quit();
+            }
+            suggestionWorkerThread = null;
+            suggestionWorkerHandler = null;
+        }
     }
 
     public void clear() {

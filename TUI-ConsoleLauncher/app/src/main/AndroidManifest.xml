@@ -262,10 +262,6 @@
                 <action android:name="android.service.notification.NotificationListenerService" />
             </intent-filter>
         </service>
-        <service 
-            android:name=".managers.notifications.NotificationMonitorService"
-            android:exported="false" />
-
         <activity
             android:name=".tuils.stuff.FakeLauncherActivity"
             android:enabled="false"

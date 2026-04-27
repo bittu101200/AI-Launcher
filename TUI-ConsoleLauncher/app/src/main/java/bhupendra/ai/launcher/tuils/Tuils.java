@@ -98,6 +98,7 @@ import bhupendra.ai.launcher.BuildConfig;
 import bhupendra.ai.launcher.R;
 import bhupendra.ai.launcher.commands.main.MainPack;
 import bhupendra.ai.launcher.managers.TerminalManager;
+import bhupendra.ai.launcher.terminal.TerminalEventBus;
 import bhupendra.ai.launcher.managers.music.MusicManager2;
 import bhupendra.ai.launcher.managers.music.Song;
 import bhupendra.ai.launcher.managers.notifications.NotificationService;
@@ -532,6 +533,9 @@ public class Tuils {
     public static void sendOutput(int color, Context context, CharSequence s, int type) {
         if (shouldSuppressOutput(s)) return;
         android.util.Log.i("AI_OUTPUT", s.toString());
+        if (TerminalEventBus.get().post(new TerminalEventBus.OutputEvent(s, color, type, null, null, null))) {
+            return;
+        }
         Intent intent = new Intent(PrivateIOReceiver.ACTION_OUTPUT);
         intent.putExtra(PrivateIOReceiver.TEXT, s);
         intent.putExtra(PrivateIOReceiver.COLOR, color);
@@ -550,6 +554,9 @@ public class Tuils {
     public static void sendOutput(int color, Context context, CharSequence s, int type, Object action) {
         if (shouldSuppressOutput(s)) return;
         android.util.Log.i("AI_OUTPUT", s.toString());
+        if (TerminalEventBus.get().post(new TerminalEventBus.OutputEvent(s, color, type, action, null, null))) {
+            return;
+        }
         Intent intent = new Intent(PrivateIOReceiver.ACTION_OUTPUT);
         intent.putExtra(PrivateIOReceiver.TEXT, s);
         intent.putExtra(PrivateIOReceiver.COLOR, color);
@@ -568,6 +575,9 @@ public class Tuils {
     public static void sendOutput(int color, Context context, CharSequence s, int type, Object action, Object longAction) {
         if (shouldSuppressOutput(s)) return;
         android.util.Log.i("AI_OUTPUT", s.toString());
+        if (TerminalEventBus.get().post(new TerminalEventBus.OutputEvent(s, color, type, action, longAction, null))) {
+            return;
+        }
         Intent intent = new Intent(PrivateIOReceiver.ACTION_OUTPUT);
         intent.putExtra(PrivateIOReceiver.TEXT, s);
         intent.putExtra(PrivateIOReceiver.COLOR, color);
@@ -589,6 +599,9 @@ public class Tuils {
     }
 
     public static void sendInput(Context context, String text) {
+        if (TerminalEventBus.get().post(new TerminalEventBus.InputEvent(text, null))) {
+            return;
+        }
         Intent intent = new Intent(PrivateIOReceiver.ACTION_INPUT);
         intent.putExtra(PrivateIOReceiver.TEXT, text);
         LocalBroadcastManager.getInstance(context).sendBroadcast(intent);
