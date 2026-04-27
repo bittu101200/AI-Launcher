@@ -120,4 +120,38 @@ public abstract class ParamCommand implements CommandAbstraction {
     public XMLPrefsSave defaultParamReference() {
         return null;
     }
+
+    @Override
+    public bhupendra.ai.launcher.commands.CommandMetadata getMetadata(android.content.Context context) {
+        String name = getClass().getSimpleName();
+        String description = context.getString(helpRes());
+        
+        java.util.Map<String, String> flags = new java.util.HashMap<>();
+        try {
+            // Find the Param enum inside the subclass
+            Class<?>[] nested = getClass().getDeclaredClasses();
+            for (Class<?> c : nested) {
+                if (c.isEnum() && bhupendra.ai.launcher.commands.main.Param.class.isAssignableFrom(c)) {
+                    Object[] constants = c.getEnumConstants();
+                    if (constants != null) {
+                        for (Object obj : constants) {
+                            bhupendra.ai.launcher.commands.main.Param p = (bhupendra.ai.launcher.commands.main.Param) obj;
+                            flags.put(p.label(), "Execute " + p.label() + " operation");
+                        }
+                    }
+                    break;
+                }
+            }
+        } catch (Exception e) {
+            // Fallback to empty flags
+        }
+
+        java.util.List<String> examples = new java.util.ArrayList<>();
+        if (!flags.isEmpty()) {
+            String firstFlag = flags.keySet().iterator().next();
+            examples.add(name + " " + firstFlag);
+        }
+
+        return new bhupendra.ai.launcher.commands.CommandMetadata(name, description, flags, "[-flag] [args]", examples);
+    }
 }

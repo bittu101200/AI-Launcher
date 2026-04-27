@@ -29,7 +29,14 @@ public interface CommandAbstraction {
     int CONFIG_VALUE = 34;
 
     default CommandMetadata getMetadata(android.content.Context context) {
-        return null;
+        String name = getClass().getSimpleName();
+        String description;
+        try {
+            description = context.getString(helpRes());
+        } catch (Exception e) {
+            description = "Command implementation.";
+        }
+        return new CommandMetadata(name, description, null, null, null);
     }
 
     String exec(ExecutePack pack) throws Exception;

@@ -214,6 +214,8 @@ public class AliasManager {
         } catch (Exception e) {
             Tuils.log(e);
         }
+
+        bhupendra.ai.launcher.commands.CommandHelpRegistry.getInstance(context).registerAliases(aliases);
     }
 
     public void dispose() {

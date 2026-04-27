@@ -61,11 +61,13 @@ public class apps extends ParamCommand {
 
         List<String> examples = new ArrayList<>();
         examples.add("apps -ls");
-        examples.add("apps -hide Maps");
+        examples.add("apps -hide com.android.chrome");
         examples.add("apps -mkgp Social");
 
-        return new CommandMetadata("apps", description, flags, "[-flag] [args]", examples);
-    }
+        return new CommandMetadata("apps", description, flags, "[-flag] [args]", examples, 
+            java.util.Arrays.asList("applications", "launch", "group", "hide", "uninstall"), 
+            "system.get_app_functions");
+        }
 
     private enum Param implements bhupendra.ai.launcher.commands.main.Param {
 

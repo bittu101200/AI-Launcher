@@ -20,7 +20,8 @@ public class wifi implements CommandAbstraction {
         List<String> examples = new ArrayList<>();
         examples.add("wifi");
 
-        return new CommandMetadata("wifi", description, null, null, examples);
+        return new CommandMetadata("wifi", description, null, null, examples, 
+            java.util.Arrays.asList("internet", "network", "wlan", "connection"), null);
     }
 
     @Override

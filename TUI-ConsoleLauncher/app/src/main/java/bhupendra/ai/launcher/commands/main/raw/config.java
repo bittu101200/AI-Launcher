@@ -70,7 +70,9 @@ public class config extends ParamCommand {
         examples.add("config -set ui_color #ffffff");
         examples.add("config -info max_lines");
 
-        return new CommandMetadata("config", description, flags, "[-flag] [args]", examples);
+        return new CommandMetadata("config", description, flags, "[-flag] [args]", examples,
+            java.util.Arrays.asList("settings", "preferences", "options", "setup", "customize"),
+            "system.search_config");
     }
 
     private enum Param implements bhupendra.ai.launcher.commands.main.Param {
