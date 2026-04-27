@@ -63,6 +63,7 @@ public class RequestManager {
             @Override
             public void onToken(String rid, String token) {
                 if (!rid.equals(activeId.get()) || cancelRequested) return;
+                cancelTimer();
                 transition(rid, AIRequestState.STREAMING, activeCallback);
                 resetTimer(rid, inactivityTimeoutMs, AIRequestState.TIMED_OUT_INACTIVITY);
                 activeCallback.onToken(rid, token);
@@ -72,6 +73,8 @@ public class RequestManager {
             public void onResponse(AIResponse response) {
                 if (!response.requestId.equals(activeId.get()) || cancelRequested) return;
                 
+                // Any response from the provider means we've connected.
+                cancelTimer();
                 resetTimer(response.requestId, inactivityTimeoutMs, AIRequestState.TIMED_OUT_INACTIVITY);
                 
                 if (response.type == AIResponse.Type.TOOL_CALLS) {
