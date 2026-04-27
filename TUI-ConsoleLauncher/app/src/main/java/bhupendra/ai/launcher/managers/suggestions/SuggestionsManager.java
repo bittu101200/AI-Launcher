@@ -1363,10 +1363,11 @@ public class SuggestionsManager {
             }
         }
         else {
-            int counter = quickCompare(afterLastSpace, list, suggestions, beforeLastSpace, suggestionsPerCategory, false, Suggestion.TYPE_COMMAND, false);
-            if(suggestionsPerCategory - counter <= 0) return;
+            int configSuggestionLimit = list.size();
+            int counter = quickCompare(afterLastSpace, list, suggestions, beforeLastSpace, configSuggestionLimit, false, Suggestion.TYPE_COMMAND, false);
+            if(configSuggestionLimit - counter <= 0) return;
 
-            XMLPrefsSave[] saves = CompareObjects.topMatchesWithDeadline(XMLPrefsSave.class, afterLastSpace, list.size(), list, suggestionsPerCategory - counter, suggestionsDeadline, XML_PREFS_SPLITTERS, algInstance, alg);
+            XMLPrefsSave[] saves = CompareObjects.topMatchesWithDeadline(XMLPrefsSave.class, afterLastSpace, list.size(), list, configSuggestionLimit - counter, suggestionsDeadline, XML_PREFS_SPLITTERS, algInstance, alg);
             for (XMLPrefsSave s : saves) {
                 if (s == null) break;
                 int score = SuggestionScorer.score(afterLastSpace, s.label());
