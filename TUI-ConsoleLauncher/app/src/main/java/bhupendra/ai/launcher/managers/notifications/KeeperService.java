@@ -23,6 +23,7 @@ import android.text.SpannableString;
 import android.text.TextUtils;
 
 import bhupendra.ai.launcher.BuildConfig;
+import bhupendra.ai.launcher.LauncherActivity;
 import bhupendra.ai.launcher.R;
 import bhupendra.ai.launcher.managers.TimeManager;
 import bhupendra.ai.launcher.managers.xml.XMLPrefsManager;
@@ -154,7 +155,8 @@ public class KeeperService extends Service {
 
         PendingIntent pendingIntent;
         if(showHome) {
-            Intent startMain = new Intent(Intent.ACTION_MAIN);
+            Intent startMain = new Intent(c, LauncherActivity.class);
+            startMain.setAction(Intent.ACTION_MAIN);
             startMain.addCategory(Intent.CATEGORY_HOME);
             startMain.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
 
@@ -169,7 +171,8 @@ public class KeeperService extends Service {
                     Tuils.pendingIntentFlags(PendingIntent.FLAG_CANCEL_CURRENT)
             );
         } else if(clickCmd != null && clickCmd.length() > 0) {
-            Intent cmdIntent = new Intent(PublicIOReceiver.ACTION_CMD);
+            Intent cmdIntent = new Intent(c, PublicIOReceiver.class);
+            cmdIntent.setAction(PublicIOReceiver.ACTION_CMD);
             cmdIntent.putExtra(PrivateIOReceiver.TEXT, clickCmd);
 
             pendingIntent = PendingIntent.getBroadcast(
@@ -225,12 +228,13 @@ public class KeeperService extends Service {
                     .setLabel(cmdLabel)
                     .build();
 
-            Intent i = new Intent(PublicIOReceiver.ACTION_CMD);
+            Intent i = new Intent(c, PublicIOReceiver.class);
+            i.setAction(PublicIOReceiver.ACTION_CMD);
 
             NotificationCompat.Action.Builder actionBuilder = new NotificationCompat.Action.Builder(
                     R.mipmap.ic_launcher,
                     cmdLabel,
-                    PendingIntent.getBroadcast(c.getApplicationContext(), 40, i, Tuils.pendingIntentFlags(PendingIntent.FLAG_UPDATE_CURRENT)))
+                    PendingIntent.getBroadcast(c.getApplicationContext(), 40, i, Tuils.pendingIntentFlags(PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_MUTABLE)))
                         .addRemoteInput(remoteInput);
 
             builder.addAction(actionBuilder.build());

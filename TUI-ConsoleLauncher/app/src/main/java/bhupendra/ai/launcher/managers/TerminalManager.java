@@ -366,7 +366,9 @@ public class TerminalManager {
 //        LocalBroadcastManager.getInstance(mContext.getApplicationContext()).sendBroadcast(intent);
 
         bhupendra.ai.launcher.ai.AISubsystem ai = bhupendra.ai.launcher.ai.AISubsystem.getInstance();
-        if (ai != null && ai.hasPendingUserInteraction()) {
+        if (mainPack.getRedirectator().getRedirect() != null) {
+            executer.execute(cmd, obj);
+        } else if (ai != null && ai.hasPendingUserInteraction()) {
             ai.resolvePendingUserInteraction(cmd);
         } else {
             executer.execute(cmd, obj);

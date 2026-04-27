@@ -919,7 +919,13 @@ public class Tuils {
     }
 
     public static int pendingIntentFlags(int flags) {
-        return flags | android.app.PendingIntent.FLAG_IMMUTABLE;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            if ((flags & android.app.PendingIntent.FLAG_MUTABLE) != 0) {
+                return flags;
+            }
+            return flags | android.app.PendingIntent.FLAG_IMMUTABLE;
+        }
+        return flags;
     }
 
 

@@ -4,6 +4,8 @@ import android.content.Intent;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.Environment;
+import android.os.Build;
+import android.provider.Settings;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -21,24 +23,71 @@ import bhupendra.ai.launcher.managers.FileSystemManager;
 
 public class AIOnboardingManager {
 
-    private static boolean onboardingStarted = false;
-
     public static void checkAndStart(bhupendra.ai.launcher.commands.main.MainPack pack) {
-        if (onboardingStarted) return;
-        
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            if (!Environment.isExternalStorageManager()) {
+                Tuils.sendOutput(Color.YELLOW, pack.context, "T-UI requires 'All Files Access' to scan for backups in your Downloads folder.", TerminalManager.CATEGORY_OUTPUT);
+                Tuils.sendOutput(pack.context, "Opening settings in 2 seconds...", TerminalManager.CATEGORY_OUTPUT);
+                
+                new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
+                    try {
+                        Intent intent = new Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION);
+                        intent.addCategory("android.intent.category.DEFAULT");
+                        intent.setData(Uri.parse(String.format("package:%s", pack.context.getPackageName())));
+                        pack.context.startActivity(intent);
+                    } catch (Exception e) {
+                        Intent intent = new Intent();
+                        intent.setAction(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION);
+                        pack.context.startActivity(intent);
+                    }
+                }, 2000);
+
+                pack.getRedirectator().prepareRedirection(new RequestPermissionOnboarding());
+                return;
+            }
+        }
+
         String provider = XMLPrefsManager.get(Ai.provider);
         String key = XMLPrefsManager.get(Ai.api_key);
 
-        if (provider.equals("mock") || key.isEmpty()) {
-            onboardingStarted = true;
-            
+        if (provider.equals("mock")) {
             List<File> backups = findBackups(pack.getContext());
             if (!backups.isEmpty()) {
                 startBackupDetection(pack, backups);
             } else {
                 startOnboarding(pack);
             }
+        } else if (key.isEmpty() && !provider.equals("mock")) {
+            Tuils.sendOutput(pack.context, "AI Provider [" + provider + "] selected. Please enter your API Key:", TerminalManager.CATEGORY_OUTPUT);
+            pack.getRedirectator().prepareRedirection(new KeyOnboarding());
         }
+    }
+
+    public static class RequestPermissionOnboarding extends RedirectCommand {
+        @Override
+        public String onRedirect(bhupendra.ai.launcher.commands.ExecutePack pack) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                if (Environment.isExternalStorageManager()) {
+                    cleanup();
+                    checkAndStart((bhupendra.ai.launcher.commands.main.MainPack) pack);
+                    return null;
+                } else {
+                    return "Permission not granted yet. Please grant 'All Files Access' in the settings page that opened, then press Enter here to retry.";
+                }
+            }
+            cleanup();
+            checkAndStart((bhupendra.ai.launcher.commands.main.MainPack) pack);
+            return null;
+        }
+
+        @Override public int getHint() { return R.string.help_help; }
+        @Override public boolean isWaitingPermission() { return false; }
+        @Override public String exec(bhupendra.ai.launcher.commands.ExecutePack pack) { return null; }
+        @Override public int[] argType() { return new int[0]; }
+        @Override public int priority() { return 0; }
+        @Override public int helpRes() { return R.string.help_ai; }
+        @Override public String onArgNotFound(bhupendra.ai.launcher.commands.ExecutePack pack, int index) { return null; }
+        @Override public String onNotArgEnough(bhupendra.ai.launcher.commands.ExecutePack pack, int n) { return null; }
     }
 
     private static List<File> findBackups(android.content.Context context) {
@@ -103,15 +152,23 @@ public class AIOnboardingManager {
                     FileSystemManager.copyDirectory(selectedBackup, tuiFolder);
                     
                     cleanup();
+                    XMLPrefsManager.dispose();
+                    
                     Tuils.sendOutput(Color.CYAN, pack.context, "Restore Complete!", TerminalManager.CATEGORY_OUTPUT);
                     Tuils.sendOutput(pack.context, "Restarting...", TerminalManager.CATEGORY_OUTPUT);
                     
-                    if (pack.context instanceof Reloadable) {
-                        ((Reloadable) pack.context).reload();
-                    }
+                    // Small delay to ensure FS sync
+                    new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
+                        if (pack.context instanceof Reloadable) {
+                            ((Reloadable) pack.context).reload();
+                        }
+                    }, 500);
                     return null;
                 }
-            } catch (Exception e) {}
+            } catch (Exception e) {
+                Tuils.log(e);
+                Tuils.sendOutput(Color.RED, pack.context, "Restore failed: " + e.getMessage(), TerminalManager.CATEGORY_OUTPUT);
+            }
 
             afterObjects.clear();
             return "Invalid selection. Enter a number (1-" + backups.size() + ") or 'fresh'.";
@@ -138,7 +195,7 @@ public class AIOnboardingManager {
         Tuils.sendOutput(Color.GREEN, pack.context, "- ollama (local, requires server URL)", TerminalManager.CATEGORY_OUTPUT);
         Tuils.sendOutput(pack.context, "\nType your choice below (or type 'help' for instructions):", TerminalManager.CATEGORY_OUTPUT);
         
-        pack.redirectator.prepareRedirection(new ProviderOnboarding());
+        pack.getRedirectator().prepareRedirection(new ProviderOnboarding());
     }
 
     public static class ProviderOnboarding extends RedirectCommand {

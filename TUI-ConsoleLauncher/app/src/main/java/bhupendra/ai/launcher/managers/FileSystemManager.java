@@ -210,7 +210,7 @@ public class FileSystemManager {
             File[] files = dir.listFiles();
             if(files == null) return;
     
-            for(File f : dir.listFiles()) {
+            for(File f : files) {
                 if(f.isDirectory()) delete(f);
                 f.delete();
             }
@@ -220,7 +220,7 @@ public class FileSystemManager {
             File[] files = dir.listFiles();
             if(files == null) return;
     
-            for(File f : dir.listFiles()) {
+            for(File f : files) {
                 if(f.isDirectory()) delete(f);
                 f.delete();
             }
@@ -264,6 +264,10 @@ public class FileSystemManager {
     }
 
     public static void copyFile(File src, File dst) throws IOException {
+        File parent = dst.getParentFile();
+        if (parent != null && !parent.exists()) {
+            parent.mkdirs();
+        }
         InputStream in = new FileInputStream(src);
         try {
             OutputStream out = new FileOutputStream(dst);
@@ -288,9 +292,11 @@ public class FileSystemManager {
             }
 
             String[] children = sourceLocation.list();
-            for (int i=0; i<children.length; i++) {
-                copyDirectory(new File(sourceLocation, children[i]),
-                        new File(targetLocation, children[i]));
+            if (children != null) {
+                for (int i=0; i<children.length; i++) {
+                    copyDirectory(new File(sourceLocation, children[i]),
+                            new File(targetLocation, children[i]));
+                }
             }
         } else {
             copyFile(sourceLocation, targetLocation);

@@ -420,6 +420,7 @@ public class LauncherActivity extends AppCompatActivity implements Reloadable {
 
         if(main != null) main.destroy();
         if(ui != null) ui.dispose();
+        XMLPrefsManager.dispose();
     }
 
     @Override

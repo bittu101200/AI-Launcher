@@ -102,6 +102,11 @@ public class MainManager {
                 redirect = null;
             }
         }
+
+        @Override
+        public RedirectCommand getRedirect() {
+            return redirect;
+        }
     };
     private OnRedirectionListener redirectionListener;
     public void setRedirectionListener(OnRedirectionListener redirectionListener) {
@@ -243,6 +248,15 @@ public class MainManager {
     }
 
     public void onCommand(String input, AppsManager.LaunchInfo launchInfo, boolean wasMusicService) {
+        if(redirect != null) {
+            if(!redirect.isWaitingPermission()) {
+                redirect.afterObjects.add(input);
+            }
+            String output = redirect.onRedirect(mainPack);
+            Tuils.sendOutput(mContext, output);
+
+            return;
+        }
         commandController.onCommand(input, launchInfo, wasMusicService, activeRequestId);
     }
 

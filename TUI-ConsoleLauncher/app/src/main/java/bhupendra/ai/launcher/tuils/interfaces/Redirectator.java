@@ -10,4 +10,5 @@ public interface Redirectator {
 
     void prepareRedirection(RedirectCommand cmd);
     void cleanup();
+    RedirectCommand getRedirect();
 }
