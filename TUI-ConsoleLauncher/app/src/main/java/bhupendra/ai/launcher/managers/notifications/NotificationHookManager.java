@@ -212,7 +212,7 @@ public class NotificationHookManager {
                 "4. Reply in the same language as the message.",
                 sender, message, instruction);
 
-        ai.submit(query, new AICallback() {
+        ai.submitAutomation(query, new AICallback() {
             @Override public void onToken(String rid, String t) {}
             @Override public void onResponse(AIResponse r) {
                 if (r.type == AIResponse.Type.TEXT && r.text != null && !r.text.isEmpty()) {

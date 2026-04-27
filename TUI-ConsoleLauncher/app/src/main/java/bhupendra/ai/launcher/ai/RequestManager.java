@@ -1,5 +1,8 @@
 package bhupendra.ai.launcher.ai;
 
+import android.os.Handler;
+import android.os.Looper;
+
 import java.util.concurrent.atomic.AtomicReference;
 
 public class RequestManager {
@@ -10,12 +13,43 @@ public class RequestManager {
     private volatile AICallback activeCallback;
     private volatile boolean cancelRequested;
 
+    private Handler handler;
+    private final long connectTimeoutMs;
+    private final long inactivityTimeoutMs;
+    private Runnable timeoutRunnable;
+
     public RequestManager(AIProvider provider, long connectTimeoutMs, long inactivityTimeoutMs) {
         this.provider = provider;
+        this.connectTimeoutMs = connectTimeoutMs;
+        this.inactivityTimeoutMs = inactivityTimeoutMs;
+        try {
+            this.handler = new Handler(Looper.getMainLooper());
+        } catch (RuntimeException e) {
+            this.handler = null;
+        }
     }
 
     public void setProvider(AIProvider provider) {
         this.provider = provider;
+    }
+
+    private void resetTimer(final String requestId, long timeout, final AIRequestState timeoutState) {
+        cancelTimer();
+        if (handler == null) return;
+        timeoutRunnable = () -> {
+            if (requestId.equals(activeId.get())) {
+                cancelRequested = true;
+                transition(requestId, timeoutState, activeCallback);
+            }
+        };
+        handler.postDelayed(timeoutRunnable, timeout);
+    }
+
+    private void cancelTimer() {
+        if (timeoutRunnable != null && handler != null) {
+            handler.removeCallbacks(timeoutRunnable);
+            timeoutRunnable = null;
+        }
     }
 
     public void submit(AIRequest request, AICallback callback) {
@@ -23,18 +57,22 @@ public class RequestManager {
         activeCallback = callback;
         cancelRequested = false;
         transition(request.requestId, AIRequestState.THINKING, callback);
+        resetTimer(request.requestId, connectTimeoutMs, AIRequestState.TIMED_OUT_CONNECT);
 
         provider.complete(request, request.requestId, new AICallback() {
             @Override
             public void onToken(String rid, String token) {
                 if (!rid.equals(activeId.get()) || cancelRequested) return;
                 transition(rid, AIRequestState.STREAMING, activeCallback);
+                resetTimer(rid, inactivityTimeoutMs, AIRequestState.TIMED_OUT_INACTIVITY);
                 activeCallback.onToken(rid, token);
             }
 
             @Override
             public void onResponse(AIResponse response) {
                 if (!response.requestId.equals(activeId.get()) || cancelRequested) return;
+                
+                resetTimer(response.requestId, inactivityTimeoutMs, AIRequestState.TIMED_OUT_INACTIVITY);
                 
                 if (response.type == AIResponse.Type.TOOL_CALLS) {
                     transition(response.requestId, AIRequestState.EXECUTING_TOOLS, activeCallback);
@@ -85,9 +123,16 @@ public class RequestManager {
         state.set(newState);
         if (cb != null) cb.onStateChange(rid, newState);
         if (isTerminalState(newState)) {
+            cancelTimer();
             activeId.compareAndSet(rid, null);
             activeCallback = null;
             cancelRequested = false;
+        } else if (newState == AIRequestState.THINKING) {
+            resetTimer(rid, connectTimeoutMs, AIRequestState.TIMED_OUT_CONNECT);
+        } else if (newState == AIRequestState.EXECUTING_TOOLS) {
+            // Tools might take a while, give them a longer inactivity timeout or don't timeout.
+            // For now, let's keep the inactivity timeout or disable it during tool execution.
+            cancelTimer();
         }
     }
 

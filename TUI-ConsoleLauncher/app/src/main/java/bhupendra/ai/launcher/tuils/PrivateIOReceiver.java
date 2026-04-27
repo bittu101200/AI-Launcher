@@ -42,15 +42,12 @@ public class PrivateIOReceiver extends BroadcastReceiver {
     public static final String BUNDLE = BuildConfig.APPLICATION_ID + ".bundle";
     public static final String PENDING_INTENT = BuildConfig.APPLICATION_ID + ".pending_intent";
     public static final String ID = BuildConfig.APPLICATION_ID + ".id";
-    public static final String CURRENT_ID = BuildConfig.APPLICATION_ID + ".current_id";
     public static final String INFO_AREA = BuildConfig.APPLICATION_ID + ".info_area";
 
     Outputable outputable;
     Inputable inputable;
 
     Activity activity;
-
-    public static int currentId = 0;
 
     public PrivateIOReceiver(Activity activity, Outputable outputable, Inputable inputable) {
         this.outputable = outputable;
@@ -60,13 +57,6 @@ public class PrivateIOReceiver extends BroadcastReceiver {
 
     @Override
     public void onReceive(Context context, Intent intent) {
-//        to avoid double onReceive calls
-        if (!ACTION_REPLY.equals(intent.getAction())) {
-            int cId = intent.getIntExtra(CURRENT_ID, -1);
-            if(cId != -1 && cId != currentId) return;
-            currentId++;
-        }
-
         Bundle remoteInput = RemoteInput.getResultsFromIntent(intent);
         if(remoteInput == null || remoteInput.size() == 0) {
             CharSequence text = intent.getCharSequenceExtra(TEXT);

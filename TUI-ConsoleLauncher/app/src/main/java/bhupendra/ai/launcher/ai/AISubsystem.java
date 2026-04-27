@@ -43,6 +43,10 @@ public class AISubsystem {
     private final ToolRegistry toolRegistry;
     private final ConversationManager conversationManager;
     private final RequestManager requestManager;
+    
+    private final ConversationManager automationConversationManager;
+    private final RequestManager automationRequestManager;
+
     private final LongTermMemory longTermMemory;
     private final bhupendra.ai.launcher.ai.platform.LauncherIndex launcherIndex = new bhupendra.ai.launcher.ai.platform.LauncherIndex();
     private final AtomicReference<String> lastRequestId = new AtomicReference<>();
@@ -141,6 +145,8 @@ public class AISubsystem {
         this.toolRegistry = new ToolRegistry();
         this.conversationManager = new ConversationManager(ConversationManager.Mode.SESSION, 4000);
         this.requestManager = new RequestManager(provider, 10_000, 30_000);
+        this.automationConversationManager = new ConversationManager(ConversationManager.Mode.SESSION, 4000);
+        this.automationRequestManager = new RequestManager(provider, 10_000, 30_000);
         this.longTermMemory = this.appContext != null ? new LongTermMemory(this.appContext) : null;
         
         if (this.appContext != null) {
@@ -378,6 +384,7 @@ public class AISubsystem {
         android.util.Log.d("AI_REFRESH", "Refreshing AI subsystem: provider=" + providerName);
         this.provider = buildProvider(providerName);
         requestManager.setProvider(this.provider);
+        automationRequestManager.setProvider(this.provider);
     }
 
     public void confirmCurrentTool() {
@@ -461,6 +468,109 @@ public class AISubsystem {
         provider.complete(request, requestId, new AICallback() {
             @Override public void onToken(String rid, String token) { callback.onToken(rid, token); }
             @Override public void onResponse(AIResponse response) { handleAIResponse(requestId, response, callback); }
+            @Override public void onStateChange(String rid, AIRequestState s) { callback.onStateChange(rid, s); }
+        });
+    }
+
+    public String submitAutomation(String userMessage, AICallback callback) {
+        String requestId = UUID.randomUUID().toString();
+        automationConversationManager.append(ConversationTurn.user(userMessage));
+        AIRequest request = new AIRequest.Builder()
+            .requestId(requestId)
+            .userMessage(userMessage)
+            .history(automationConversationManager.getHistory())
+            .tools(toolRegistry.getTools())
+            .systemPrompt(getSystemPrompt())
+            .maxTokens(2048)
+            .build();
+        automationRequestManager.submit(request, new AICallback() {
+            @Override public void onToken(String rid, String token) { callback.onToken(rid, token); }
+            @Override public void onResponse(AIResponse response) { handleAutomationResponse(requestId, response, callback); }
+            @Override public void onStateChange(String rid, AIRequestState s) { callback.onStateChange(rid, s); }
+        });
+        return requestId;
+    }
+
+    private void handleAutomationResponse(String requestId, AIResponse response, AICallback callback) {
+        if (response.type == AIResponse.Type.TOOL_CALLS) {
+            automationConversationManager.append(ConversationTurn.assistantCalls(response.toolCalls));
+            beginAutomationToolExecution(requestId, response.toolCalls, callback);
+        } else if (response.type == AIResponse.Type.TEXT) {
+            if (response.text != null && !response.text.isEmpty()) {
+                automationConversationManager.append(ConversationTurn.assistant(response.text));
+            }
+            callback.onResponse(response);
+            automationRequestManager.finishToolExecution(requestId, true);
+        } else if (response.type == AIResponse.Type.ERROR) {
+            callback.onResponse(response);
+            automationRequestManager.finishToolExecution(requestId, false);
+        }
+    }
+
+    private void beginAutomationToolExecution(final String requestId, List<ToolCall> toolCalls, final AICallback callback) {
+        executeAutomationToolAtIndex(requestId, toolCalls, 0, callback);
+    }
+
+    private void executeAutomationToolAtIndex(final String requestId, final List<ToolCall> toolCalls, final int index, final AICallback callback) {
+        if (index >= toolCalls.size()) {
+            performAutomationFollowUp(requestId, callback);
+            return;
+        }
+        ToolCall toolCall = toolCalls.get(index);
+        Tool tool = toolRegistry.lookup(toolCall.toolName);
+        if (tool == null) {
+            automationConversationManager.append(ConversationTurn.tool(toolCall.callId, toolCall.toolName, "Tool not available"));
+            executeAutomationToolAtIndex(requestId, toolCalls, index + 1, callback);
+            return;
+        }
+        Runnable runTool = () -> {
+            try {
+                automationRequestManager.transition(requestId, AIRequestState.THINKING, callback);
+                if (appContext == null && toolExecutor instanceof AndroidToolExecutor) {
+                    callback.onResponse(AIResponse.error(requestId, "Tool execution requires app context"));
+                    automationRequestManager.finishToolExecution(requestId, false);
+                    return;
+                }
+                
+                String output = toolExecutor.execute(appContext, tool, toolCall.argumentsJson);
+                automationConversationManager.append(ConversationTurn.tool(toolCall.callId, toolCall.toolName, output != null ? output : "[done]"));
+                if (output != null && !output.isEmpty()) callback.onResponse(AIResponse.toolOutput(requestId, output, toolCall));
+                executeAutomationToolAtIndex(requestId, toolCalls, index + 1, callback);
+            } catch (Exception e) {
+                automationConversationManager.append(ConversationTurn.tool(toolCall.callId, toolCall.toolName, "[error: " + e.getMessage() + "]"));
+                executeAutomationToolAtIndex(requestId, toolCalls, index + 1, callback);
+            }
+        };
+
+        // For automation, we never prompt the user to confirm. We either run it if it's safe or reject it if it requires confirmation.
+        boolean requireConfirmation = true;
+        if (appContext != null) {
+            requireConfirmation = XMLPrefsManager.getBoolean(Ai.confirm_state_changing);
+        }
+        
+        if (tool.riskClass == ToolRiskClass.READ_ONLY || 
+            "system.execute_command".equals(tool.name) ||
+            !requireConfirmation) {
+            runTool.run();
+            return;
+        }
+
+        // Auto-decline if confirmation needed for automation (or we could just run it, but automation shouldn't bypass safety by default)
+        automationConversationManager.append(ConversationTurn.tool(toolCall.callId, toolCall.toolName, "[error: tool requires interactive confirmation which is unavailable in background automation]"));
+        executeAutomationToolAtIndex(requestId, toolCalls, index + 1, callback);
+    }
+
+    private void performAutomationFollowUp(String requestId, AICallback callback) {
+        automationRequestManager.transition(requestId, AIRequestState.THINKING, callback);
+        AIRequest request = new AIRequest.Builder()
+            .requestId(requestId)
+            .history(automationConversationManager.getHistory())
+            .tools(toolRegistry.getTools())
+            .systemPrompt(getSystemPrompt())
+            .build();
+        provider.complete(request, requestId, new AICallback() {
+            @Override public void onToken(String rid, String token) { callback.onToken(rid, token); }
+            @Override public void onResponse(AIResponse response) { handleAutomationResponse(requestId, response, callback); }
             @Override public void onStateChange(String rid, AIRequestState s) { callback.onStateChange(rid, s); }
         });
     }
