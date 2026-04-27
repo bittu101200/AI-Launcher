@@ -479,6 +479,7 @@ public class AISubsystem {
     }
 
     private void handleAIResponse(String requestId, AIResponse response, AICallback callback) {
+        if (!requestManager.isActive(requestId)) return;
         if (response.type == AIResponse.Type.TOOL_CALLS) {
             conversationManager.append(ConversationTurn.assistantCalls(response.toolCalls));
             beginToolExecution(requestId, response.toolCalls, callback);
@@ -495,6 +496,7 @@ public class AISubsystem {
     }
 
     private void performFollowUp(String requestId, AICallback callback) {
+        if (!requestManager.isActive(requestId)) return;
         requestManager.transition(requestId, AIRequestState.FOLLOWUP, callback);
         AIRequest request = new AIRequest.Builder()
             .requestId(requestId)
@@ -503,9 +505,13 @@ public class AISubsystem {
             .systemPrompt(getSystemPrompt())
             .build();
         provider.complete(request, requestId, new AICallback() {
-            @Override public void onToken(String rid, String token) { callback.onToken(rid, token); }
+            @Override public void onToken(String rid, String token) {
+                if (requestManager.isActive(requestId)) callback.onToken(rid, token);
+            }
             @Override public void onResponse(AIResponse response) { handleAIResponse(requestId, response, callback); }
-            @Override public void onStateChange(String rid, AIRequestState s) { callback.onStateChange(rid, s); }
+            @Override public void onStateChange(String rid, AIRequestState s) {
+                if (requestManager.isActive(requestId)) callback.onStateChange(rid, s);
+            }
         });
     }
 
@@ -737,6 +743,7 @@ public class AISubsystem {
     }
 
     private void executeToolAtIndex(final String requestId, final List<ToolCall> toolCalls, final int index, final AICallback callback) {
+        if (!requestManager.isActive(requestId)) return;
         if (index >= toolCalls.size()) {
             performFollowUp(requestId, callback);
             return;
@@ -750,6 +757,7 @@ public class AISubsystem {
         }
         Runnable runTool = () -> {
             try {
+                if (!requestManager.isActive(requestId)) return;
                 requestManager.transition(requestId, AIRequestState.THINKING, callback);
                 
                 // Technical visibility: Inform the user which tool is running
@@ -763,11 +771,14 @@ public class AISubsystem {
                     return;
                 }
                 
+                if (!requestManager.isActive(requestId)) return;
                 String output = toolExecutor.execute(appContext, tool, toolCall.argumentsJson);
+                if (!requestManager.isActive(requestId)) return;
                 conversationManager.append(ConversationTurn.tool(toolCall.callId, toolCall.toolName, output != null ? output : "[done]"));
                 if (output != null && !output.isEmpty()) callback.onResponse(AIResponse.toolOutput(requestId, output, toolCall));
                 executeToolAtIndex(requestId, toolCalls, index + 1, callback);
             } catch (Exception e) {
+                if (!requestManager.isActive(requestId)) return;
                 conversationManager.append(ConversationTurn.tool(toolCall.callId, toolCall.toolName, "[error: " + e.getMessage() + "]"));
                 executeToolAtIndex(requestId, toolCalls, index + 1, callback);
             }
@@ -789,6 +800,7 @@ public class AISubsystem {
         pendingConfirmAction = runTool;
         pendingDeclineAction = () -> {
             clearPendingConfirmationState();
+            if (!requestManager.isActive(requestId)) return;
             conversationManager.append(ConversationTurn.tool(toolCall.callId, toolCall.toolName, "[user declined]"));
             executeToolAtIndex(requestId, toolCalls, index + 1, callback);
         };

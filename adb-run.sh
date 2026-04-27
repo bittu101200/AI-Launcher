@@ -24,7 +24,7 @@ adb logcat -v raw -T 1 -s AI_OUTPUT | while read -r line; do
         pkill -P $$ adb 2>/dev/null
         break
     fi
-    if [[ "$line" == *"CMD_FINISHED"* && "$line" == *"$REQUEST_ID"* ]]; then
+    if [[ "$line" == *"CMD_FINISHED"* && ( "$line" == *"$REQUEST_ID"* || "$line" != *"requestId="* ) ]]; then
         echo "--- Finished (CMD_FINISHED) ---"
         pkill -P $$ adb 2>/dev/null
         break

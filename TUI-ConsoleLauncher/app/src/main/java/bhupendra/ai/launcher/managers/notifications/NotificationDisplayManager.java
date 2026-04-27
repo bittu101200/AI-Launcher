@@ -7,7 +7,6 @@ import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.os.Parcelable;
 import android.service.notification.StatusBarNotification;
-import android.text.TextUtils;
 import android.util.Log;
 
 import java.util.HashMap;
@@ -52,7 +51,7 @@ public class NotificationDisplayManager {
             debug("suppressed attention", sbn, renderedText, resolvedContent);
             return false;
         }
-        if (shouldSuppressDuplicate(buildSystemFingerprint(sbn, renderedText))) {
+        if (shouldSuppressDuplicate(buildSystemFingerprint(sbn, renderedText, resolvedContent))) {
             debug("suppressed duplicate", sbn, renderedText, resolvedContent);
             return false;
         }
@@ -117,9 +116,18 @@ public class NotificationDisplayManager {
         return false;
     }
 
-    private String buildSystemFingerprint(StatusBarNotification sbn, CharSequence renderedText) {
+    private String buildSystemFingerprint(StatusBarNotification sbn, CharSequence renderedText, NotificationContentResolver.ResolvedContent resolvedContent) {
         if (sbn == null) return "";
-        return "system|" + safe(sbn.getPackageName()) + "|" + safe(renderedText);
+        return buildStableSystemFingerprint(sbn.getPackageName(), renderedText, resolvedContent);
+    }
+
+    static String buildStableSystemFingerprint(String packageName, CharSequence renderedText, NotificationContentResolver.ResolvedContent resolvedContent) {
+        String title = resolvedContent != null ? firstNonEmpty(resolvedContent.title, resolvedContent.originalTitle) : "";
+        String text = resolvedContent != null ? firstNonEmpty(resolvedContent.text, resolvedContent.originalText) : "";
+        if (title.length() > 0 || text.length() > 0) {
+            return "system|" + safeString(packageName) + "|" + title + "|" + text;
+        }
+        return "system|" + safeString(packageName) + "|" + safeString(renderedText);
     }
 
     private String buildJourneyFingerprint(String packageName, String title, String text) {
@@ -141,13 +149,27 @@ public class NotificationDisplayManager {
     }
 
     private String safe(CharSequence value) {
-        if (value == null) return "";
-        return TextUtils.isEmpty(value) ? "" : value.toString().trim();
+        return safeString(value);
     }
 
     private boolean isBlankOrNull(CharSequence value) {
         String safeValue = safe(value);
         return safeValue.length() == 0 || "null".equalsIgnoreCase(safeValue);
+    }
+
+    private static String firstNonEmpty(String... values) {
+        if (values == null) return "";
+        for (String value : values) {
+            String safeValue = safeString(value);
+            if (safeValue.length() > 0) return safeValue;
+        }
+        return "";
+    }
+
+    private static String safeString(CharSequence value) {
+        if (value == null || value.length() == 0) return "";
+        String text = value.toString().trim();
+        return "null".equalsIgnoreCase(text) ? "" : text;
     }
 
     private void debug(String stage, StatusBarNotification sbn, CharSequence renderedText, NotificationContentResolver.ResolvedContent resolvedContent) {

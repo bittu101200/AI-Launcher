@@ -109,6 +109,10 @@ public class RequestManager {
         return cancelRequested;
     }
 
+    public boolean isActive(String requestId) {
+        return requestId != null && requestId.equals(activeId.get()) && !cancelRequested && isInFlight();
+    }
+
     public boolean isInFlight() {
         AIRequestState s = state.get();
         return s == AIRequestState.THINKING || s == AIRequestState.STREAMING

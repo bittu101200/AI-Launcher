@@ -5,6 +5,7 @@ import android.text.Spannable;
 import android.text.method.LinkMovementMethod;
 import android.text.method.MovementMethod;
 import android.view.MotionEvent;
+import android.view.ViewConfiguration;
 import android.widget.TextView;
 
 /**
@@ -18,6 +19,7 @@ public class LongClickMovementMethod extends LinkMovementMethod {
 //    private int lastY = 0;
 
     private int longClickDuration, lastLine = -1;
+    private int downX, downY, touchSlop = -1;
 
     private abstract class WasActivatedRunnable implements Runnable {
 
@@ -32,14 +34,27 @@ public class LongClickMovementMethod extends LinkMovementMethod {
     private WasActivatedRunnable runnable;
     private LongClickableSpan activeSpan;
 
+    private void clearPress(TextView widget) {
+        if (runnable != null) {
+            widget.removeCallbacks(runnable);
+            runnable = null;
+        }
+        activeSpan = null;
+    }
+
     @Override
     public boolean onTouchEvent(final TextView widget, Spannable buffer, MotionEvent event) {
         int action = event.getAction();
 //        Tuils.log("action", action);
+        if (touchSlop < 0) {
+            touchSlop = ViewConfiguration.get(widget.getContext()).getScaledTouchSlop();
+        }
 
         if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_DOWN || action == MotionEvent.ACTION_MOVE || action == MotionEvent.ACTION_CANCEL) {
-            int x = (int) event.getX();
-            int y = (int) event.getY();
+            int rawX = (int) event.getX();
+            int rawY = (int) event.getY();
+            int x = rawX;
+            int y = rawY;
 
             x -= widget.getTotalPaddingLeft();
             y -= widget.getTotalPaddingTop();
@@ -57,10 +72,8 @@ public class LongClickMovementMethod extends LinkMovementMethod {
                 if(runnable != null) {
                     if(!runnable.wasActivated) {
                         widget.removeCallbacks(runnable);
-                        if (activeSpan != null) {
+                        if (activeSpan != null && link.length > 0 && link[0] == activeSpan) {
                             activeSpan.onClick(widget);
-                        } else if(link.length > 0) {
-                            link[0].onClick(widget);
                         }
                     }
                     runnable = null;
@@ -68,6 +81,8 @@ public class LongClickMovementMethod extends LinkMovementMethod {
                 activeSpan = null;
 
             } else if (action == MotionEvent.ACTION_DOWN) {
+                downX = rawX;
+                downY = rawY;
                 activeSpan = null;
                 if(link.length > 0) {
                     activeSpan = link[0];
@@ -83,10 +98,12 @@ public class LongClickMovementMethod extends LinkMovementMethod {
                     widget.postDelayed(runnable, longClickDuration);
                 }
 
-            } else {
-                if(line != lastLine) {
-                    widget.removeCallbacks(runnable);
+            } else if (action == MotionEvent.ACTION_MOVE) {
+                if(line != lastLine || Math.abs(rawX - downX) > touchSlop || Math.abs(rawY - downY) > touchSlop) {
+                    clearPress(widget);
                 }
+            } else if (action == MotionEvent.ACTION_CANCEL) {
+                clearPress(widget);
             }
 
             lastLine = line;

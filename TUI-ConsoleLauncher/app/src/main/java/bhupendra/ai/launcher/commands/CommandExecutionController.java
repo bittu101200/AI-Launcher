@@ -83,6 +83,10 @@ public class CommandExecutionController {
         return shellCommandTrigger;
     }
 
+    public boolean onAICommand(String input, String requestId) {
+        return onCommandInternal(input, null, false, requestId, false, false);
+    }
+
     private void logCommandFinished(String requestId) {
         if (requestId == null || requestId.length() == 0) {
             android.util.Log.i("AI_OUTPUT", "CMD_FINISHED");
@@ -121,12 +125,15 @@ public class CommandExecutionController {
     }
 
     public void onCommand(String input, String alias, boolean wasMusicService, String requestId) {
-        final String originalInput = input;
+        onCommandInternal(input, alias, wasMusicService, requestId, true, true);
+    }
+
+    private boolean onCommandInternal(String input, String alias, boolean wasMusicService, String requestId, boolean allowShellFallback, boolean allowAITrigger) {
         BeepPlayer.stopRepeatingAlert();
 
         if (bhupendra.ai.launcher.ai.AppCapabilityScanner.PendingIntegration.isActive()) {
             bhupendra.ai.launcher.ai.AppCapabilityScanner.PendingIntegration.processSelection(input);
-            return;
+            return true;
         }
 
         if (mainPack.aiSubsystem != null) {
@@ -134,7 +141,11 @@ public class CommandExecutionController {
                 String trimmed = input.trim();
                 if (trimmed.equalsIgnoreCase("stop") || trimmed.equalsIgnoreCase("cancel")) {
                     mainPack.aiSubsystem.cancel();
-                    return;
+                    return true;
+                } else if (trimmed.equalsIgnoreCase("kill")) {
+                    mainPack.aiSubsystem.hardKill();
+                    Tuils.sendOutput(mContext, "AI processes terminated and history cleared.");
+                    return true;
                 }
             }
             if (mainPack.aiSubsystem.isAwaitingConfirmation()) {
@@ -143,7 +154,7 @@ public class CommandExecutionController {
                 } else {
                     mainPack.aiSubsystem.declineCurrentTool();
                 }
-                return;
+                return true;
             }
         }
 
@@ -205,24 +216,30 @@ public class CommandExecutionController {
 
             if (matched) continue;
 
-            if (agentic && aiTrigger != null) {
+            if (allowAITrigger && agentic && aiTrigger != null) {
                 if (aiTrigger.trigger(cmds[c])) {
                     continue;
                 }
             }
 
-            try {
-                if (shellCommandTrigger.trigger(mainPack, cmds[c], requestId)) {
-                    continue;
+            if (allowShellFallback) {
+                try {
+                    if (shellCommandTrigger.trigger(mainPack, cmds[c], requestId)) {
+                        continue;
+                    }
+                } catch (Exception e) {
+                    Tuils.sendOutput(mContext, Tuils.getStackTrace(e));
                 }
-            } catch (Exception e) {
-                Tuils.sendOutput(mContext, Tuils.getStackTrace(e));
             }
 
-            if (!agentic && alwaysOnFallback && aiTrigger != null) {
+            if (allowAITrigger && !agentic && alwaysOnFallback && aiTrigger != null) {
                 aiTrigger.trigger(cmds[c]);
             }
+
+            return false;
         }
+
+        return true;
     }
 
     public boolean performLaunch(MainPack mainPack, AppsManager.LaunchInfo i, String input) {

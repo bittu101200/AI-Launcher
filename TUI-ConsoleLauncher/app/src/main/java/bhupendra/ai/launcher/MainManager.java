@@ -156,6 +156,7 @@ public class MainManager {
 
         mainPack = new MainPack(mContext, group, aliasManager, appsManager, musicManager2, contactManager, redirectator, rssManager, client);
         commandController = new CommandExecutionController(mContext, mainPack);
+        mainPack.commandController = commandController;
 
         if (mainPack.aiSubsystem != null) {
             mainPack.aiSubsystem.setMainPack(mainPack);

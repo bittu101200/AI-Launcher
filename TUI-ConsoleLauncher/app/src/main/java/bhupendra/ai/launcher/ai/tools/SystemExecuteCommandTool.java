@@ -60,8 +60,12 @@ public class SystemExecuteCommandTool extends BaseAITool {
             mainHandler.post(() -> {
                 try {
                     String requestId = UUID.randomUUID().toString();
-                    mainPack.commandController.onCommand(commandLine, (String) null, false, requestId);
-                    resultRef.set("[dispatched: " + commandLine + "]");
+                    boolean dispatched = mainPack.commandController.onAICommand(commandLine, requestId);
+                    if (dispatched) {
+                        resultRef.set("[dispatched: " + commandLine + "]");
+                    } else {
+                        resultRef.set("[not dispatched: no launcher command, alias, app, or group matched '" + commandLine + "']");
+                    }
                 } catch (Exception e) {
                     Log.e(TAG, "Command execution failed on main thread", e);
                     errorRef.set(e);
@@ -79,4 +83,3 @@ public class SystemExecuteCommandTool extends BaseAITool {
             return resultRef.get();
     }
 }
-

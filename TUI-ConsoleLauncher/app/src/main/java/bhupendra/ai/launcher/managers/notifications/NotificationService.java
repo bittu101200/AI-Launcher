@@ -417,8 +417,9 @@ public class NotificationService extends NotificationListenerService {
             appLabelCache.put(packageName, label);
             return label;
         } catch (PackageManager.NameNotFoundException e) {
-            appLabelCache.put(packageName, "null");
-            return "null";
+            String fallback = packageName != null ? packageName : "";
+            appLabelCache.put(packageName, fallback);
+            return fallback;
         }
     }
 
@@ -441,7 +442,7 @@ public class NotificationService extends NotificationListenerService {
                 if (candidate == null) continue;
                 if (!packageName.equals(candidate.getPackageName())) continue;
                 if (NotificationContentResolver.isGroupSummary(candidate)) continue;
-                if (groupKey != null && candidate.getGroupKey() != null && !groupKey.equals(candidate.getGroupKey())) {
+                if (groupKey != null && groupKey.length() > 0 && !groupKey.equals(candidate.getGroupKey())) {
                     continue;
                 }
 
@@ -464,8 +465,11 @@ public class NotificationService extends NotificationListenerService {
     private String firstNonEmpty(String... values) {
         if (values == null) return "";
         for (String value : values) {
-            if (value != null && value.trim().length() > 0) {
-                return value.trim();
+            if (value != null) {
+                String trimmed = value.trim();
+                if (trimmed.length() > 0 && !"null".equalsIgnoreCase(trimmed)) {
+                    return trimmed;
+                }
             }
         }
         return "";

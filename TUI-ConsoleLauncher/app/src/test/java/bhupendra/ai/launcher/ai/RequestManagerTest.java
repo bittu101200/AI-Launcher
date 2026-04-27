@@ -47,6 +47,7 @@ public class RequestManagerTest {
 
         rm.cancel("r2");
         assertTrue(latch.await(2, TimeUnit.SECONDS));
+        assertFalse(rm.isActive("r2"));
     }
 
     @Test

@@ -93,8 +93,12 @@ public class AITrigger {
                         Tuils.sendOutput(Color.GRAY, context, "[cancelled]", TerminalManager.CATEGORY_OUTPUT);
                         break;
                     case TIMED_OUT_CONNECT:
-                        Tuils.sendOutput(Color.YELLOW, context, "[AI unavailable \u2014 retrying as shell command]", TerminalManager.CATEGORY_OUTPUT);
-                        if (shellFallback != null && fallbackInput != null) shellFallback.triggerShell(fallbackInput);
+                        if (shellFallback != null && shouldFallbackToShell(fallbackInput)) {
+                            Tuils.sendOutput(Color.YELLOW, context, "[AI unavailable \u2014 retrying as shell command]", TerminalManager.CATEGORY_OUTPUT);
+                            shellFallback.triggerShell(fallbackInput);
+                        } else {
+                            Tuils.sendOutput(Color.YELLOW, context, "[AI unavailable]", TerminalManager.CATEGORY_OUTPUT);
+                        }
                         break;
                     case TIMED_OUT_INACTIVITY:
                         Tuils.sendOutput(Color.YELLOW, context, "[AI response timed out]", TerminalManager.CATEGORY_OUTPUT);
@@ -107,6 +111,26 @@ public class AITrigger {
                 }
             }
         });
+
+        return true;
+    }
+
+    static boolean shouldFallbackToShell(String input) {
+        if (input == null) return false;
+        String trimmed = input.trim();
+        if (trimmed.length() == 0) return false;
+
+        String lower = trimmed.toLowerCase();
+        if (lower.endsWith("?")) return false;
+
+        String[] naturalLanguagePrefixes = {
+                "how ", "what ", "why ", "when ", "where ", "who ", "which ",
+                "can you ", "could you ", "would you ", "should i ", "do i ",
+                "does ", "is ", "are ", "tell me ", "explain ", "help me "
+        };
+        for (String prefix : naturalLanguagePrefixes) {
+            if (lower.startsWith(prefix)) return false;
+        }
 
         return true;
     }
