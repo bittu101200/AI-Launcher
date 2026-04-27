@@ -54,4 +54,9 @@ public class compact implements CommandAbstraction {
     @Override public int helpRes() { return R.string.help_compact; }
     @Override public String onArgNotFound(ExecutePack pack, int indexNotFound) { return null; }
     @Override public String onNotArgEnough(ExecutePack pack, int nArgs) { return null; }
+
+    @Override
+    public bhupendra.ai.launcher.commands.CommandMetadata getMetadata(android.content.Context context) {
+        return new bhupendra.ai.launcher.commands.CommandMetadata("compact", "compact — manually compact AI conversation history", null, null, null);
+    }
 }

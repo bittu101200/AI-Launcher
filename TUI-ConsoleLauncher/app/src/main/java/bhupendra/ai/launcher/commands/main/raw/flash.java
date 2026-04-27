@@ -149,4 +149,9 @@ public class flash implements CommandAbstraction {
         return null;
     }
 
+
+    @Override
+    public bhupendra.ai.launcher.commands.CommandMetadata getMetadata(android.content.Context context) {
+        return new bhupendra.ai.launcher.commands.CommandMetadata("flash", "Toggle the flashlight", null, null, null);
+    }
 }

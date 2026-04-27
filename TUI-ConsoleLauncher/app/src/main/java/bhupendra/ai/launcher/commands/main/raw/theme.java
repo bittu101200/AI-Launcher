@@ -292,4 +292,9 @@ public class theme extends ParamCommand {
     protected String doThings(ExecutePack pack) {
         return null;
     }
+
+    @Override
+    public bhupendra.ai.launcher.commands.CommandMetadata getMetadata(android.content.Context context) {
+        return new bhupendra.ai.launcher.commands.CommandMetadata("theme", "-apply [path] -> apply a theme from a local file", null, null, null);
+    }
 }

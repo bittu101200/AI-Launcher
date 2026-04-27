@@ -112,4 +112,9 @@ public class reply extends ParamCommand {
         return R.string.help_reply;
     }
 
+
+    @Override
+    public bhupendra.ai.launcher.commands.CommandMetadata getMetadata(android.content.Context context) {
+        return new bhupendra.ai.launcher.commands.CommandMetadata("reply", "-to [ID or packageName] [what] -> reply to the last notification from the application bound with the given ID", null, null, null);
+    }
 }

@@ -72,4 +72,9 @@ public class termux implements CommandAbstraction {
         return null;
     }
 
+
+    @Override
+    public bhupendra.ai.launcher.commands.CommandMetadata getMetadata(android.content.Context context) {
+        return new bhupendra.ai.launcher.commands.CommandMetadata("termux", "Run commands in Termux environment", null, null, null);
+    }
 }

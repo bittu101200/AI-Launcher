@@ -200,4 +200,9 @@ public class shortcut extends ParamCommand {
         return null;
     }
 
+
+    @Override
+    public bhupendra.ai.launcher.commands.CommandMetadata getMetadata(android.content.Context context) {
+        return new bhupendra.ai.launcher.commands.CommandMetadata("shortcut", "-ls [appName] -> show the shortcuts of this app", null, null, null);
+    }
 }

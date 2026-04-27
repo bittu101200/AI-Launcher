@@ -82,4 +82,9 @@ public class location implements CommandAbstraction {
         return null;
     }
 
+
+    @Override
+    public bhupendra.ai.launcher.commands.CommandMetadata getMetadata(android.content.Context context) {
+        return new bhupendra.ai.launcher.commands.CommandMetadata("location", "Show your current location", null, null, null);
+    }
 }

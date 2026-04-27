@@ -276,4 +276,9 @@ public class notifications extends ParamCommand {
     public int helpRes() {
         return R.string.help_notifications;
     }
+
+    @Override
+    public bhupendra.ai.launcher.commands.CommandMetadata getMetadata(android.content.Context context) {
+        return new bhupendra.ai.launcher.commands.CommandMetadata("notifications", "-inc [appName] -> include an application", null, null, null);
+    }
 }

@@ -51,4 +51,9 @@ public class open implements CommandAbstraction {
         return info.getResources().getString(R.string.output_filenotfound);
     }
 
+
+    @Override
+    public bhupendra.ai.launcher.commands.CommandMetadata getMetadata(android.content.Context context) {
+        return new bhupendra.ai.launcher.commands.CommandMetadata("open", "Open a file", null, null, null);
+    }
 }

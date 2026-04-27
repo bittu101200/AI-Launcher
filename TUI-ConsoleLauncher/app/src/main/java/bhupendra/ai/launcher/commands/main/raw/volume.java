@@ -180,4 +180,9 @@ public class volume extends ParamCommand {
     protected String doThings(ExecutePack pack) {
         return null;
     }
+
+    @Override
+    public bhupendra.ai.launcher.commands.CommandMetadata getMetadata(android.content.Context context) {
+        return new bhupendra.ai.launcher.commands.CommandMetadata("volume", "-set [stream] [volume: 0-100] -> set the volume for the selected stream", null, null, null);
+    }
 }

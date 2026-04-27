@@ -47,4 +47,9 @@ public class status implements CommandAbstraction {
     public String onNotArgEnough(ExecutePack info, int nArgs) {
         return null;
     }
+
+    @Override
+    public bhupendra.ai.launcher.commands.CommandMetadata getMetadata(android.content.Context context) {
+        return new bhupendra.ai.launcher.commands.CommandMetadata("status", "Get info about battery charge, wifi status and mobile data", null, null, null);
+    }
 }

@@ -147,4 +147,9 @@ public class tuiweather extends ParamCommand {
     protected String doThings(ExecutePack pack) {
         return null;
     }
+
+    @Override
+    public bhupendra.ai.launcher.commands.CommandMetadata getMetadata(android.content.Context context) {
+        return new bhupendra.ai.launcher.commands.CommandMetadata("tuiweather", "- update -> perform a manual update (this won\'t work unless you set a custom weather key)", null, null, null);
+    }
 }

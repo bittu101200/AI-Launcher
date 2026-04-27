@@ -107,4 +107,9 @@ public class sms extends RedirectCommand {
     public boolean isWaitingPermission() {
         return beforeObjects.size() == 1 && afterObjects.size() == 1;
     }
+
+    @Override
+    public bhupendra.ai.launcher.commands.CommandMetadata getMetadata(android.content.Context context) {
+        return new bhupendra.ai.launcher.commands.CommandMetadata("sms", "Send an SMS", null, null, null);
+    }
 }

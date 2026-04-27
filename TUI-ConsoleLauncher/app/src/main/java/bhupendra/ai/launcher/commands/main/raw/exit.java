@@ -43,4 +43,9 @@ public class exit implements CommandAbstraction {
     public String onNotArgEnough(ExecutePack pack, int nArgs) {
         return null;
     }
+
+    @Override
+    public bhupendra.ai.launcher.commands.CommandMetadata getMetadata(android.content.Context context) {
+        return new bhupendra.ai.launcher.commands.CommandMetadata("exit", "Close T-UI and reset the default launcher", null, null, null);
+    }
 }

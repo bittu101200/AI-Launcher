@@ -257,4 +257,9 @@ public class search extends ParamCommand {
     public int priority() {
         return 4;
     }
+
+    @Override
+    public bhupendra.ai.launcher.commands.CommandMetadata getMetadata(android.content.Context context) {
+        return new bhupendra.ai.launcher.commands.CommandMetadata("search", "-gg [search this", null, null, null);
+    }
 }

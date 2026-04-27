@@ -46,4 +46,9 @@ public class tutorial implements CommandAbstraction {
     public String onNotArgEnough(ExecutePack pack, int nArgs) {
         return null;
     }
+
+    @Override
+    public bhupendra.ai.launcher.commands.CommandMetadata getMetadata(android.content.Context context) {
+        return new bhupendra.ai.launcher.commands.CommandMetadata("tutorial", "Open the tutorial page on GitHub", null, null, null);
+    }
 }

@@ -42,4 +42,9 @@ public class changelog implements CommandAbstraction {
     public String onNotArgEnough(ExecutePack pack, int nArgs) {
         return null;
     }
+
+    @Override
+    public bhupendra.ai.launcher.commands.CommandMetadata getMetadata(android.content.Context context) {
+        return new bhupendra.ai.launcher.commands.CommandMetadata("changelog", "Show the changelog of the current version", null, null, null);
+    }
 }

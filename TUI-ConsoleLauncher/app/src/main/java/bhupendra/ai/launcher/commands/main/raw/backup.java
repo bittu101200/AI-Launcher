@@ -72,4 +72,9 @@ public class backup implements CommandAbstraction {
     public String onNotArgEnough(ExecutePack pack, int nArgs) {
         return pack.getContext().getString(helpRes());
     }
+
+    @Override
+    public bhupendra.ai.launcher.commands.CommandMetadata getMetadata(android.content.Context context) {
+        return new bhupendra.ai.launcher.commands.CommandMetadata("backup", "Copy all TUI configuration files to Downloads/TUI_Backup", null, null, null);
+    }
 }

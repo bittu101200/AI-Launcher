@@ -49,4 +49,9 @@ public class rate implements CommandAbstraction {
         return null;
     }
 
+
+    @Override
+    public bhupendra.ai.launcher.commands.CommandMetadata getMetadata(android.content.Context context) {
+        return new bhupendra.ai.launcher.commands.CommandMetadata("rate", "Leave a feedback on the Play Store page", null, null, null);
+    }
 }

@@ -63,4 +63,9 @@ public class ctrlc implements CommandAbstraction {
     public String onNotArgEnough(ExecutePack pack, int nArgs) {
         return null;
     }
+
+    @Override
+    public bhupendra.ai.launcher.commands.CommandMetadata getMetadata(android.content.Context context) {
+        return new bhupendra.ai.launcher.commands.CommandMetadata("ctrlc", "Interrupt the current shell process and create a new one", null, null, null);
+    }
 }

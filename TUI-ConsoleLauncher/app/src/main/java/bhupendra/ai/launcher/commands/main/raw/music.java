@@ -220,4 +220,9 @@ public class music extends ParamCommand {
     protected String doThings(ExecutePack pack) {
         return null;
     }
+
+    @Override
+    public bhupendra.ai.launcher.commands.CommandMetadata getMetadata(android.content.Context context) {
+        return new bhupendra.ai.launcher.commands.CommandMetadata("music", "-next -> play the next song", null, null, null);
+    }
 }

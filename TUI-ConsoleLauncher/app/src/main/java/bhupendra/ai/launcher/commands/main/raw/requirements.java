@@ -43,4 +43,9 @@ public class requirements implements CommandAbstraction {
     public String onNotArgEnough(ExecutePack pack, int nArgs) {
         return null;
     }
+
+    @Override
+    public bhupendra.ai.launcher.commands.CommandMetadata getMetadata(android.content.Context context) {
+        return new bhupendra.ai.launcher.commands.CommandMetadata("requirements", "requirements — check and request missing permissions (Notifications, storage, etc", null, null, null);
+    }
 }

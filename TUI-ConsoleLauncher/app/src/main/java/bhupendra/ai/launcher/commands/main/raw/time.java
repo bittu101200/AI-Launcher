@@ -39,4 +39,9 @@ public class time implements CommandAbstraction {
     public String onNotArgEnough(ExecutePack info, int nArgs) {
         return TimeManager.instance.replace("%t0").toString();
     }
+
+    @Override
+    public bhupendra.ai.launcher.commands.CommandMetadata getMetadata(android.content.Context context) {
+        return new bhupendra.ai.launcher.commands.CommandMetadata("time", "Print the current time with the given format", null, null, null);
+    }
 }

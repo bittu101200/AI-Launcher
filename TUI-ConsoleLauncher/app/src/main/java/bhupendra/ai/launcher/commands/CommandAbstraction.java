@@ -28,6 +28,10 @@ public interface CommandAbstraction {
     int THEME_PRESET = 33;
     int CONFIG_VALUE = 34;
 
+    default CommandMetadata getMetadata(android.content.Context context) {
+        return null;
+    }
+
     String exec(ExecutePack pack) throws Exception;
     int[] argType();
     int priority();

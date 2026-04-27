@@ -237,4 +237,9 @@ public class htmlextract extends ParamCommand {
     public int helpRes() {
         return R.string.help_htmlextract;
     }
+
+    @Override
+    public bhupendra.ai.launcher.commands.CommandMetadata getMetadata(android.content.Context context) {
+        return new bhupendra.ai.launcher.commands.CommandMetadata("htmlextract", "Extract text from HTML pages", null, null, null);
+    }
 }

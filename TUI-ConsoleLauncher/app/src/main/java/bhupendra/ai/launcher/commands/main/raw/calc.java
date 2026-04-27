@@ -55,4 +55,9 @@ public class calc implements PermanentSuggestionCommand {
     public String[] permanentSuggestions() {
         return new String[] {"(", ")", "+", "-", "*", "/", "%", "^", "sqrt"};
     }
+
+    @Override
+    public bhupendra.ai.launcher.commands.CommandMetadata getMetadata(android.content.Context context) {
+        return new bhupendra.ai.launcher.commands.CommandMetadata("calc", "Command implementation.", null, null, null);
+    }
 }

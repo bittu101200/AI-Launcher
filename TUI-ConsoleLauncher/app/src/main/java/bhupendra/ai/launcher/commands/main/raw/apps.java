@@ -27,7 +27,45 @@ import bhupendra.ai.launcher.managers.xml.classes.XMLPrefsSave;
 import bhupendra.ai.launcher.managers.xml.options.Apps;
 import bhupendra.ai.launcher.tuils.Tuils;
 
+import bhupendra.ai.launcher.commands.CommandMetadata;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 public class apps extends ParamCommand {
+
+    @Override
+    public CommandMetadata getMetadata(Context context) {
+        String description = "Manage your applications: list, show, hide, group, and more.";
+        Map<String, String> flags = new HashMap<>();
+        flags.put("-ls", "List all visible applications.");
+        flags.put("-lsh", "List all hidden applications.");
+        flags.put("-show", "Make a hidden application visible.");
+        flags.put("-hide", "Hide an application from the list.");
+        flags.put("-l", "Show detailed information about an application.");
+        flags.put("-ps", "Open an application's page on the Google Play Store.");
+        flags.put("-st", "Open an application's system settings page.");
+        flags.put("-default_app", "Set a default application for a specific index.");
+        flags.put("-frc", "Force launch an application.");
+        flags.put("-file", "Open the apps.xml configuration file.");
+        flags.put("-reset", "Reset an application's launch count to zero.");
+        flags.put("-mkgp", "Create a new application group.");
+        flags.put("-rmgp", "Delete an existing application group.");
+        flags.put("-gp_bg_color", "Set the background color for an application group.");
+        flags.put("-gp_fore_color", "Set the foreground color for an application group.");
+        flags.put("-lsgp", "List all groups or applications within a specific group.");
+        flags.put("-addtogp", "Add an application to a group.");
+        flags.put("-rmfromgp", "Remove an application from a group.");
+        flags.put("-tutorial", "Open the applications tutorial on GitHub.");
+
+        List<String> examples = new ArrayList<>();
+        examples.add("apps -ls");
+        examples.add("apps -hide Maps");
+        examples.add("apps -mkgp Social");
+
+        return new CommandMetadata("apps", description, flags, "[-flag] [args]", examples);
+    }
 
     private enum Param implements bhupendra.ai.launcher.commands.main.Param {
 

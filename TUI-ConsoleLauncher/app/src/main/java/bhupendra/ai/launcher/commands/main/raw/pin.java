@@ -23,4 +23,9 @@ public class pin implements CommandAbstraction {
     @Override public int helpRes() { return R.string.help_pin; }
     @Override public String onArgNotFound(ExecutePack pack, int indexNotFound) { return null; }
     @Override public String onNotArgEnough(ExecutePack pack, int nArgs) { return null; }
+
+    @Override
+    public bhupendra.ai.launcher.commands.CommandMetadata getMetadata(android.content.Context context) {
+        return new bhupendra.ai.launcher.commands.CommandMetadata("pin", "pin — pin the latest AI response", null, null, null);
+    }
 }

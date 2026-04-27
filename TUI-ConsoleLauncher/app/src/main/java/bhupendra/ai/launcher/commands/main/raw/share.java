@@ -55,4 +55,9 @@ public class share implements CommandAbstraction {
         return info.getResources().getString(R.string.output_filenotfound);
     }
 
+
+    @Override
+    public bhupendra.ai.launcher.commands.CommandMetadata getMetadata(android.content.Context context) {
+        return new bhupendra.ai.launcher.commands.CommandMetadata("share", "$ share [pathToFile]", null, null, null);
+    }
 }

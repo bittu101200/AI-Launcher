@@ -36,4 +36,9 @@ public class ai implements CommandAbstraction {
     @Override public int helpRes() { return R.string.help_ai; }
     @Override public String onArgNotFound(ExecutePack pack, int indexNotFound) { return pack.getContext().getString(R.string.help_ai); }
     @Override public String onNotArgEnough(ExecutePack pack, int nArgs) { return pack.getContext().getString(R.string.help_ai); }
+
+    @Override
+    public bhupendra.ai.launcher.commands.CommandMetadata getMetadata(android.content.Context context) {
+        return new bhupendra.ai.launcher.commands.CommandMetadata("ai", "ai [query] — send a query directly to AI", null, null, null);
+    }
 }

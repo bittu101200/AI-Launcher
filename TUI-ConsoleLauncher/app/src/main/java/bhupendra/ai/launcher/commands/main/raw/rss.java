@@ -398,4 +398,9 @@ public class rss extends ParamCommand {
     public String[] params() {
         return Param.labels();
     }
+
+    @Override
+    public bhupendra.ai.launcher.commands.CommandMetadata getMetadata(android.content.Context context) {
+        return new bhupendra.ai.launcher.commands.CommandMetadata("rss", "-add [ID] [update_time_in_seconds] [url] -> add a new RSS feed", null, null, null);
+    }
 }

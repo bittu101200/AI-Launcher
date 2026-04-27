@@ -58,4 +58,9 @@ public class donate implements CommandAbstraction {
     public String onNotArgEnough(ExecutePack info, int nArgs) {
         return null;
     }
+
+    @Override
+    public bhupendra.ai.launcher.commands.CommandMetadata getMetadata(android.content.Context context) {
+        return new bhupendra.ai.launcher.commands.CommandMetadata("donate", "Offer a coffee to the developer (PayPal only)", null, null, null);
+    }
 }

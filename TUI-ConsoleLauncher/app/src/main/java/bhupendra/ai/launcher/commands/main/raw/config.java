@@ -33,14 +33,45 @@ import bhupendra.ai.launcher.managers.xml.options.Rss;
 import bhupendra.ai.launcher.managers.xml.options.Ui;
 import bhupendra.ai.launcher.tuils.Tuils;
 import bhupendra.ai.launcher.tuils.interfaces.Reloadable;
+import android.content.Context;
 
 import static bhupendra.ai.launcher.UIManager.PREFS_NAME;
+
+import bhupendra.ai.launcher.commands.CommandMetadata;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Created by francescoandreuzzi on 11/06/2017.
  */
 
 public class config extends ParamCommand {
+
+    @Override
+    public CommandMetadata getMetadata(Context context) {
+        String description = "Configure T-UI settings, colors, and behavior.";
+        Map<String, String> flags = new HashMap<>();
+        flags.put("-set", "Set the value of a configuration option.");
+        flags.put("-info", "Get information about a specific configuration option.");
+        flags.put("-file", "Open a configuration file for editing.");
+        flags.put("-append", "Append a value to a configuration option.");
+        flags.put("-erase", "Clear the value of a configuration option.");
+        flags.put("-get", "Get the current value of a configuration option.");
+        flags.put("-ls", "List available configuration files or options.");
+        flags.put("-fontsize", "Change the global font size.");
+        flags.put("-reset", "Reset a configuration option to its default value.");
+        flags.put("-apply", "Apply a configuration file from a local path.");
+        flags.put("-tutorial", "Open the customization tutorial on GitHub.");
+
+        List<String> examples = new ArrayList<>();
+        examples.add("config -ls");
+        examples.add("config -set ui_color #ffffff");
+        examples.add("config -info max_lines");
+
+        return new CommandMetadata("config", description, flags, "[-flag] [args]", examples);
+    }
 
     private enum Param implements bhupendra.ai.launcher.commands.main.Param {
 

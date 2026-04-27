@@ -7,7 +7,21 @@ import bhupendra.ai.launcher.commands.CommandAbstraction;
 import bhupendra.ai.launcher.commands.ExecutePack;
 import bhupendra.ai.launcher.commands.main.MainPack;
 
+import bhupendra.ai.launcher.commands.CommandMetadata;
+import java.util.ArrayList;
+import java.util.List;
+import android.content.Context;
+
 public class bluetooth implements CommandAbstraction {
+
+    @Override
+    public CommandMetadata getMetadata(Context context) {
+        String description = "Toggle Bluetooth on or off.";
+        List<String> examples = new ArrayList<>();
+        examples.add("bluetooth");
+
+        return new CommandMetadata("bluetooth", description, null, null, examples);
+    }
 
     @Override
     public String exec(ExecutePack pack) {

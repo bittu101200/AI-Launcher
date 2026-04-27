@@ -86,4 +86,9 @@ public class vibrate implements CommandAbstraction {
     public String onNotArgEnough(ExecutePack pack, int nArgs) {
         return pack.getContext().getString(helpRes());
     }
+
+    @Override
+    public bhupendra.ai.launcher.commands.CommandMetadata getMetadata(android.content.Context context) {
+        return new bhupendra.ai.launcher.commands.CommandMetadata("vibrate", "Make your device vibrate", null, null, null);
+    }
 }

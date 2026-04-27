@@ -135,4 +135,9 @@ public class regex extends ParamCommand {
     public String[] params() {
         return Param.labels();
     }
+
+    @Override
+    public bhupendra.ai.launcher.commands.CommandMetadata getMetadata(android.content.Context context) {
+        return new bhupendra.ai.launcher.commands.CommandMetadata("regex", "-add [ID] [regex] -> add a new regex with the given ID", null, null, null);
+    }
 }

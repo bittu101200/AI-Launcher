@@ -41,4 +41,9 @@ public class restart implements CommandAbstraction {
         return null;
     }
 
+
+    @Override
+    public bhupendra.ai.launcher.commands.CommandMetadata getMetadata(android.content.Context context) {
+        return new bhupendra.ai.launcher.commands.CommandMetadata("restart", "Restart t-ui and load modified values", null, null, null);
+    }
 }

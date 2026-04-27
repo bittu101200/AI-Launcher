@@ -21,7 +21,14 @@ public class help implements CommandAbstraction {
     public String exec(ExecutePack pack) throws Exception {
         MainPack info = (MainPack) pack;
         CommandAbstraction cmd = info.get(CommandAbstraction.class);
-        int res = cmd == null ? R.string.output_commandnotfound : cmd.helpRes();
+        if (cmd == null) return info.getResources().getString(R.string.output_commandnotfound);
+
+        bhupendra.ai.launcher.commands.CommandMetadata meta = bhupendra.ai.launcher.commands.CommandHelpRegistry.getInstance(pack.getContext()).getCommandHelp(cmd.getClass().getSimpleName());
+        if (meta != null) {
+            return meta.toString();
+        }
+
+        int res = cmd.helpRes();
         return "Priority: " + info.getCmdPrefs().getPriority(cmd) + Tuils.NEWLINE + info.getResources().getString(res);
     }
 
@@ -60,4 +67,9 @@ public class help implements CommandAbstraction {
         return info.getResources().getString(R.string.output_commandnotfound);
     }
 
+
+    @Override
+    public bhupendra.ai.launcher.commands.CommandMetadata getMetadata(android.content.Context context) {
+        return new bhupendra.ai.launcher.commands.CommandMetadata("help", "Print the available commands, or info about a command", null, null, null);
+    }
 }

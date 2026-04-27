@@ -43,4 +43,9 @@ public class refresh implements CommandAbstraction {
     public String onArgNotFound(ExecutePack info, int index) {
         return null;
     }
+
+    @Override
+    public bhupendra.ai.launcher.commands.CommandMetadata getMetadata(android.content.Context context) {
+        return new bhupendra.ai.launcher.commands.CommandMetadata("refresh", "Refresh apps, alias, music, contacts", null, null, null);
+    }
 }

@@ -46,4 +46,9 @@ public class beep implements CommandAbstraction {
     public String onNotArgEnough(ExecutePack pack, int nArgs) {
         return pack.getContext().getString(helpRes());
     }
+
+    @Override
+    public bhupendra.ai.launcher.commands.CommandMetadata getMetadata(android.content.Context context) {
+        return new bhupendra.ai.launcher.commands.CommandMetadata("beep", "Emit a \"beep\"", null, null, null);
+    }
 }

@@ -11,11 +11,38 @@ import bhupendra.ai.launcher.commands.main.specific.ParamCommand;
 import bhupendra.ai.launcher.managers.NotesManager;
 import bhupendra.ai.launcher.tuils.Tuils;
 
+import bhupendra.ai.launcher.commands.CommandMetadata;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import android.content.Context;
+
 /**
  * Created by francescoandreuzzi on 12/02/2018.
  */
 
 public class notes extends ParamCommand {
+
+    @Override
+    public CommandMetadata getMetadata(Context context) {
+        String description = "Manage simple notes.";
+        Map<String, String> flags = new HashMap<>();
+        flags.put("-add", "Add a new note.");
+        flags.put("-rm", "Remove an existing note by ID or text.");
+        flags.put("-cp", "Copy a note to the clipboard.");
+        flags.put("-ls", "List all notes.");
+        flags.put("-clear", "Remove all unlocked notes.");
+        flags.put("-lock", "Lock a note to prevent deletion.");
+        flags.put("-unlock", "Unlock a note.");
+        flags.put("-tutorial", "Open the notes tutorial on GitHub.");
+
+        List<String> examples = new ArrayList<>();
+        examples.add("notes -add Buy milk");
+        examples.add("notes -ls");
+
+        return new CommandMetadata("notes", description, flags, "[-flag] [args]", examples);
+    }
 
     private enum Param implements bhupendra.ai.launcher.commands.main.Param {
 

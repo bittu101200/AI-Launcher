@@ -54,4 +54,9 @@ public class username implements CommandAbstraction {
     public String onArgNotFound(ExecutePack pack, int index) {
         return null;
     }
+
+    @Override
+    public bhupendra.ai.launcher.commands.CommandMetadata getMetadata(android.content.Context context) {
+        return new bhupendra.ai.launcher.commands.CommandMetadata("username", "Change the username and device name: username [new_user] [new_device]", null, null, null);
+    }
 }

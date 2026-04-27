@@ -52,4 +52,9 @@ public class uninstall implements CommandAbstraction {
         return info.getResources().getString(R.string.output_appnotfound);
     }
 
+
+    @Override
+    public bhupendra.ai.launcher.commands.CommandMetadata getMetadata(android.content.Context context) {
+        return new bhupendra.ai.launcher.commands.CommandMetadata("uninstall", "Uninstall an application", null, null, null);
+    }
 }

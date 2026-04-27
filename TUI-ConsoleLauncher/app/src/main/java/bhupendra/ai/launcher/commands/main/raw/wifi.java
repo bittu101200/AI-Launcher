@@ -8,7 +8,20 @@ import bhupendra.ai.launcher.commands.CommandAbstraction;
 import bhupendra.ai.launcher.commands.ExecutePack;
 import bhupendra.ai.launcher.commands.main.MainPack;
 
+import bhupendra.ai.launcher.commands.CommandMetadata;
+import java.util.ArrayList;
+import java.util.List;
+
 public class wifi implements CommandAbstraction {
+
+    @Override
+    public CommandMetadata getMetadata(Context context) {
+        String description = "Toggle WiFi on or off.";
+        List<String> examples = new ArrayList<>();
+        examples.add("wifi");
+
+        return new CommandMetadata("wifi", description, null, null, examples);
+    }
 
     @Override
     public String exec(ExecutePack pack) {

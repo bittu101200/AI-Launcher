@@ -43,4 +43,9 @@ public class kill implements CommandAbstraction {
     public String onNotArgEnough(ExecutePack pack, int nArgs) {
         return null;
     }
+
+    @Override
+    public bhupendra.ai.launcher.commands.CommandMetadata getMetadata(android.content.Context context) {
+        return new bhupendra.ai.launcher.commands.CommandMetadata("kill", "kill — immediately terminate all AI processes and clear history", null, null, null);
+    }
 }

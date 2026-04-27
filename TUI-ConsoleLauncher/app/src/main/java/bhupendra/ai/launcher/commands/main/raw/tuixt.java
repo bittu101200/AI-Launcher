@@ -86,4 +86,9 @@ public class tuixt implements CommandAbstraction {
         MainPack info = (MainPack) pack;
         return info.getResources().getString(R.string.help_tuixt);
     }
+
+    @Override
+    public bhupendra.ai.launcher.commands.CommandMetadata getMetadata(android.content.Context context) {
+        return new bhupendra.ai.launcher.commands.CommandMetadata("tuixt", "Open the text editor", null, null, null);
+    }
 }

@@ -213,6 +213,15 @@ public class AISubsystem {
             aliasArgs,
             ToolRiskClass.STATE_CHANGING));
 
+        Map<String, String> helpArgs = new HashMap<>();
+        helpArgs.put("command_name", "The specific command to look up (e.g., 'apps', 'config').");
+        helpArgs.put("search_query", "Keyword to search for in command library.");
+        toolRegistry.register(ToolRegistry.Tier.SYSTEM, new SystemGetCommandHelpTool(
+            "system.get_command_help",
+            "Extensive registry of TUI commands. Use this to find the correct syntax, flags, and examples for any launcher feature.",
+            helpArgs,
+            ToolRiskClass.READ_ONLY));
+
         toolRegistry.register(ToolRegistry.Tier.SYSTEM, new SystemGetNotificationsTool());
         toolRegistry.register(ToolRegistry.Tier.SYSTEM, new SystemReplyNotificationTool());
         toolRegistry.register(ToolRegistry.Tier.SYSTEM, new SystemAddNotificationHookTool());

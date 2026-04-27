@@ -78,4 +78,9 @@ public class call implements CommandAbstraction {
         return info.getResources().getString(R.string.output_numbernotfound);
     }
 
+
+    @Override
+    public bhupendra.ai.launcher.commands.CommandMetadata getMetadata(android.content.Context context) {
+        return new bhupendra.ai.launcher.commands.CommandMetadata("call", "Call someone", null, null, null);
+    }
 }

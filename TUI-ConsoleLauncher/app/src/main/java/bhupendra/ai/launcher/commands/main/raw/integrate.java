@@ -60,4 +60,9 @@ public class integrate implements CommandAbstraction {
     @Override public int helpRes() { return R.string.help_integrate; }
     @Override public String onArgNotFound(ExecutePack pack, int indexNotFound) { return null; }
     @Override public String onNotArgEnough(ExecutePack pack, int nArgs) { return null; }
+
+    @Override
+    public bhupendra.ai.launcher.commands.CommandMetadata getMetadata(android.content.Context context) {
+        return new bhupendra.ai.launcher.commands.CommandMetadata("integrate", "integrate — discover installed apps and add as AI tools", null, null, null);
+    }
 }

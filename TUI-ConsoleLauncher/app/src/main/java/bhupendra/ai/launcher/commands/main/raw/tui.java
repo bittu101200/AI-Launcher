@@ -219,4 +219,9 @@ public class tui extends ParamCommand {
     public int helpRes() {
         return R.string.help_tui;
     }
+
+    @Override
+    public bhupendra.ai.launcher.commands.CommandMetadata getMetadata(android.content.Context context) {
+        return new bhupendra.ai.launcher.commands.CommandMetadata("tui", "-rm -> uninstall t-ui", null, null, null);
+    }
 }

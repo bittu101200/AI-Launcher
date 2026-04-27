@@ -17,10 +17,34 @@ import bhupendra.ai.launcher.commands.main.specific.ParamCommand;
 import bhupendra.ai.launcher.managers.AliasManager;
 import bhupendra.ai.launcher.tuils.Tuils;
 
+import bhupendra.ai.launcher.commands.CommandMetadata;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import android.content.Context;
+
 /**
  * Created by andre on 15/11/15.
  */
 public class alias extends ParamCommand {
+
+    @Override
+    public CommandMetadata getMetadata(Context context) {
+        String description = "Create and manage command aliases.";
+        Map<String, String> flags = new HashMap<>();
+        flags.put("-add", "Add a new alias.");
+        flags.put("-rm", "Remove an existing alias.");
+        flags.put("-file", "Open the alias.xml configuration file.");
+        flags.put("-ls", "List all current aliases.");
+        flags.put("-tutorial", "Open the alias tutorial on GitHub.");
+
+        List<String> examples = new ArrayList<>();
+        examples.add("alias -add g google");
+        examples.add("alias -ls");
+
+        return new CommandMetadata("alias", description, flags, "[-flag] [args]", examples);
+    }
 
     private enum Param implements bhupendra.ai.launcher.commands.main.Param {
 

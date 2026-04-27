@@ -125,4 +125,9 @@ public class restore extends RedirectCommand {
     
     @Override public int getHint() { return R.string.restore_hint; }
     @Override public boolean isWaitingPermission() { return false; }
+
+    @Override
+    public bhupendra.ai.launcher.commands.CommandMetadata getMetadata(android.content.Context context) {
+        return new bhupendra.ai.launcher.commands.CommandMetadata("restore", "Restore configuration from a backup in Downloads/TUI_Backup", null, null, null);
+    }
 }
