@@ -1,6 +1,6 @@
 # T-UI Linux CLI Launcher
 
-Updated for compatibility with modern Android versions (API 34+) and enhanced with security hardening.
+Updated for compatibility with modern Android versions (API 34+) and enhanced with security hardening and an integrated AI subsystem.
 
 ---
 
@@ -10,7 +10,15 @@ These updates ensure the launcher remains functional, secure, and performant on 
 
 > **Pro Tip:** On the very first install, if background transparency does not take effect immediately, simply type \`restart\` in the terminal and press enter.
 
+### 🤖 AI Subsystem (Modularisation)
+The launcher now features a modular AI subsystem that transforms your terminal into a smart assistant.
+*   **Smart Onboarding:** A new guided setup flow for AI providers (Gemini, Claude, OpenAI, Ollama).
+*   **Auto-Restore:** Automatically detects T-UI backups in your Downloads folder on fresh installs and offers a one-tap restore.
+*   **Context-Aware Tools:** AI can now interact with your device (launch apps, check system info) using natural language.
+*   **Security Hardening:** AI interactions are isolated and use secure credential management.
+
 ### ⌨️ New Commands
+*   **`ai [prompt]`**: Interact directly with your selected AI provider.
 *   **`username [user] [device]`**: Instantly customize your terminal prompt. Changes both the username and device name and reloads the UI to apply.
 *   **`theme -preset [name]`**: Rapidly switch between high-quality pre-configured themes.
     *   **Available Presets:** `blue`, `red`, `green`, `pink`, `bw`, `cyberpunk`.
@@ -18,6 +26,7 @@ These updates ensure the launcher remains functional, secure, and performant on 
 *   **`bbman`**: The new BusyBox manager for installing and verifying Linux binaries.
 
 ### ✨ Enhanced Features
+*   **Automated Permissions:** Smart detection and request for "All Files Access" (MANAGE_EXTERNAL_STORAGE) required for backup scanning and file management on Android 11+.
 *   **Built-in BusyBox Manager:** Gain access to 300+ Linux commands (ls, grep, awk, top, etc.) via the new `bbman -install` command.
 *   **Theme Preset Shortcut Buttons:** Enhanced the `theme -preset` command to show interactive shortcut buttons for presets.
 *   **Synchronized Theme UI:** Applying a preset now automatically colors the shortcut buttons (suggestions) to match the overall theme.
@@ -25,16 +34,19 @@ These updates ensure the launcher remains functional, secure, and performant on 
 
 ---
 
-## 🐧 BusyBox Integration
+## 🛡 Security Hardening (Android 14+ & OWASP MASVS)
 
-To enable a full Linux environment, you can install BusyBox directly from the launcher:
+This project has been audited and hardened following the **OWASP Mobile Application Security Verification Standard (MASVS)** and latest Android 14 security requirements.
 
-1.  Type `bbman -install` in the terminal.
-2.  The launcher will automatically detect your architecture, download the verified binary, and check its integrity.
-3.  Once finished, you can run any Linux command directly (e.g., `ls`, `ping`, `vi`).
-4.  To remove it at any time, use `bbman -remove`.
+### 📦 Platform & OS Security
+*   **Android 14 Explicit Intents:** Hardened `PendingIntent` logic to use explicit Class-based targets for notification actions, preventing `CannotPostForegroundServiceNotificationException`.
+*   **Mutable Intent Safety:** Strategic use of `FLAG_MUTABLE` where required (e.g., RemoteInput) with strict `IMMUTABLE` defaults for all other system interactions (Android 12+).
+*   **Signature-Level Protection:** Custom permission `bhupendra.ai.launcher.permission.RECEIVE_CMD` with `protectionLevel="signature"` ensures only authorized apps can trigger launcher commands.
 
-**Security Note:** Binaries are sourced from the trusted EXALAB repository and are verified against hardcoded SHA-256 hashes to ensure they have not been tampered with.
+### 💾 Data Storage and Privacy
+*   **Scoped Storage Implementation:** All application data has been moved from public external storage (`/sdcard/t-ui/`) to secure, app-private **Scoped Storage** (`Context.getExternalFilesDir()`).
+*   **Backup Protection:** `android:allowBackup` is set to `false` to prevent sensitive data extraction via ADB backups (MASVS-STORAGE-1).
+*   **Secure File Sharing:** Uses `FileProvider` for secure, permission-based file sharing.
 
 ---
 
@@ -44,30 +56,8 @@ To enable a full Linux environment, you can install BusyBox directly from the la
 *   **AndroidX Migration:** Fully migrated from legacy Support Libraries to **AndroidX**.
 *   **Gradle & AGP:** Updated to Gradle 8.2 and Android Gradle Plugin 8.2.0.
 *   **Java Compatibility:** Built with **Java 17** support.
+*   **Dependency Injection:** Integrated **Hilt/Dagger** for modern modular architecture.
 
----
-
-## 🛡 Security Hardening (OWASP MASVS Compliance)
-
-This project has been audited and hardened following the **OWASP Mobile Application Security Verification Standard (MASVS)**.
-
-### 📦 MASVS-STORAGE: Data Storage and Privacy
-*   **Scoped Storage Implementation:** All application data has been moved from public external storage (`/sdcard/t-ui/`) to secure, app-private **Scoped Storage** (`Context.getExternalFilesDir()`). This prevents other applications from accessing your T-UI configuration and logs.
-*   **Backup Protection:** `android:allowBackup` is set to `false` to prevent sensitive data extraction via ADB backups (MASVS-STORAGE-1).
-*   **Secure File Sharing:** Uses `FileProvider` for secure, permission-based file sharing instead of vulnerable `file://` URIs.
-
-### 🌐 MASVS-NETWORK: Network Communication
-*   **Enforced TLS:** `android:usesCleartextTraffic` is disabled globally. All network communications are forced over **HTTPS** (TLS 1.2+).
-*   **Hardened Service Endpoints:** Internal services (Weather API, Connectivity checks) have been upgraded to secure HTTPS endpoints (MASVS-NETWORK-1).
-
-### ⚙️ MASVS-PLATFORM: Platform Interaction
-*   **Signature-Level Protection:** Implemented a custom permission `ohi.andre.consolelauncher.permission.RECEIVE_CMD` with `protectionLevel="signature"`. This ensures only apps signed with the same developer key can programmatically send commands to the launcher.
-*   **Intent Security:** All system-bound `PendingIntents` use the `FLAG_IMMUTABLE` flag to prevent intent redirection attacks (Android 12+ requirement).
-*   **Receiver Security:** All Broadcast Receivers are registered with appropriate export flags (`RECEIVER_EXPORTED` or `RECEIVER_NOT_EXPORTED`) to prevent unauthorized external triggers.
-
-### 🛠 MASVS-CODE: Code Quality & Build Settings
-*   **Minification & Obfuscation:** Release builds have R8/Proguard enabled (`minifyEnabled true`) to shrink resources and obfuscate code, making reverse engineering more difficult (MASVS-RESILIENCE-1).
-*   **Foreground Service Security:** Updated to comply with Android 14's strict foreground service types (`specialUse`, `mediaPlayback`).
 
 ---
 
