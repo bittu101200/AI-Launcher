@@ -45,7 +45,6 @@ import bhupendra.ai.launcher.managers.xml.classes.XMLPrefsList;
 import bhupendra.ai.launcher.managers.xml.classes.XMLPrefsSave;
 
 import bhupendra.ai.launcher.tuils.Tuils;
-import bhupendra.ai.launcher.tuils.html_escape.HtmlEscape;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
@@ -831,7 +830,7 @@ public class RssManager implements XMLPrefsElement {
                         long timeLong = d.getTime();
                         value = TimeManager.instance.replace(timeFormat, timeLong, Integer.MAX_VALUE).toString();
                     } else {
-                        value = HtmlEscape.unescapeHtml(value);
+                        value = org.jsoup.parser.Parser.unescapeEntities(value, false);
 
                         for(Pattern p : hideTagPatterns) {
                             value = p.matcher(value).replaceAll(Tuils.EMPTYSTRING);
