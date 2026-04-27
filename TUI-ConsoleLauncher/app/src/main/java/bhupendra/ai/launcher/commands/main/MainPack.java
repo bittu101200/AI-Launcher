@@ -6,6 +6,7 @@ import android.net.wifi.WifiManager;
 
 import java.io.File;
 
+import bhupendra.ai.launcher.commands.CommandExecutionController;
 import bhupendra.ai.launcher.commands.CommandGroup;
 import bhupendra.ai.launcher.commands.CommandsPreferences;
 import bhupendra.ai.launcher.commands.ExecutePack;
@@ -62,6 +63,8 @@ public class MainPack extends ExecutePack {
     public int commandColor = TerminalManager.NO_COLOR;
 
     public bhupendra.ai.launcher.ai.AISubsystem aiSubsystem;
+    
+    public CommandExecutionController commandController;
 
     public MainPack(Context context, CommandGroup commandGroup, AliasManager alMgr, AppsManager appmgr, MusicManager2 p,
                     ContactManager c, Redirectator redirectator, RssManager rssManager, OkHttpClient client) {

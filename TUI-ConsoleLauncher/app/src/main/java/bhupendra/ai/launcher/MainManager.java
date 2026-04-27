@@ -26,6 +26,7 @@ import bhupendra.ai.launcher.ai.AITrigger;
 import bhupendra.ai.launcher.commands.Command;
 import bhupendra.ai.launcher.commands.CommandGroup;
 import bhupendra.ai.launcher.commands.CommandTuils;
+import bhupendra.ai.launcher.commands.CommandExecutionController;
 import bhupendra.ai.launcher.commands.main.MainPack;
 import bhupendra.ai.launcher.commands.main.raw.location;
 import bhupendra.ai.launcher.commands.main.specific.RedirectCommand;
@@ -109,24 +110,10 @@ public class MainManager {
 
     private final String COMMANDS_PKG = "bhupendra.ai.launcher.commands.main.raw";
 
-    private final ShellCommandTrigger shellCommandTrigger = new ShellCommandTrigger();
-    private CmdTrigger[] triggers = new CmdTrigger[] {
-            new GroupTrigger(),
-            new AliasTrigger(),
-            new TuiCommandTrigger(),
-            new AppTrigger(),
-            shellCommandTrigger
-    };
+    private CommandExecutionController commandController;
     private MainPack mainPack;
-    private AITrigger aiTrigger;
 
     private LauncherActivity mContext;
-
-    private boolean showAliasValue;
-    private boolean showAppHistory;
-    private int aliasContentColor;
-
-    private String multipleCmdSeparator;
 
     public static Shell.Interactive interactive;
 
@@ -144,18 +131,8 @@ public class MainManager {
 
     public static int commandCount = 0;
 
-    private boolean keeperServiceRunning;
-
     protected MainManager(LauncherActivity c) {
         mContext = c;
-
-        keeperServiceRunning = XMLPrefsManager.getBoolean(Behavior.tui_notification);
-
-        showAliasValue = XMLPrefsManager.getBoolean(Behavior.show_alias_content);
-        showAppHistory = XMLPrefsManager.getBoolean(Behavior.show_launch_history);
-        aliasContentColor = XMLPrefsManager.getColor(Theme.alias_content_color);
-
-        multipleCmdSeparator = XMLPrefsManager.get(Behavior.multiple_cmd_separator);
 
         CommandGroup group = new CommandGroup(mContext, COMMANDS_PKG);
 
@@ -172,60 +149,28 @@ public class MainManager {
                 .cache(new Cache(mContext.getCacheDir(), 10*1024*1024))
                 .build();
 
-//        new Thread() {
-//            @Override
-//            public void run() {
-//                super.run();
-//
-//                int lat = -90, lon = 0;
-//
-//                for(int j = 0; j < 120; j++) {
-//                    Tuils.log("----------------" + j + "----------------");
-//
-//                    try {
-//                        Request.Builder builder = new Request.Builder()
-//                                .url("http://api.openweathermap.org/data/2.5/weather?lat=" + lat++ + "&lon=" + lon++ + "&appid=1f798f99228596c20ccfda51b9771a86&units=metric")
-//                                .cacheControl(CacheControl.FORCE_NETWORK)
-//                                .get();
-//
-//                        Response response = client.newCall(builder.build()).execute();
-//
-//                        Tuils.log("code", response.code());
-//                        if (!response.isSuccessful()) {
-//                            Tuils.log("not succesfull");
-//                            return;
-//                        }
-//
-//                        InputStream inputStream = response.body().byteStream();
-//                        String json = FileSystemManager.inputStreamToString(inputStream);
-//                        Tuils.log(json);
-//                    } catch (Exception e) {
-//                        Tuils.log(e);
-//                    }
-//                }
-//            }
-//        }.start();
-
         rssManager = new RssManager(mContext, client);
         themeManager = new ThemeManager(client, mContext, c);
         musicManager2 = XMLPrefsManager.getBoolean(Behavior.enable_music) ? new MusicManager2(mContext) : null;
         htmlExtractManager = new HTMLExtractManager(mContext, client);
 
         mainPack = new MainPack(mContext, group, aliasManager, appsManager, musicManager2, contactManager, redirectator, rssManager, client);
+        commandController = new CommandExecutionController(mContext, mainPack);
 
         if (mainPack.aiSubsystem != null) {
             mainPack.aiSubsystem.setMainPack(mainPack);
-            aiTrigger = new AITrigger(
+            AITrigger aiTrigger = new AITrigger(
                 mainPack.aiSubsystem,
                 mContext,
                 rawInput -> {
                     try {
-                        shellCommandTrigger.trigger(mainPack, rawInput);
+                        commandController.getShellCommandTrigger().trigger(mainPack, rawInput, null);
                     } catch (Exception e) {
                         Tuils.sendOutput(mContext, Tuils.getStackTrace(e));
                     }
                 }
             );
+            commandController.setAITrigger(aiTrigger);
         }
 
         ShellHolder shellHolder = new ShellHolder(mContext);
@@ -296,79 +241,11 @@ public class MainManager {
         platformReceiverRegistered = true;
     }
 
-    private void logCommandFinished(String requestId) {
-        if (requestId == null || requestId.length() == 0) {
-            android.util.Log.i("AI_OUTPUT", "CMD_FINISHED");
-        } else {
-            android.util.Log.i("AI_OUTPUT", "CMD_FINISHED requestId=" + requestId);
-        }
-    }
-
-    private void updateServices(String cmd, boolean wasMusicService) {
-
-        if(keeperServiceRunning) {
-            Intent i = new Intent(mContext, KeeperService.class);
-            i.putExtra(KeeperService.CMD_KEY, cmd);
-            i.putExtra(KeeperService.PATH_KEY, mainPack.currentDirectory.getAbsolutePath());
-            mContext.startService(i);
-        }
-
-        if(wasMusicService) {
-            Intent i = new Intent(mContext, MusicService.class);
-            mContext.startService(i);
-        }
-    }
-
     public void onCommand(String input, AppsManager.LaunchInfo launchInfo, boolean wasMusicService) {
-        if(launchInfo == null) {
-            onCommand(input, (String) null, wasMusicService);
-            return;
-        }
-
-        updateServices(input, wasMusicService);
-
-        if(launchInfo.unspacedLowercaseLabel.equals(TextProcessor.removeSpaces(input.toLowerCase()))) {
-            performLaunch(mainPack, launchInfo, input);
-        } else {
-            onCommand(input, (String) null, wasMusicService);
-        }
+        commandController.onCommand(input, launchInfo, wasMusicService, activeRequestId);
     }
 
-    Pattern colorExtractor = Pattern.compile("(#[^(]{6})\\[([^\\)]*)\\]", Pattern.CASE_INSENSITIVE);
-
-//    command manager
     public void onCommand(String input, String alias, boolean wasMusicService) {
-        final String originalInput = input;
-        BeepPlayer.stopRepeatingAlert();
-
-        if (bhupendra.ai.launcher.ai.AppCapabilityScanner.PendingIntegration.isActive()) {
-            bhupendra.ai.launcher.ai.AppCapabilityScanner.PendingIntegration.processSelection(input);
-            return;
-        }
-
-        // AI cancel/confirm gate
-        if (mainPack.aiSubsystem != null) {
-            if (mainPack.aiSubsystem.isInFlight()) {
-                String trimmed = input.trim();
-                if (trimmed.equalsIgnoreCase("stop") || trimmed.equalsIgnoreCase("cancel")) {
-                    mainPack.aiSubsystem.cancel();
-                    return;
-                }
-            }
-            if (mainPack.aiSubsystem.isAwaitingConfirmation()) {
-                if (input.trim().isEmpty()) {
-                    mainPack.aiSubsystem.confirmCurrentTool();
-                } else {
-                    mainPack.aiSubsystem.declineCurrentTool();
-                }
-                return;
-            }
-        }
-
-        input = TextProcessor.removeUnncesarySpaces(input);
-
-        if(alias == null) updateServices(input, wasMusicService);
-
         if(redirect != null) {
             if(!redirect.isWaitingPermission()) {
                 redirect.afterObjects.add(input);
@@ -379,76 +256,7 @@ public class MainManager {
             return;
         }
 
-        if(alias != null && showAliasValue) {
-           Tuils.sendOutput(aliasContentColor, mContext, aliasManager.formatLabel(alias, input));
-        }
-
-        String[] cmds;
-        if(multipleCmdSeparator.length() > 0) {
-            cmds = input.split(multipleCmdSeparator);
-        } else {
-            cmds = new String[] {input};
-        }
-
-        int[] colors = new int[cmds.length];
-        for(int c = 0; c < colors.length; c++) {
-            Matcher m = colorExtractor.matcher(cmds[c]);
-            if(m.matches()) {
-                try {
-                    colors[c] = Color.parseColor(m.group(1));
-                    cmds[c] = m.group(2);
-                } catch (Exception e) {
-                    colors[c] = TerminalManager.NO_COLOR;
-                }
-            } else colors[c] = TerminalManager.NO_COLOR;
-        }
-
-        boolean agentic = XMLPrefsManager.getBoolean(bhupendra.ai.launcher.managers.xml.options.Ai.agentic_mode);
-        boolean alwaysOnFallback = XMLPrefsManager.getBoolean(bhupendra.ai.launcher.managers.xml.options.Ai.always_on_fallback);
-
-        for(int c = 0; c < cmds.length; c++) {
-            mainPack.clear();
-            mainPack.commandColor = colors[c];
-
-            boolean matched = false;
-            // 1. Try traditional commands (Group, Alias, TUI, App)
-            for (int i = 0; i < triggers.length - 1; i++) {
-                CmdTrigger trigger = triggers[i];
-                try {
-                    if (trigger.trigger(mainPack, cmds[c])) {
-                        matched = true;
-                        break;
-                    }
-                } catch (Exception e) {
-                    Tuils.sendOutput(mContext, Tuils.getStackTrace(e));
-                    matched = true;
-                    break;
-                }
-            }
-
-            if (matched) continue;
-
-            // 2. If not matched and in agentic mode, go to AI immediately
-            if (agentic && aiTrigger != null) {
-                if (aiTrigger.trigger(cmds[c])) {
-                    continue;
-                }
-            }
-
-            // 3. Fallback to Shell (the traditional way)
-            try {
-                if (shellCommandTrigger.trigger(mainPack, cmds[c])) {
-                    continue;
-                }
-            } catch (Exception e) {
-                Tuils.sendOutput(mContext, Tuils.getStackTrace(e));
-            }
-
-            // 4. Last resort: AI fallback if not in agentic mode and always_on_fallback is enabled
-            if (!agentic && alwaysOnFallback && aiTrigger != null) {
-                aiTrigger.trigger(cmds[c]);
-            }
-        }
+        commandController.onCommand(input, alias, wasMusicService, activeRequestId);
     }
 
     public void onLongBack() {
@@ -500,22 +308,27 @@ public class MainManager {
         if (ai != null) {
             mainPack.aiSubsystem = ai;
             ai.setMainPack(mainPack);
-            aiTrigger = new AITrigger(
+            AITrigger aiTrigger = new AITrigger(
                 ai,
                 mContext,
                 rawInput -> {
                     try {
-                        shellCommandTrigger.trigger(mainPack, rawInput);
+                        commandController.getShellCommandTrigger().trigger(mainPack, rawInput, null);
                     } catch (Exception e) {
                         Tuils.sendOutput(mContext, Tuils.getStackTrace(e));
                     }
                 }
             );
+            commandController.setAITrigger(aiTrigger);
         }
     }
 
     public MainPack getMainPack() {
         return mainPack;
+    }
+
+    public CommandExecutionController getCommandController() {
+        return commandController;
     }
 
     public CommandExecuter executer() {
@@ -524,231 +337,5 @@ public class MainManager {
 
             onCommand(input, li, false);
         };
-    }
-
-//
-    String appFormat;
-    int outputColor;
-
-    Pattern pa = Pattern.compile("%a", Pattern.CASE_INSENSITIVE | Pattern.LITERAL);
-    Pattern pp = Pattern.compile("%p", Pattern.CASE_INSENSITIVE | Pattern.LITERAL);
-    Pattern pl = Pattern.compile("%l", Pattern.CASE_INSENSITIVE | Pattern.LITERAL);
-
-    public boolean performLaunch(MainPack mainPack, AppsManager.LaunchInfo i, String input) {
-        Intent intent = appsManager.getIntent(i);
-        if (intent == null) {
-            return false;
-        }
-
-        if(showAppHistory) {
-            if(appFormat == null) {
-                appFormat = XMLPrefsManager.get(Behavior.app_launch_format);
-                outputColor = XMLPrefsManager.getColor(Theme.output_color);
-            }
-
-            String a = new String(appFormat);
-            a = pa.matcher(a).replaceAll(Matcher.quoteReplacement(intent.getComponent().getClassName()));
-            a = pp.matcher(a).replaceAll(Matcher.quoteReplacement(intent.getComponent().getPackageName()));
-            a = pl.matcher(a).replaceAll(Matcher.quoteReplacement(i.publicLabel));
-            a = Tuils.patternNewline.matcher(a).replaceAll(Matcher.quoteReplacement(Tuils.NEWLINE));
-
-            SpannableString text = new SpannableString(a);
-            text.setSpan(new ForegroundColorSpan(outputColor), 0, text.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-            CharSequence s = TimeManager.instance.replace(text);
-
-            Tuils.sendOutput(mainPack, s, TerminalManager.CATEGORY_OUTPUT);
-        }
-
-        mainPack.context.startActivity(intent);
-
-        return true;
-    }
-//
-
-    public interface CmdTrigger {
-        boolean trigger(MainPack info, String input) throws Exception;
-    }
-
-    private class AliasTrigger implements CmdTrigger {
-
-        @Override
-        public boolean trigger(MainPack info, String input) {
-            String alias[] = aliasManager.getAlias(input, true);
-
-            String aliasValue = alias[0];
-            if (alias[0] == null) {
-                return false;
-            }
-
-            String aliasName = alias[1];
-            String residual = alias[2];
-
-            aliasValue = aliasManager.format(aliasValue, residual);
-
-            onCommand(aliasValue, aliasName, false);
-
-            return true;
-        }
-    }
-
-    private class GroupTrigger implements CmdTrigger {
-
-        @Override
-        public boolean trigger(MainPack info, String input) throws Exception {
-            int index = input.indexOf(Tuils.SPACE);
-            String name;
-
-            if(index != -1) {
-                name = input.substring(0,index);
-                input = input.substring(index + 1);
-            } else {
-                name = input;
-                input = null;
-            }
-
-            List<? extends Group> appGroups = info.appsManager.groups;
-            if(appGroups != null) {
-                for(Group g : appGroups) {
-                    if(name.equals(g.name())) {
-                        if(input == null) {
-                            Tuils.sendOutput(mContext, AppsManager.AppUtils.printApps(AppsManager.AppUtils.labelList((List<AppsManager.LaunchInfo>) g.members(), false)));
-                            return true;
-                        } else {
-                            return g.use(mainPack, input);
-                        }
-                    }
-                }
-            }
-
-            return false;
-        }
-    }
-
-    private class ShellCommandTrigger implements CmdTrigger {
-
-        final int CD_CODE = 10;
-        final int PWD_CODE = 11;
-
-        final Shell.OnCommandResultListener result = new Shell.OnCommandResultListener() {
-            @Override
-            public void onCommandResult(int commandCode, int exitCode, List<String> output) {
-                if(commandCode == CD_CODE) {
-                    interactive.addCommand("pwd", PWD_CODE, result);
-                } else if(commandCode == PWD_CODE && output.size() == 1) {
-                    File f = new File(output.get(0));
-                    if(f.exists()) {
-                        mainPack.currentDirectory = f;
-
-                        LocalBroadcastManager.getInstance(mContext.getApplicationContext()).sendBroadcast(new Intent(UIManager.ACTION_UPDATE_HINT));
-                    }
-                }
-            }
-        };
-
-        @Override
-        public boolean trigger(final MainPack info, final String input) throws Exception {
-            final String requestId = activeRequestId;
-            final String trimmed = input.trim();
-            final String cmd = trimmed.split(" ")[0];
-
-            if (bhupendra.ai.launcher.tuils.TermuxManager.isTermuxInstalled(mContext)) {
-                String[] common = {"ping", "echo", "ls", "grep", "cat", "vi", "top", "ps", "ip", "pkg", "git", "python", "node", "vim", "sed", "awk", "find"};
-                for (String c : common) {
-                    if (cmd.equalsIgnoreCase(c)) {
-                        String argsStr = input.length() > cmd.length() ? input.substring(cmd.length()).trim() : "";
-                        String[] finalArgs = argsStr.isEmpty() ? new String[0] : argsStr.split(" ");
-                        bhupendra.ai.launcher.tuils.TermuxManager.runCommand(mContext, cmd, finalArgs, null, false);
-                        
-                        if (mainPack.aiSubsystem == null || !mainPack.aiSubsystem.isInFlight()) {
-                            logCommandFinished(requestId);
-                        }
-                        
-                        return true;
-                    }
-                }
-            } else {
-                String[] common = {"ping", "echo", "ls", "grep", "cat", "vi", "top", "ps", "ip"};
-                for (String c : common) {
-                    if (cmd.equalsIgnoreCase(c)) {
-                        Tuils.sendOutput(mContext, "Command not found. Install Termux for a full Linux environment: termux", TerminalManager.CATEGORY_OUTPUT);
-                        return true;
-                    }
-                }
-            }
-
-            new StoppableThread() {
-                @Override
-                public void run() {
-                    if(input.trim().equalsIgnoreCase("su")) {
-                        if(Shell.SU.available()) LocalBroadcastManager.getInstance(mContext.getApplicationContext()).sendBroadcast(new Intent(UIManager.ACTION_ROOT));
-                        interactive.addCommand("su");
-
-                    } else if(input.contains("cd ")) {
-                        interactive.addCommand(input, CD_CODE, result);
-                    } else interactive.addCommand(input);
-
-                    // Suppress CMD_FINISHED for ALWAYS-ON AI turns that fallback to shell
-                    if (mainPack.aiSubsystem == null || !mainPack.aiSubsystem.isInFlight()) {
-                        logCommandFinished(requestId);
-                    }
-                }
-            }.start();
-
-            return true;
-        }
-    }
-
-    private class AppTrigger implements CmdTrigger {
-
-        @Override
-        public boolean trigger(MainPack info, String input) {
-            AppsManager.LaunchInfo i = appsManager.findLaunchInfoWithLabel(input, AppsManager.SHOWN_APPS);
-            return i != null && performLaunch(info, i, input);
-        }
-    }
-
-    private class TuiCommandTrigger implements CmdTrigger {
-
-        @Override
-        public boolean trigger(final MainPack info, final String input) throws Exception {
-            final String requestId = activeRequestId;
-
-            final Command command = CommandTuils.parse(input, info);
-            if(command == null) return false;
-
-            mainPack.lastCommand = input;
-
-            new StoppableThread() {
-                @Override
-                public void run() {
-                    super.run();
-
-                    try {
-                        String output = command.exec(info);
-                        if(output != null) {
-                            Tuils.sendOutput(info, output, TerminalManager.CATEGORY_OUTPUT);
-                        }
-
-                        // Only log CMD_FINISHED for non-AI commands. 
-                        // AI commands will log AI_TURN_FINISHED themselves when truly done.
-                        boolean isAI = command.getClass().getSimpleName().equals("ai") || input.trim().startsWith("ai ");
-                        if (!isAI) {
-                            logCommandFinished(requestId);
-                        }
-                    } catch (Exception e) {
-                        Tuils.sendOutput(mContext, Tuils.getStackTrace(e));
-                        Tuils.log(e);
-                    }
-                }
-            }.start();
-
-            return true;
-        }
-    }
-
-    public interface Group {
-        List<? extends Object> members();
-        boolean use(MainPack mainPack, String input);
-        String name();
     }
 }

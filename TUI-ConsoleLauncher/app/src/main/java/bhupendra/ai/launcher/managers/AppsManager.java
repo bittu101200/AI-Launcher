@@ -916,7 +916,7 @@ public class AppsManager implements XMLPrefsElement {
         unregisterReceiver(context);
     }
 
-    public static class Group implements MainManager.Group, StringableObject {
+    public static class Group implements bhupendra.ai.launcher.commands.CommandExecutionController.Group, StringableObject {
 
         public static final int ALPHABETIC_UP_DOWN = 0;
         public static final int ALPHABETIC_DOWN_UP = 1;

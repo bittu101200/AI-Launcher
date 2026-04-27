@@ -7,11 +7,10 @@ import android.util.Log;
 
 import org.json.JSONObject;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
 
-import bhupendra.ai.launcher.commands.Command;
-import bhupendra.ai.launcher.commands.CommandTuils;
 import bhupendra.ai.launcher.commands.main.MainPack;
 import bhupendra.ai.launcher.ai.AISubsystem;
 import bhupendra.ai.launcher.ai.ToolRiskClass;
@@ -52,6 +51,7 @@ public class SystemExecuteCommandTool extends BaseAITool {
             }
             
             if (mainPack == null) return "[error: mainPack not available]";
+            if (mainPack.commandController == null) return "[error: commandController not available]";
 
             final CountDownLatch latch = new CountDownLatch(1);
             final AtomicReference<String> resultRef = new AtomicReference<>();
@@ -59,17 +59,9 @@ public class SystemExecuteCommandTool extends BaseAITool {
 
             mainHandler.post(() -> {
                 try {
-                    Command command = CommandTuils.parse(commandLine, mainPack);
-                    if (command == null) {
-                        resultRef.set("[error: unknown command: " + commandLine + "]");
-                    } else {
-                        if (command.mArgs != null) {
-                            mainPack.clear();
-                            mainPack.set(command.mArgs);
-                        }
-                        String output = command.exec(mainPack);
-                        resultRef.set(output != null ? output : "[executed: " + commandLine + "]");
-                    }
+                    String requestId = UUID.randomUUID().toString();
+                    mainPack.commandController.onCommand(commandLine, (String) null, false, requestId);
+                    resultRef.set("[dispatched: " + commandLine + "]");
                 } catch (Exception e) {
                     Log.e(TAG, "Command execution failed on main thread", e);
                     errorRef.set(e);
@@ -87,3 +79,4 @@ public class SystemExecuteCommandTool extends BaseAITool {
             return resultRef.get();
     }
 }
+
