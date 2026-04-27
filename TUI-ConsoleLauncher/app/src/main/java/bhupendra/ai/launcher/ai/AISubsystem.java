@@ -204,6 +204,15 @@ public class AISubsystem {
             Collections.singletonMap("command", "The full command string to execute"),
             ToolRiskClass.STATE_CHANGING));
 
+        Map<String, String> aliasArgs = new HashMap<>();
+        aliasArgs.put("name", "The alias name (trigger).");
+        aliasArgs.put("value", "The command it should run.");
+        toolRegistry.register(ToolRegistry.Tier.SYSTEM, new SystemAddAliasTool(
+            "system.add_alias",
+            "Create a new alias (shortcut) for a command.",
+            aliasArgs,
+            ToolRiskClass.STATE_CHANGING));
+
         toolRegistry.register(ToolRegistry.Tier.SYSTEM, new SystemGetNotificationsTool());
         toolRegistry.register(ToolRegistry.Tier.SYSTEM, new SystemReplyNotificationTool());
         toolRegistry.register(ToolRegistry.Tier.SYSTEM, new SystemAddNotificationHookTool());

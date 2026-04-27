@@ -344,21 +344,25 @@ public class XMLPrefsManager {
 
     public static <T> T get(Class<T> c, XMLPrefsSave prefsSave) {
         try {
-//            if(prefsSave.is(Notifications.show_notifications.label())) {
-//                Tuils.log("----------------");
-//                Tuils.log("label", prefsSave.label());
-//                Tuils.log("parent", prefsSave.parent().toString());
-//                Tuils.log("values tostring", prefsSave.parent().getValues().toString());
-//            }
-            return (T) transform(prefsSave.parent().getValues().get(prefsSave).value, c);
+            bhupendra.ai.launcher.managers.xml.classes.XMLPrefsElement parent = prefsSave.parent();
+            if (parent != null) {
+                XMLPrefsList values = parent.getValues();
+                if (values != null) {
+                    bhupendra.ai.launcher.managers.xml.classes.XMLPrefsEntry entry = values.get(prefsSave);
+                    if (entry != null && entry.value != null) {
+                        return (T) transform(entry.value, c);
+                    }
+                }
+            }
+            throw new Exception("Value not found for " + prefsSave.label());
         } catch (Exception e) {
-            Tuils.log(e);
-//            this will happen if the option is not found
+            // Only log if it's not a common "not found yet" case during startup
+            if (commonsLoaded) Tuils.log(e);
+            
             try {
                 return (T) transform(prefsSave.defaultValue(), c);
             } catch (Exception e1) {
-                Tuils.log(e1);
-//                attempts to get a default value for the given type, as we say in italian, "the last beach"
+                if (commonsLoaded) Tuils.log(e1);
                 return Tuils.getDefaultValue(c);
             }
         }

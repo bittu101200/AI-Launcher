@@ -42,15 +42,14 @@ public class MusicManager2 implements MediaController.MediaPlayerControl {
 
     Context mContext;
 
-    List<Song> songs;
+    List<Song> songs = new ArrayList<>();
+    private volatile boolean loadingSongs = false;
 
     MusicService musicSrv;
     boolean musicBound=false;
     Intent playIntent;
 
     boolean playbackPaused=true, stopped = true;
-
-    Thread loader;
 
     int waitingMethod = 0;
     String savedParam;
@@ -177,45 +176,47 @@ public class MusicManager2 implements MediaController.MediaPlayerControl {
     }
 
     public void updateSongs() {
+        loadingSongs = true;
         bhupendra.ai.launcher.tuils.LauncherExecutors.bgExecutor.execute(() -> {
                 try {
-                    if(songs == null) songs = new ArrayList<>();
-                    else songs.clear();
+                    synchronized (songs) {
+                        songs.clear();
 
-                    if(XMLPrefsManager.getBoolean(Behavior.songs_from_mediastore)) {
-                        ContentResolver musicResolver = mContext.getContentResolver();
-                        Uri musicUri = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI;
-                        Cursor musicCursor = musicResolver.query(musicUri, null, null, null, null);
-                        if(musicCursor!=null && musicCursor.moveToFirst()){
-                            int titleColumn = musicCursor.getColumnIndex(MediaStore.Audio.Media.TITLE);
-                            int idColumn = musicCursor.getColumnIndex(MediaStore.Audio.Media._ID);
-                            do {
-                                long thisId = musicCursor.getLong(idColumn);
-                                String thisTitle = musicCursor.getString(titleColumn);
-                                songs.add(new Song(thisId, thisTitle));
+                        if(XMLPrefsManager.getBoolean(Behavior.songs_from_mediastore)) {
+                            ContentResolver musicResolver = mContext.getContentResolver();
+                            Uri musicUri = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI;
+                            Cursor musicCursor = musicResolver.query(musicUri, null, null, null, null);
+                            if(musicCursor!=null && musicCursor.moveToFirst()){
+                                int titleColumn = musicCursor.getColumnIndex(MediaStore.Audio.Media.TITLE);
+                                int idColumn = musicCursor.getColumnIndex(MediaStore.Audio.Media._ID);
+                                do {
+                                    long thisId = musicCursor.getLong(idColumn);
+                                    String thisTitle = musicCursor.getString(titleColumn);
+                                    songs.add(new Song(thisId, thisTitle));
+                                }
+                                while (musicCursor.moveToNext());
                             }
-                            while (musicCursor.moveToNext());
-                        }
-                        musicCursor.close();
-                    } else {
-                        String path = XMLPrefsManager.get(Behavior.songs_folder);
-                        if(path.length() == 0) return;
-
-                        File file;
-                        if(path.startsWith(File.separator)) {
-                            file = new File(path);
+                            musicCursor.close();
                         } else {
-                            file = new File(XMLPrefsManager.get(Behavior.home_path), path);
-                        }
+                            String path = XMLPrefsManager.get(Behavior.songs_folder);
+                            if(path.length() > 0) {
+                                File file;
+                                if(path.startsWith(File.separator)) {
+                                    file = new File(path);
+                                } else {
+                                    file = new File(XMLPrefsManager.get(Behavior.home_path), path);
+                                }
 
-                        if(file.exists() && file.isDirectory()) songs.addAll(FileSystemManager.getSongsInFolder(file));
+                                if(file.exists() && file.isDirectory()) songs.addAll(FileSystemManager.getSongsInFolder(file));
+                            }
+                        }
+                        
+                        loadingSongs = false;
+                        songs.notifyAll();
                     }
                 } catch (Exception e) {
+                    loadingSongs = false;
                     FileSystemManager.toFile(e);
-                }
-
-                synchronized (songs) {
-                    songs.notify();
                 }
         });
     }
@@ -228,10 +229,10 @@ public class MusicManager2 implements MediaController.MediaPlayerControl {
             musicSrv = binder.getService();
             musicSrv.setShuffle(XMLPrefsManager.getBoolean(Behavior.random_play));
 
-            if(loader.isAlive()) {
+            if(loadingSongs) {
                 synchronized (songs) {
                     try {
-                        songs.wait();
+                        if (loadingSongs) songs.wait(5000);
                     } catch (InterruptedException e) {}
                 }
             }

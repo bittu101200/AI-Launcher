@@ -179,6 +179,8 @@ public enum Notifications implements XMLPrefsSave {
 
     @Override
     public String type() {
+        if (this == default_notification_color) return XMLPrefsSave.COLOR;
+        if (this == notification_format || this == notification_whitelist || this == notification_blacklist) return XMLPrefsSave.TEXT;
         return XMLPrefsSave.BOOLEAN;
     }
 
