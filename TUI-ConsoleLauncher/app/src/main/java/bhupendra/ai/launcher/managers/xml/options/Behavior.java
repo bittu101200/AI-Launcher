@@ -101,7 +101,7 @@ public enum Behavior implements XMLPrefsSave {
     tui_notification {
         @Override
         public String defaultValue() {
-            return "false";
+            return "true";
         }
 
         @Override

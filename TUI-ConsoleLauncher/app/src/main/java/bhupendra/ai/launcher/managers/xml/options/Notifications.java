@@ -13,7 +13,7 @@ public enum Notifications implements XMLPrefsSave {
     show_notifications {
         @Override
         public String defaultValue() {
-            return "false";
+            return "true";
         }
 
         @Override
