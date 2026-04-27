@@ -44,7 +44,7 @@ public class AISubsystem {
     private final ConversationManager conversationManager;
     private final RequestManager requestManager;
     
-    private final ConversationManager automationConversationManager;
+    private final Map<String, ConversationManager> automationHistories = new java.util.concurrent.ConcurrentHashMap<>();
     private final RequestManager automationRequestManager;
 
     private final LongTermMemory longTermMemory;
@@ -148,15 +148,29 @@ public class AISubsystem {
         this.toolRegistry = new ToolRegistry();
         this.conversationManager = new ConversationManager(ConversationManager.Mode.SESSION, 4000);
         this.requestManager = new RequestManager(provider, 10_000, 30_000);
-        this.automationConversationManager = new ConversationManager(ConversationManager.Mode.SESSION, 4000);
         this.automationRequestManager = new RequestManager(provider, 10_000, 30_000);
         this.longTermMemory = this.appContext != null ? new LongTermMemory(this.appContext) : null;
         
         if (this.appContext != null) {
+            syncSystemPromptToDisk();
             registerSystemTools();
         }
 
         instance = this;
+    }
+
+    private void syncSystemPromptToDisk() {
+        if (appContext == null) return;
+        try {
+            java.io.InputStream in = appContext.getAssets().open("ai_system_prompt.md");
+            String assetPrompt = FileSystemManager.inputStreamToString(in);
+            java.io.File promptFile = new java.io.File(FileSystemManager.getFolder(), "ai_system_prompt.md");
+            
+            FileSystemManager.saveFile(promptFile, assetPrompt);
+            android.util.Log.d("AI_PROMPT", "Synchronized ai_system_prompt.md to disk");
+        } catch (Exception e) {
+            android.util.Log.e("AI_PROMPT", "Failed to sync system prompt", e);
+        }
     }
 
     public static AIProvider buildProvider(String providerName) {
@@ -295,7 +309,7 @@ public class AISubsystem {
 
         Map<String, String> scheduleArgs = new HashMap<>();
         scheduleArgs.put("command", "TUI command to run");
-        scheduleArgs.put("minutes_from_now", "Time delay");
+        scheduleArgs.put("delay_minutes", "Time delay in minutes from now");
         toolRegistry.register(ToolRegistry.Tier.SYSTEM, new SystemScheduleTaskTool(
             "system.schedule_task",
             "Schedule a TUI command to run after a delay.",
@@ -481,7 +495,7 @@ public class AISubsystem {
     }
 
     private void performFollowUp(String requestId, AICallback callback) {
-        requestManager.transition(requestId, AIRequestState.THINKING, callback);
+        requestManager.transition(requestId, AIRequestState.FOLLOWUP, callback);
         AIRequest request = new AIRequest.Builder()
             .requestId(requestId)
             .history(conversationManager.getHistory())
@@ -496,32 +510,49 @@ public class AISubsystem {
     }
 
     public String submitAutomation(String userMessage, AICallback callback) {
+        return submitAutomation("default", userMessage, callback);
+    }
+
+    public String submitAutomation(final String contextId, String userMessage, AICallback callback) {
         String requestId = UUID.randomUUID().toString();
-        automationConversationManager.append(ConversationTurn.user(userMessage));
+        
+        ConversationManager history = automationHistories.get(contextId);
+        if (history == null) {
+            history = new ConversationManager(ConversationManager.Mode.SESSION, 2000);
+            automationHistories.put(contextId, history);
+        }
+        
+        final ConversationManager finalHistory = history;
+        finalHistory.append(ConversationTurn.user(userMessage));
+        
         if (cachedTools == null) cachedTools = toolRegistry.getTools();
         AIRequest request = new AIRequest.Builder()
             .requestId(requestId)
             .userMessage(userMessage)
-            .history(automationConversationManager.getHistory())
+            .history(finalHistory.getHistory())
             .tools(cachedTools)
             .systemPrompt(getSystemPrompt())
             .maxTokens(2048)
             .build();
+            
         automationRequestManager.submit(request, new AICallback() {
             @Override public void onToken(String rid, String token) { callback.onToken(rid, token); }
-            @Override public void onResponse(AIResponse response) { handleAutomationResponse(requestId, response, callback); }
+            @Override public void onResponse(AIResponse response) { handleAutomationResponse(requestId, contextId, response, callback); }
             @Override public void onStateChange(String rid, AIRequestState s) { callback.onStateChange(rid, s); }
         });
         return requestId;
     }
 
-    private void handleAutomationResponse(String requestId, AIResponse response, AICallback callback) {
+    private void handleAutomationResponse(String requestId, String contextId, AIResponse response, AICallback callback) {
+        ConversationManager history = automationHistories.get(contextId);
+        if (history == null) return;
+
         if (response.type == AIResponse.Type.TOOL_CALLS) {
-            automationConversationManager.append(ConversationTurn.assistantCalls(response.toolCalls));
-            beginAutomationToolExecution(requestId, response.toolCalls, callback);
+            history.append(ConversationTurn.assistantCalls(response.toolCalls));
+            beginAutomationToolExecution(requestId, contextId, response.toolCalls, callback);
         } else if (response.type == AIResponse.Type.TEXT) {
             if (response.text != null && !response.text.isEmpty()) {
-                automationConversationManager.append(ConversationTurn.assistant(response.text));
+                history.append(ConversationTurn.assistant(response.text));
             }
             callback.onResponse(response);
             automationRequestManager.finishToolExecution(requestId, true);
@@ -531,22 +562,26 @@ public class AISubsystem {
         }
     }
 
-    private void beginAutomationToolExecution(final String requestId, List<ToolCall> toolCalls, final AICallback callback) {
-        executeAutomationToolAtIndex(requestId, toolCalls, 0, callback);
+    private void beginAutomationToolExecution(final String requestId, final String contextId, List<ToolCall> toolCalls, final AICallback callback) {
+        executeAutomationToolAtIndex(requestId, contextId, toolCalls, 0, callback);
     }
 
-    private void executeAutomationToolAtIndex(final String requestId, final List<ToolCall> toolCalls, final int index, final AICallback callback) {
+    private void executeAutomationToolAtIndex(final String requestId, final String contextId, final List<ToolCall> toolCalls, final int index, final AICallback callback) {
         if (index >= toolCalls.size()) {
-            performAutomationFollowUp(requestId, callback);
+            performAutomationFollowUp(requestId, contextId, callback);
             return;
         }
+        
+        ConversationManager history = automationHistories.get(contextId);
         ToolCall toolCall = toolCalls.get(index);
         Tool tool = toolRegistry.lookup(toolCall.toolName);
+        
         if (tool == null) {
-            automationConversationManager.append(ConversationTurn.tool(toolCall.callId, toolCall.toolName, "Tool not available"));
-            executeAutomationToolAtIndex(requestId, toolCalls, index + 1, callback);
+            if (history != null) history.append(ConversationTurn.tool(toolCall.callId, toolCall.toolName, "Tool not available"));
+            executeAutomationToolAtIndex(requestId, contextId, toolCalls, index + 1, callback);
             return;
         }
+        
         Runnable runTool = () -> {
             try {
                 automationRequestManager.transition(requestId, AIRequestState.THINKING, callback);
@@ -557,12 +592,12 @@ public class AISubsystem {
                 }
                 
                 String output = toolExecutor.execute(appContext, tool, toolCall.argumentsJson);
-                automationConversationManager.append(ConversationTurn.tool(toolCall.callId, toolCall.toolName, output != null ? output : "[done]"));
+                if (history != null) history.append(ConversationTurn.tool(toolCall.callId, toolCall.toolName, output != null ? output : "[done]"));
                 if (output != null && !output.isEmpty()) callback.onResponse(AIResponse.toolOutput(requestId, output, toolCall));
-                executeAutomationToolAtIndex(requestId, toolCalls, index + 1, callback);
+                executeAutomationToolAtIndex(requestId, contextId, toolCalls, index + 1, callback);
             } catch (Exception e) {
-                automationConversationManager.append(ConversationTurn.tool(toolCall.callId, toolCall.toolName, "[error: " + e.getMessage() + "]"));
-                executeAutomationToolAtIndex(requestId, toolCalls, index + 1, callback);
+                if (history != null) history.append(ConversationTurn.tool(toolCall.callId, toolCall.toolName, "[error: " + e.getMessage() + "]"));
+                executeAutomationToolAtIndex(requestId, contextId, toolCalls, index + 1, callback);
             }
         };
 
@@ -580,21 +615,24 @@ public class AISubsystem {
         }
 
         // Auto-decline if confirmation needed for automation (or we could just run it, but automation shouldn't bypass safety by default)
-        automationConversationManager.append(ConversationTurn.tool(toolCall.callId, toolCall.toolName, "[error: tool requires interactive confirmation which is unavailable in background automation]"));
-        executeAutomationToolAtIndex(requestId, toolCalls, index + 1, callback);
+        if (history != null) history.append(ConversationTurn.tool(toolCall.callId, toolCall.toolName, "[error: tool requires interactive confirmation which is unavailable in background automation]"));
+        executeAutomationToolAtIndex(requestId, contextId, toolCalls, index + 1, callback);
     }
 
-    private void performAutomationFollowUp(String requestId, AICallback callback) {
-        automationRequestManager.transition(requestId, AIRequestState.THINKING, callback);
+    private void performAutomationFollowUp(String requestId, String contextId, AICallback callback) {
+        ConversationManager history = automationHistories.get(contextId);
+        if (history == null) return;
+
+        automationRequestManager.transition(requestId, AIRequestState.FOLLOWUP, callback);
         AIRequest request = new AIRequest.Builder()
             .requestId(requestId)
-            .history(automationConversationManager.getHistory())
+            .history(history.getHistory())
             .tools(toolRegistry.getTools())
             .systemPrompt(getSystemPrompt())
             .build();
         provider.complete(request, requestId, new AICallback() {
             @Override public void onToken(String rid, String token) { callback.onToken(rid, token); }
-            @Override public void onResponse(AIResponse response) { handleAutomationResponse(requestId, response, callback); }
+            @Override public void onResponse(AIResponse response) { handleAutomationResponse(requestId, contextId, response, callback); }
             @Override public void onStateChange(String rid, AIRequestState s) { callback.onStateChange(rid, s); }
         });
     }

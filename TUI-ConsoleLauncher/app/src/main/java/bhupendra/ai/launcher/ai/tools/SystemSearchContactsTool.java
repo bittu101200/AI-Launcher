@@ -65,14 +65,8 @@ public class SystemSearchContactsTool extends BaseAITool {
             
             for (bhupendra.ai.launcher.managers.ContactManager.Contact c : contacts) {
                 String name = c.name.toLowerCase();
-                int matchPercent = 0;
-                if (name.equals(query)) matchPercent = 100;
-                else if (name.startsWith(query)) matchPercent = 90;
-                else if (name.contains(query)) matchPercent = 75;
-                
-                if (matchPercent >= 75) {
+                if (name.contains(query)) {
                     results.append("- ").append(c.name)
-                           .append(" [Match: ").append(matchPercent).append("%]")
                            .append(": ").append(c.numbers.toString()).append("\n");
                     count++;
                 }

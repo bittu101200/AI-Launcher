@@ -104,6 +104,36 @@ public class NotificationService extends NotificationListenerService {
             replyManager = null;
         }
 
+        manager = getPackageManager();
+        enabled = XMLPrefsManager.getBoolean(Notifications.show_notifications) || XMLPrefsManager.get(Notifications.show_notifications).equalsIgnoreCase("enabled");
+        Log.d(TAG, "NotificationService enabled: " + enabled);
+
+        format = XMLPrefsManager.get(Notifications.notification_format);
+        color = XMLPrefsManager.getColor(Notifications.default_notification_color);
+
+        click = XMLPrefsManager.getBoolean(Notifications.click_notification);
+        longClick = XMLPrefsManager.getBoolean(Notifications.long_click_notification);
+
+        String wl = XMLPrefsManager.get(Notifications.notification_whitelist);
+        if (wl != null && wl.length() > 0) {
+            whitelist = new ArrayList<>(Arrays.asList(wl.split(",")));
+            for (int i = 0; i < whitelist.size(); i++) whitelist.set(i, whitelist.get(i).trim());
+        } else {
+            whitelist = null;
+        }
+
+        String bl = XMLPrefsManager.get(Notifications.notification_blacklist);
+        if (bl != null && bl.length() > 0) {
+            blacklist = new ArrayList<>(Arrays.asList(bl.split(",")));
+            for (int i = 0; i < blacklist.size(); i++) blacklist.set(i, blacklist.get(i).trim());
+        } else {
+            blacklist = null;
+        }
+
+        maxOptionalDepth = XMLPrefsManager.getInt(Behavior.max_optional_depth);
+
+        queue = new ArrayBlockingQueue<>(QUEUE_CAPACITY);
+
         bhupendra.ai.launcher.tuils.LauncherExecutors.notificationExecutor.execute(() -> {
                 if(!enabled) return;
 
@@ -130,19 +160,23 @@ public class NotificationService extends NotificationListenerService {
                         String pack = displaySbn.getPackageName();
 
                         if (blacklist != null && blacklist.contains(pack)) {
+                            Log.d(DEBUG_TAG, "Filtered by blacklist: " + pack);
                             continue;
                         }
 
                         if (whitelist != null && !whitelist.isEmpty() && !whitelist.contains(pack)) {
+                            Log.d(DEBUG_TAG, "Filtered by whitelist (not in list): " + pack + " Whitelist: " + whitelist);
                             continue;
                         }
 
                         NotificationManager.NotificatedApp nApp = notificationManager.getAppState(pack);
                         if ((nApp != null && !nApp.enabled)) {
+                            Log.d(DEBUG_TAG, "Filtered by app state (disabled): " + pack);
                             continue;
                         }
 
                         if (nApp == null && !notificationManager.default_app_state) {
+                            Log.d(DEBUG_TAG, "Filtered by default app state (null and default false): " + pack);
                             continue;
                         }
 
@@ -300,37 +334,6 @@ public class NotificationService extends NotificationListenerService {
                     } while ((sbn = queue.poll()) != null && !Thread.currentThread().isInterrupted());
                 }
         });
-
-        manager = getPackageManager();
-        enabled = XMLPrefsManager.getBoolean(Notifications.show_notifications) || XMLPrefsManager.get(Notifications.show_notifications).equalsIgnoreCase("enabled");
-        Log.d(TAG, "NotificationService enabled: " + enabled);
-
-        format = XMLPrefsManager.get(Notifications.notification_format);
-        color = XMLPrefsManager.getColor(Notifications.default_notification_color);
-
-        click = XMLPrefsManager.getBoolean(Notifications.click_notification);
-        longClick = XMLPrefsManager.getBoolean(Notifications.long_click_notification);
-
-        String wl = XMLPrefsManager.get(Notifications.notification_whitelist);
-        if (wl != null && wl.length() > 0) {
-            whitelist = new ArrayList<>(Arrays.asList(wl.split(",")));
-            for (int i = 0; i < whitelist.size(); i++) whitelist.set(i, whitelist.get(i).trim());
-        } else {
-            whitelist = null;
-        }
-
-        String bl = XMLPrefsManager.get(Notifications.notification_blacklist);
-        if (bl != null && bl.length() > 0) {
-            blacklist = new ArrayList<>(Arrays.asList(bl.split(",")));
-            for (int i = 0; i < blacklist.size(); i++) blacklist.set(i, blacklist.get(i).trim());
-        } else {
-            blacklist = null;
-        }
-
-        maxOptionalDepth = XMLPrefsManager.getInt(Behavior.max_optional_depth);
-
-        queue = new ArrayBlockingQueue<>(QUEUE_CAPACITY);
-
 
         active = true;
     }

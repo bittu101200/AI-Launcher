@@ -54,7 +54,6 @@ public class config extends ParamCommand {
         String description = "Configure T-UI settings, colors, and behavior.";
         Map<String, String> flags = new HashMap<>();
         flags.put("-set", "Set the value of a configuration option.");
-        flags.put("-info", "Get information about a specific configuration option.");
         flags.put("-file", "Open a configuration file for editing.");
         flags.put("-append", "Append a value to a configuration option.");
         flags.put("-erase", "Clear the value of a configuration option.");

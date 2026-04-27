@@ -19,7 +19,7 @@ public class SystemRemoveNotificationHookTool extends BaseAITool {
     @Override
     public String execute(Context context, JSONObject args) throws Exception {
         String id = args.getString("id");
-        NotificationHookManager.getInstance(context).removeHook(id);
-        return "Hook " + id + " removed.";
+        boolean success = NotificationHookManager.getInstance(context).removeHook(id);
+        return success ? "Hook " + id + " removed." : "[error: hook ID " + id + " not found]";
     }
 }

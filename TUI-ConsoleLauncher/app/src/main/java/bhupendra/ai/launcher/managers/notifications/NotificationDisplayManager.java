@@ -42,6 +42,8 @@ public class NotificationDisplayManager {
     }
 
     public boolean dispatchSystemNotification(StatusBarNotification sbn, CharSequence renderedText, Parcelable action, Parcelable longAction, NotificationContentResolver.ResolvedContent resolvedContent) {
+        if (sbn != null) Log.d(DEBUG_TAG, "Attempting dispatch for: " + sbn.getPackageName());
+        
         if (isBlankOrNull(renderedText)) {
             debug("suppressed blank", sbn, renderedText, resolvedContent);
             return false;
@@ -54,7 +56,8 @@ public class NotificationDisplayManager {
             debug("suppressed duplicate", sbn, renderedText, resolvedContent);
             return false;
         }
-        debug("dispatch", sbn, renderedText, resolvedContent);
+        
+        Log.d(DEBUG_TAG, "Dispatching to terminal: " + safe(renderedText));
         Tuils.sendOutput(appContext, renderedText, TerminalManager.CATEGORY_NO_COLOR, action, longAction);
         return true;
     }

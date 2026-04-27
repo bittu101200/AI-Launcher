@@ -64,6 +64,20 @@ public class SystemAddContactTool extends BaseAITool {
                 return "[waiting for contacts permission - please grant it and try again]";
             }
 
+            // Duplicate detection
+            if (mainPack == null) {
+                AISubsystem ai = AISubsystem.getInstance();
+                if (ai != null) mainPack = ai.getMainPack();
+            }
+
+            if (mainPack != null && mainPack.contacts != null) {
+                for (bhupendra.ai.launcher.managers.ContactManager.Contact c : mainPack.contacts.getContacts()) {
+                    if (name.equalsIgnoreCase(c.name)) {
+                        return "[error: contact '" + name + "' already exists]";
+                    }
+                }
+            }
+
             ArrayList<ContentProviderOperation> ops = new ArrayList<>();
 
             ops.add(ContentProviderOperation.newInsert(ContactsContract.RawContacts.CONTENT_URI)

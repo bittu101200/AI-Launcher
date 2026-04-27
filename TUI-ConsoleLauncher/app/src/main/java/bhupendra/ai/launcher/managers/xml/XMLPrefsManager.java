@@ -354,17 +354,15 @@ public class XMLPrefsManager {
                     }
                 }
             }
-            throw new Exception("Value not found for " + prefsSave.label());
         } catch (Exception e) {
-            // Only log if it's not a common "not found yet" case during startup
             if (commonsLoaded) Tuils.log(e);
-            
-            try {
-                return (T) transform(prefsSave.defaultValue(), c);
-            } catch (Exception e1) {
-                if (commonsLoaded) Tuils.log(e1);
-                return Tuils.getDefaultValue(c);
-            }
+        }
+        
+        try {
+            return (T) transform(prefsSave.defaultValue(), c);
+        } catch (Exception e1) {
+            if (commonsLoaded) Tuils.log(e1);
+            return Tuils.getDefaultValue(c);
         }
     }
 

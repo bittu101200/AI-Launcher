@@ -31,11 +31,13 @@ public class SystemTimerTool extends BaseAITool {
 
     @Override
     public String execute(Context context, JSONObject args) throws Exception {
-        String action = args.getString("action").toLowerCase();
+        String action = args.optString("action", "").toLowerCase();
         String label = args.optString("label", "AI Task");
 
         if ("timer".equals(action)) {
-            int seconds = args.getInt("duration_seconds");
+            int seconds = args.optInt("duration_seconds", -1);
+            if (seconds <= 0) return "[error: duration_seconds must be a positive integer]";
+            
             Intent intent = new Intent(AlarmClock.ACTION_SET_TIMER)
                     .putExtra(AlarmClock.EXTRA_LENGTH, seconds)
                     .putExtra(AlarmClock.EXTRA_MESSAGE, label)
@@ -44,8 +46,12 @@ public class SystemTimerTool extends BaseAITool {
             context.startActivity(intent);
             return "Timer started for " + seconds + " seconds: " + label;
         } else if ("alarm".equals(action)) {
-            int hour = args.getInt("hour");
-            int minutes = args.getInt("minutes");
+            int hour = args.optInt("hour", -1);
+            int minutes = args.optInt("minutes", -1);
+            
+            if (hour < 0 || hour > 23) return "[error: hour must be 0-23]";
+            if (minutes < 0 || minutes > 59) return "[error: minutes must be 0-59]";
+
             Intent intent = new Intent(AlarmClock.ACTION_SET_ALARM)
                     .putExtra(AlarmClock.EXTRA_HOUR, hour)
                     .putExtra(AlarmClock.EXTRA_MINUTES, minutes)

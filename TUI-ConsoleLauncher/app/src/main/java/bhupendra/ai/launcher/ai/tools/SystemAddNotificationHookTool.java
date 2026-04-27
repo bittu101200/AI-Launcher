@@ -97,6 +97,17 @@ public class SystemAddNotificationHookTool extends BaseAITool {
 
         hook.senderRegex = finalSender;
         hook.contentRegex = args.optString("content_regex", null);
+        
+        // Validate regex patterns
+        if (hook.senderRegex != null) {
+            try { java.util.regex.Pattern.compile(hook.senderRegex); }
+            catch (Exception e) { return "[error: invalid sender_regex: " + e.getMessage() + "]"; }
+        }
+        if (hook.contentRegex != null) {
+            try { java.util.regex.Pattern.compile(hook.contentRegex); }
+            catch (Exception e) { return "[error: invalid content_regex: " + e.getMessage() + "]"; }
+        }
+
         hook.replyText = args.optString("reply_text", null);
         
         hook.useAI = args.optBoolean("use_ai", false);

@@ -129,9 +129,10 @@ public class NotificationHookManager {
         return new ArrayList<>(hooks);
     }
 
-    public void removeHook(String id) {
-        hooks.removeIf(h -> h.id.equals(id));
-        save();
+    public boolean removeHook(String id) {
+        boolean removed = hooks.removeIf(h -> h.id.equals(id));
+        if (removed) save();
+        return removed;
     }
 
     public void processNotification(final StatusBarNotification sbn) {
@@ -212,7 +213,7 @@ public class NotificationHookManager {
                 "4. Reply in the same language as the message.",
                 sender, message, instruction);
 
-        ai.submitAutomation(query, new AICallback() {
+        ai.submitAutomation(sender, query, new AICallback() {
             @Override public void onToken(String rid, String t) {}
             @Override public void onResponse(AIResponse r) {
                 if (r.type == AIResponse.Type.TEXT && r.text != null && !r.text.isEmpty()) {

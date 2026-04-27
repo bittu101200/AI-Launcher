@@ -132,6 +132,9 @@ public class RequestManager {
             cancelRequested = false;
         } else if (newState == AIRequestState.THINKING) {
             resetTimer(rid, connectTimeoutMs, AIRequestState.TIMED_OUT_CONNECT);
+        } else if (newState == AIRequestState.FOLLOWUP) {
+            // Once we are in followup, we are connected. Use inactivity timeout.
+            resetTimer(rid, inactivityTimeoutMs, AIRequestState.TIMED_OUT_INACTIVITY);
         } else if (newState == AIRequestState.EXECUTING_TOOLS) {
             // Tools might take a while, give them a longer inactivity timeout or don't timeout.
             // For now, let's keep the inactivity timeout or disable it during tool execution.
