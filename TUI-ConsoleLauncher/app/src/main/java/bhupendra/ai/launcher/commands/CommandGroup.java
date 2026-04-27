@@ -1,8 +1,6 @@
 package bhupendra.ai.launcher.commands;
 
 import android.content.Context;
-import android.os.Build;
-
 import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.util.ArrayList;
@@ -10,7 +8,6 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
-import bhupendra.ai.launcher.commands.main.specific.APICommand;
 import bhupendra.ai.launcher.tuils.Tuils;
 
 public class CommandGroup {
@@ -34,7 +31,7 @@ public class CommandGroup {
         while (iterator.hasNext()) {
             String s = iterator.next();
             CommandAbstraction ca = buildCommand(s);
-            if(ca != null && ( !(ca instanceof APICommand) || ((APICommand) ca).willWorkOn(Build.VERSION.SDK_INT))) {
+            if(ca != null) {
                 cmdAbs.add(ca);
             } else {
                 iterator.remove();

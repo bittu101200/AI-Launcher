@@ -270,10 +270,8 @@ public class TerminalManager {
         this.mInputView.setTypeface(Tuils.getTypeface(context));
         this.mInputView.setHint(Tuils.getHint(mainPack.currentDirectory.getAbsolutePath()));
         this.mInputView.setInputType(InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-            this.mInputView.setImportantForAutofill(View.IMPORTANT_FOR_AUTOFILL_NO_EXCLUDE_DESCENDANTS);
-            this.mInputView.setAutofillHints("");
-        }
+        this.mInputView.setImportantForAutofill(View.IMPORTANT_FOR_AUTOFILL_NO_EXCLUDE_DESCENDANTS);
+        this.mInputView.setAutofillHints("");
         Tuils.setCursorDrawableColor(this.mInputView, XMLPrefsManager.getColor(Theme.cursor_color));
         this.mInputView.setHighlightColor(Color.TRANSPARENT);
         this.mInputView.setOnEditorActionListener((v1, actionId, event) -> {

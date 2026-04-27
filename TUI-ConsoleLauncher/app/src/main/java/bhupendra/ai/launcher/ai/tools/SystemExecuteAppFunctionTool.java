@@ -2,7 +2,6 @@ package bhupendra.ai.launcher.ai.tools;
 
 import android.content.Context;
 import android.content.pm.LauncherApps;
-import android.os.Build;
 import android.os.Process;
 import android.util.Log;
 
@@ -49,10 +48,6 @@ public class SystemExecuteAppFunctionTool extends BaseAITool {
             // Fallback for generic shortcut: prefix
             String[] parts = functionId.split(":");
             if (parts.length >= 3) functionId = parts[2];
-        }
-
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N_MR1) {
-            return "[error: App Function execution requires Android 7.1 or higher]";
         }
 
         try {

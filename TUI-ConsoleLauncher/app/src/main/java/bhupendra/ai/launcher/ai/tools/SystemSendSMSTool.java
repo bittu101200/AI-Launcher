@@ -89,12 +89,7 @@ public class SystemSendSMSTool extends BaseAITool {
         }
 
         try {
-            SmsManager smsManager;
-            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
-                smsManager = context.getSystemService(SmsManager.class);
-            } else {
-                smsManager = SmsManager.getDefault();
-            }
+            SmsManager smsManager = context.getSystemService(SmsManager.class);
             
             if (smsManager == null) {
                 smsManager = SmsManager.getDefault();

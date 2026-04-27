@@ -98,7 +98,7 @@ public class PrivateIOReceiver extends BroadcastReceiver {
             }
             else if(intent.getAction().equals(ACTION_INPUT)) {
                 inputable.in(text.toString());
-            } else if(intent.getAction().equals(ACTION_REPLY) && Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT_WATCH) {
+            } else if(intent.getAction().equals(ACTION_REPLY)) {
                 Bundle b = intent.getBundleExtra(BUNDLE);
                 Parcelable[] ps = intent.getParcelableArrayExtra(REMOTE_INPUTS);
                 PendingIntent pi = intent.getParcelableExtra(PENDING_INTENT);

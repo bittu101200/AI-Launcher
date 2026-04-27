@@ -142,25 +142,23 @@ public class AppCapabilityScanner {
             result.add(cap);
 
             // 3. Deep Scan Shortcuts (App Functions)
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N_MR1) {
-                try {
-                    LauncherApps launcherApps = (LauncherApps) context.getSystemService(Context.LAUNCHER_APPS_SERVICE);
-                    LauncherApps.ShortcutQuery query = new LauncherApps.ShortcutQuery();
-                    query.setPackage(pkg);
-                    query.setQueryFlags(LauncherApps.ShortcutQuery.FLAG_MATCH_DYNAMIC | LauncherApps.ShortcutQuery.FLAG_MATCH_MANIFEST);
-                    
-                    List<ShortcutInfo> shortcuts = launcherApps.getShortcuts(query, Process.myUserHandle());
-                    if (shortcuts != null) {
-                        for (ShortcutInfo s : shortcuts) {
-                            String desc = s.getLongLabel() != null ? s.getLongLabel().toString() : s.getShortLabel().toString();
-                            Capability subCap = new Capability("shortcut:" + pkg + ":" + s.getId(), s.getShortLabel().toString(), pkg, "FUNCTION", desc);
-                            subCap.usageTime = cap.usageTime; // Inherit parent app usage for sorting
-                            result.add(subCap);
-                        }
+            try {
+                LauncherApps launcherApps = (LauncherApps) context.getSystemService(Context.LAUNCHER_APPS_SERVICE);
+                LauncherApps.ShortcutQuery query = new LauncherApps.ShortcutQuery();
+                query.setPackage(pkg);
+                query.setQueryFlags(LauncherApps.ShortcutQuery.FLAG_MATCH_DYNAMIC | LauncherApps.ShortcutQuery.FLAG_MATCH_MANIFEST);
+
+                List<ShortcutInfo> shortcuts = launcherApps.getShortcuts(query, Process.myUserHandle());
+                if (shortcuts != null) {
+                    for (ShortcutInfo s : shortcuts) {
+                        String desc = s.getLongLabel() != null ? s.getLongLabel().toString() : s.getShortLabel().toString();
+                        Capability subCap = new Capability("shortcut:" + pkg + ":" + s.getId(), s.getShortLabel().toString(), pkg, "FUNCTION", desc);
+                        subCap.usageTime = cap.usageTime; // Inherit parent app usage for sorting
+                        result.add(subCap);
                     }
-                } catch (Exception e) {
-                    Log.e(TAG, "Failed to scan shortcuts for " + pkg, e);
                 }
+            } catch (Exception e) {
+                Log.e(TAG, "Failed to scan shortcuts for " + pkg, e);
             }
         }
 
@@ -172,14 +170,12 @@ public class AppCapabilityScanner {
 
     private Map<String, Long> getUsageStats() {
         Map<String, Long> map = new HashMap<>();
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            UsageStatsManager usm = (UsageStatsManager) context.getSystemService(Context.USAGE_STATS_SERVICE);
-            long now = System.currentTimeMillis();
-            List<UsageStats> stats = usm.queryUsageStats(UsageStatsManager.INTERVAL_WEEKLY, now - (1000 * 60 * 60 * 24 * 7), now);
-            if (stats != null) {
-                for (UsageStats s : stats) {
-                    map.put(s.getPackageName(), s.getTotalTimeInForeground());
-                }
+        UsageStatsManager usm = (UsageStatsManager) context.getSystemService(Context.USAGE_STATS_SERVICE);
+        long now = System.currentTimeMillis();
+        List<UsageStats> stats = usm.queryUsageStats(UsageStatsManager.INTERVAL_WEEKLY, now - (1000 * 60 * 60 * 24 * 7), now);
+        if (stats != null) {
+            for (UsageStats s : stats) {
+                map.put(s.getPackageName(), s.getTotalTimeInForeground());
             }
         }
         return map;

@@ -1,7 +1,6 @@
 package bhupendra.ai.launcher.managers.flashlight;
 
 import android.content.Context;
-import android.os.Build;
 
 /**
  * Created by francescoandreuzzi on 20/08/2017.
@@ -10,12 +9,10 @@ import android.os.Build;
 public class TorchManager {
 
     private static TorchManager mInstance;
-    private final String flashType;
     private Torch mTorch;
     private String torchType;
 
     private TorchManager() {
-        this.flashType = (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) ? Flashlight2.TYPE : Flashlight1.TYPE;
         this.setTorchType(Constants.ID_DEVICE_OUTPUT_TORCH_FLASH);
     }
 
@@ -37,11 +34,7 @@ public class TorchManager {
     public void turnOn(Context context) {
         if (this.mTorch == null) {
             if (this.torchType.equals(Flashlight.TYPE)) {
-                if (this.flashType.equals(Flashlight1.TYPE)) {
-                    this.mTorch = new Flashlight1(context);
-                } else if (this.flashType.equals(Flashlight2.TYPE)) {
-                    this.mTorch = new Flashlight2(context);
-                }
+                this.mTorch = new Flashlight2(context);
             }
         }
         this.mTorch.setEnabled(true);

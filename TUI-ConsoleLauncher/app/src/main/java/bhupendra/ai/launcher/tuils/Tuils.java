@@ -860,14 +860,9 @@ public class Tuils {
 
     public static String getTextFromClipboard(Context context) {
         try {
-            if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB_MR2) {
-                ClipboardManager manager = (ClipboardManager) context.getSystemService(Context.CLIPBOARD_SERVICE);
-                ClipData.Item item = manager.getPrimaryClip().getItemAt(0);
-                return item.getText().toString();
-            } else {
-                android.text.ClipboardManager manager = (android.text.ClipboardManager) context.getSystemService(Context.CLIPBOARD_SERVICE);
-                return manager.getText().toString();
-            }
+            ClipboardManager manager = (ClipboardManager) context.getSystemService(Context.CLIPBOARD_SERVICE);
+            ClipData.Item item = manager.getPrimaryClip().getItemAt(0);
+            return item.getText().toString();
         } catch (Exception e) {
             return null;
         }
@@ -911,10 +906,7 @@ public class Tuils {
     }
 
     public static int pendingIntentFlags(int flags) {
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
-            return flags | android.app.PendingIntent.FLAG_IMMUTABLE;
-        }
-        return flags;
+        return flags | android.app.PendingIntent.FLAG_IMMUTABLE;
     }
 
 

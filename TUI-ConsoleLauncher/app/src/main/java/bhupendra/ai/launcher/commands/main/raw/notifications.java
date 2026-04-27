@@ -11,23 +11,15 @@ import bhupendra.ai.launcher.R;
 import bhupendra.ai.launcher.commands.CommandAbstraction;
 import bhupendra.ai.launcher.commands.ExecutePack;
 import bhupendra.ai.launcher.commands.main.MainPack;
-import bhupendra.ai.launcher.commands.main.specific.APICommand;
 import bhupendra.ai.launcher.commands.main.specific.ParamCommand;
 import bhupendra.ai.launcher.managers.notifications.NotificationManager;
 import bhupendra.ai.launcher.tuils.Tuils;
-
-import static android.os.Build.VERSION_CODES.JELLY_BEAN_MR2;
 
 /**
  * Created by francescoandreuzzi on 29/04/2017.
  */
 
-public class notifications extends ParamCommand implements APICommand {
-
-    @Override
-    public boolean willWorkOn(int api) {
-        return api >= JELLY_BEAN_MR2;
-    }
+public class notifications extends ParamCommand {
 
     private enum Param implements bhupendra.ai.launcher.commands.main.Param {
 

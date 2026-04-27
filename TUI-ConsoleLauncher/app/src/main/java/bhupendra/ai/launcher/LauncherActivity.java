@@ -256,12 +256,10 @@ public class LauncherActivity extends AppCompatActivity implements Reloadable {
         if(requestedOrientation >= 0 && requestedOrientation != 2) {
             int orientation = getResources().getConfiguration().orientation;
             if(orientation != requestedOrientation) setRequestedOrientation(requestedOrientation);
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
-                setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LOCKED);
-            }
+            setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LOCKED);
         }
 
-        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP && !XMLPrefsManager.getBoolean(Ui.ignore_bar_color)) {
+        if(!XMLPrefsManager.getBoolean(Ui.ignore_bar_color)) {
             Window window = getWindow();
 
             window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
@@ -276,11 +274,7 @@ public class LauncherActivity extends AppCompatActivity implements Reloadable {
         Intent keeperIntent = new Intent(this, KeeperService.class);
         if (showNotification) {
             keeperIntent.putExtra(KeeperService.PATH_KEY, XMLPrefsManager.get(Behavior.home_path));
-            if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                startForegroundService(keeperIntent);
-            } else {
-                startService(keeperIntent);
-            }
+            startForegroundService(keeperIntent);
         } else {
             try {
                 stopService(keeperIntent);
@@ -308,23 +302,19 @@ public class LauncherActivity extends AppCompatActivity implements Reloadable {
 
         boolean notifications = XMLPrefsManager.getBoolean(Notifications.show_notifications) || XMLPrefsManager.get(Notifications.show_notifications).equalsIgnoreCase("enabled");
         if(notifications) {
-            if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
-                try {
-                    ComponentName notificationComponent = new ComponentName(this, NotificationService.class);
-                    PackageManager pm = getPackageManager();
-                    pm.setComponentEnabledSetting(notificationComponent, PackageManager.COMPONENT_ENABLED_STATE_ENABLED, PackageManager.DONT_KILL_APP);
+            try {
+                ComponentName notificationComponent = new ComponentName(this, NotificationService.class);
+                PackageManager pm = getPackageManager();
+                pm.setComponentEnabledSetting(notificationComponent, PackageManager.COMPONENT_ENABLED_STATE_ENABLED, PackageManager.DONT_KILL_APP);
 
-                    Intent monitor = new Intent(this, NotificationMonitorService.class);
-                    startService(monitor);
+                Intent monitor = new Intent(this, NotificationMonitorService.class);
+                startService(monitor);
 
-                    Intent notificationIntent = new Intent(this, NotificationService.class);
-                    startService(notificationIntent);
-                } catch (NoClassDefFoundError er) {
-                    Intent intent = new Intent(PrivateIOReceiver.ACTION_OUTPUT);
-                    intent.putExtra(PrivateIOReceiver.TEXT, getString(R.string.output_notification_error) + Tuils.SPACE + er.toString());
-                }
-            } else {
-                Tuils.sendOutput(Color.RED, this, R.string.notification_low_api);
+                Intent notificationIntent = new Intent(this, NotificationService.class);
+                startService(notificationIntent);
+            } catch (NoClassDefFoundError er) {
+                Intent intent = new Intent(PrivateIOReceiver.ACTION_OUTPUT);
+                intent.putExtra(PrivateIOReceiver.TEXT, getString(R.string.output_notification_error) + Tuils.SPACE + er.toString());
             }
         }
 
@@ -359,7 +349,7 @@ public class LauncherActivity extends AppCompatActivity implements Reloadable {
 
         ViewGroup mainView = (ViewGroup) findViewById(R.id.mainview);
 
-        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !XMLPrefsManager.getBoolean(Ui.ignore_bar_color) && !XMLPrefsManager.getBoolean(Ui.statusbar_light_icons)) {
+        if(!XMLPrefsManager.getBoolean(Ui.ignore_bar_color) && !XMLPrefsManager.getBoolean(Ui.statusbar_light_icons)) {
             mainView.setSystemUiVisibility(mainView.getSystemUiVisibility() | View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR);
         }
 

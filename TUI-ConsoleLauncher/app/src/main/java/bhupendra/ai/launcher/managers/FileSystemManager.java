@@ -166,14 +166,9 @@ public class FileSystemManager {
     
             intent.setDataAndType(u, mimetype);
     
-            int flags;
-            if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                flags = Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION | Intent.FLAG_GRANT_PREFIX_URI_PERMISSION;
-            } else {
-                flags = Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION;
-            }
-    
-            intent.addFlags(flags);
+            intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION
+                    | Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+                    | Intent.FLAG_GRANT_PREFIX_URI_PERMISSION);
     
             return intent;
         }
@@ -309,14 +304,7 @@ public class FileSystemManager {
 
 
     public static Uri buildFile(Context context, File file) {
-        Uri uri;
-        if(Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
-            uri = Uri.fromFile(file);
-        }
-        else {
-            uri = FileProvider.getUriForFile(context, context.getApplicationContext().getPackageName() + ".FILE_PROVIDER", file);
-        }
-        return uri;
+        return FileProvider.getUriForFile(context, context.getApplicationContext().getPackageName() + ".FILE_PROVIDER", file);
     }
 
 }

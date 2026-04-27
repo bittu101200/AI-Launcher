@@ -30,13 +30,11 @@ public class volume extends ParamCommand {
 
             @Override
             public String exec(ExecutePack pack) {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                    NotificationManager mNotificationManager = (NotificationManager) pack.getContext().getSystemService(Context.NOTIFICATION_SERVICE);
-                    if (!mNotificationManager.isNotificationPolicyAccessGranted()) {
-                        Intent intent = new Intent(Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS);
-                        pack.getContext().startActivity(intent);
-                        return pack.getContext().getString(R.string.output_waitingpermission);
-                    }
+                NotificationManager mNotificationManager = (NotificationManager) pack.getContext().getSystemService(Context.NOTIFICATION_SERVICE);
+                if (!mNotificationManager.isNotificationPolicyAccessGranted()) {
+                    Intent intent = new Intent(Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS);
+                    pack.getContext().startActivity(intent);
+                    return pack.getContext().getString(R.string.output_waitingpermission);
                 }
 
                 int type = pack.getInt();
@@ -69,13 +67,11 @@ public class volume extends ParamCommand {
             @Override
             public String exec(ExecutePack pack) {
 
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                    NotificationManager mNotificationManager = (NotificationManager) pack.getContext().getSystemService(Context.NOTIFICATION_SERVICE);
-                    if (!mNotificationManager.isNotificationPolicyAccessGranted()) {
-                        Intent intent = new Intent(Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS);
-                        pack.getContext().startActivity(intent);
-                        return pack.getContext().getString(R.string.output_waitingpermission);
-                    }
+                NotificationManager mNotificationManager = (NotificationManager) pack.getContext().getSystemService(Context.NOTIFICATION_SERVICE);
+                if (!mNotificationManager.isNotificationPolicyAccessGranted()) {
+                    Intent intent = new Intent(Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS);
+                    pack.getContext().startActivity(intent);
+                    return pack.getContext().getString(R.string.output_waitingpermission);
                 }
 
                 AudioManager manager = (AudioManager) pack.getContext().getSystemService(Context.AUDIO_SERVICE);

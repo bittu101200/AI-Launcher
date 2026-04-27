@@ -242,7 +242,7 @@ public class NotificationAttentionDecider {
 
     private boolean isGroupSummary(Notification notification, String title, String text) {
         if (notification == null) return false;
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT_WATCH && notification.flags != 0) {
+        if (notification.flags != 0) {
             if ((notification.flags & Notification.FLAG_GROUP_SUMMARY) != 0) return true;
         }
         return GROUP_SUMMARY_PATTERN.matcher(safeLower(text)).matches()
@@ -251,11 +251,8 @@ public class NotificationAttentionDecider {
 
     private boolean hasProgress(Notification notification) {
         if (notification == null || notification.extras == null) return false;
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-            return notification.extras.containsKey(Notification.EXTRA_PROGRESS)
-                || notification.extras.containsKey(Notification.EXTRA_PROGRESS_MAX);
-        }
-        return false;
+        return notification.extras.containsKey(Notification.EXTRA_PROGRESS)
+            || notification.extras.containsKey(Notification.EXTRA_PROGRESS_MAX);
     }
 
     private boolean hasReplyAction(Notification notification) {

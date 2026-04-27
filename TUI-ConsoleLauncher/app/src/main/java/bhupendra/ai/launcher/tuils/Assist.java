@@ -45,11 +45,7 @@ public class Assist {
                 // keyboard probably just became hidden
                 frameLayoutParams.height = usableHeightSansKeyboard;
             }
-            if (Build.VERSION.SDK_INT >= 11) {
-                mChildOfContent.setBottom(frameLayoutParams.height);
-            } else {
-                setPrivateField(mChildOfContent, "mBottom", frameLayoutParams.height);
-            }
+            mChildOfContent.setBottom(frameLayoutParams.height);
             mChildOfContent.requestLayout();
             usableHeightPrevious = usableHeightNow;
         }

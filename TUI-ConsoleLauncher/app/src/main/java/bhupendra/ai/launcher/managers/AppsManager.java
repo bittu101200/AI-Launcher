@@ -413,7 +413,7 @@ public class AppsManager implements XMLPrefsElement {
             }
 //        }
 
-        if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.N_MR1 && DeviceStateManager.isMyLauncherDefault(context.getPackageManager())) {
+        if (DeviceStateManager.isMyLauncherDefault(context.getPackageManager())) {
             LauncherApps launcherApps = (LauncherApps) context.getSystemService(Context.LAUNCHER_APPS_SERVICE);
             for (ResolveInfo ri : main) {
                 LaunchInfo li = new LaunchInfo(ri.activityInfo.packageName, ri.activityInfo.name, ri.loadLabel(mgr).toString());
@@ -544,11 +544,7 @@ public class AppsManager implements XMLPrefsElement {
 
     public void writeLaunchTimes(LaunchInfo info) {
         editor.putInt(info.write(), info.launchedTimes);
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.GINGERBREAD) {
-            editor.apply();
-        } else {
-            editor.commit();
-        }
+        editor.apply();
 
         if(appsHolder != null) appsHolder.update(true);
     }
@@ -1570,9 +1566,7 @@ public class AppsManager implements XMLPrefsElement {
             builder.append("vrs: ").append(info.versionCode).append(" - ").append(info.versionName).append(Tuils.NEWLINE).append(Tuils.NEWLINE);
             builder.append("launched_times: ").append(app.launchedTimes).append(Tuils.NEWLINE).append(Tuils.NEWLINE);
 
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.GINGERBREAD) {
-                builder.append("Install: ").append(TimeManager.instance.replace("%t0", info.firstInstallTime, Integer.MAX_VALUE)).append(Tuils.NEWLINE).append(Tuils.NEWLINE);
-            }
+            builder.append("Install: ").append(TimeManager.instance.replace("%t0", info.firstInstallTime, Integer.MAX_VALUE)).append(Tuils.NEWLINE).append(Tuils.NEWLINE);
 
             ActivityInfo[] a = info.activities;
             if(a != null && a.length > 0) {

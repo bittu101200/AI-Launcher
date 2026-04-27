@@ -55,7 +55,7 @@ public class SystemSetBrightnessTool extends BaseAITool {
                 return "[error: brightness must be 0-100]";
             }
 
-            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M && !Settings.System.canWrite(context)) {
+            if (!Settings.System.canWrite(context)) {
                 context.startActivity(new Intent(Settings.ACTION_MANAGE_WRITE_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
                 return "[waiting for write settings permission]";
             }

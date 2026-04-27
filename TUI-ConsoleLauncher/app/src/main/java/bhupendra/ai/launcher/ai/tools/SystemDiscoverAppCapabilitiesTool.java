@@ -1,10 +1,8 @@
 package bhupendra.ai.launcher.ai.tools;
 
 import android.content.Context;
-import android.content.Intent;
 import android.content.pm.LauncherApps;
 import android.content.pm.ShortcutInfo;
-import android.os.Build;
 import android.os.Process;
 import android.util.Log;
 
@@ -32,10 +30,6 @@ public class SystemDiscoverAppCapabilitiesTool extends BaseAITool {
     public String execute(Context context, JSONObject args) throws Exception {
         String pkg = args.getString("package_name");
         
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N_MR1) {
-            return "[error: App Function discovery requires Android 7.1 or higher]";
-        }
-
         try {
             LauncherApps launcherApps = (LauncherApps) context.getSystemService(Context.LAUNCHER_APPS_SERVICE);
             if (launcherApps == null) return "[error: LauncherApps service not available]";

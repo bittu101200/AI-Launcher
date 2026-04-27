@@ -64,9 +64,6 @@ public class ReplyManager implements XMLPrefsElement {
     }
 
     public ReplyManager(Context context) {
-        enabled = Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT_WATCH;
-        if(!enabled) return;
-
         notificationWears = new HashMap<>();
         values = new XMLPrefsList();
         this.context = context;
@@ -235,15 +232,13 @@ public class ReplyManager implements XMLPrefsElement {
         }
 
         if (notificationWear.pendingIntent == null) {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                Notification n = statusBarNotification.getNotification();
-                if (n.actions != null) {
-                    for (Notification.Action action : n.actions) {
-                        if (action.getRemoteInputs() != null && action.getRemoteInputs().length > 0) {
-                            notificationWear.remoteInputs = action.getRemoteInputs();
-                            notificationWear.pendingIntent = action.actionIntent;
-                            break;
-                        }
+            Notification n = statusBarNotification.getNotification();
+            if (n.actions != null) {
+                for (Notification.Action action : n.actions) {
+                    if (action.getRemoteInputs() != null && action.getRemoteInputs().length > 0) {
+                        notificationWear.remoteInputs = action.getRemoteInputs();
+                        notificationWear.pendingIntent = action.actionIntent;
+                        break;
                     }
                 }
             }

@@ -106,7 +106,7 @@ public class CronManager {
         Intent intent = new Intent(context, ScheduledTaskReceiver.class);
         intent.setAction(ACTION_SCHEDULED_EXEC);
         PendingIntent pi = PendingIntent.getBroadcast(context, id.hashCode(), intent, 
-            PendingIntent.FLAG_UPDATE_CURRENT | (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M ? PendingIntent.FLAG_IMMUTABLE : 0));
+            PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
         alarmManager.cancel(pi);
     }
 
@@ -124,10 +124,7 @@ public class CronManager {
         intent.putExtra("task_id", task.id);
         intent.putExtra("command", task.command);
 
-        int piFlags = PendingIntent.FLAG_UPDATE_CURRENT;
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            piFlags |= PendingIntent.FLAG_IMMUTABLE;
-        }
+        int piFlags = PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE;
         
         PendingIntent pi = PendingIntent.getBroadcast(context, task.id.hashCode(), intent, piFlags);
 
@@ -137,10 +134,8 @@ public class CronManager {
             } else {
                 alarmManager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, task.timestamp, pi);
             }
-        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, task.timestamp, pi);
         } else {
-            alarmManager.setExact(AlarmManager.RTC_WAKEUP, task.timestamp, pi);
+            alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, task.timestamp, pi);
         }
         Log.d(TAG, "Scheduled alarm for task " + task.id + " at " + task.timestamp);
     }

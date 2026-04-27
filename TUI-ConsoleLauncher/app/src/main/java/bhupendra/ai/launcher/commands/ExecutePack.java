@@ -73,8 +73,6 @@ public abstract class ExecutePack implements CommandContext {
     @Override public java.io.File getCurrentDirectory() { return null; }
     @Override public void setCurrentDirectory(java.io.File directory) {}
     @Override public android.net.wifi.WifiManager getWifiManager() { return null; }
-    @Override public android.net.ConnectivityManager getConnectivityManager() { return null; }
-    @Override public Object getConnectMgr() { return null; }
     @Override public bhupendra.ai.launcher.managers.ContactManager getContactManager() { return null; }
     @Override public bhupendra.ai.launcher.managers.music.MusicManager2 getMusicManager() { return null; }
     @Override public bhupendra.ai.launcher.managers.AliasManager getAliasManager() { return null; }

@@ -1,21 +1,19 @@
 package bhupendra.ai.launcher.commands.main.raw;
 
 import android.content.Context;
-import android.os.Build;
 
 import bhupendra.ai.launcher.BuildConfig;
 import bhupendra.ai.launcher.R;
 import bhupendra.ai.launcher.commands.CommandAbstraction;
 import bhupendra.ai.launcher.commands.ExecutePack;
 import bhupendra.ai.launcher.commands.main.MainPack;
-import bhupendra.ai.launcher.commands.main.specific.APICommand;
 import bhupendra.ai.launcher.managers.TuiLocationManager;
 
 /**
  * Created by francescoandreuzzi on 10/05/2017.
  */
 
-public class location implements APICommand, CommandAbstraction {
+public class location implements CommandAbstraction {
 
     public static String ACTION_LOCATION_CMD_GOT = BuildConfig.APPLICATION_ID + ".loc_cmd_location";
 
@@ -84,8 +82,4 @@ public class location implements APICommand, CommandAbstraction {
         return null;
     }
 
-    @Override
-    public boolean willWorkOn(int api) {
-        return api >= Build.VERSION_CODES.GINGERBREAD;
-    }
 }

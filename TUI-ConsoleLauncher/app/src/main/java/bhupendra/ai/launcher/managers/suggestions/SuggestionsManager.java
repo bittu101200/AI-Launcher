@@ -1383,7 +1383,7 @@ public class SuggestionsManager {
             for(XMLPrefsManager.XMLPrefsRoot element : XMLPrefsManager.XMLPrefsRoot.values())
                 xmlPrefsFiles.add(element.path);
             xmlPrefsFiles.add(AppsManager.PATH);
-            if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT_WATCH) xmlPrefsFiles.add(ReplyManager.PATH);
+            xmlPrefsFiles.add(ReplyManager.PATH);
             xmlPrefsFiles.add(NotificationManager.PATH);
             xmlPrefsFiles.add(RssManager.PATH);
         }

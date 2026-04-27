@@ -1271,7 +1271,7 @@ public class UIManager implements OnTouchListener {
 //                notesView.setScrollBarStyle(View.SCROLLBARS_OUTSIDE_OVERLAY);
 //                notesView.setVerticalScrollBarEnabled(true);
 
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB && XMLPrefsManager.getBoolean(Ui.show_scroll_notes_message)) {
+                if (XMLPrefsManager.getBoolean(Ui.show_scroll_notes_message)) {
                     notesView.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
 
                         int linesBefore = Integer.MIN_VALUE;

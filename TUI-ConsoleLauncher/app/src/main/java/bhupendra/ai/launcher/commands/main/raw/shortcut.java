@@ -12,7 +12,6 @@ import bhupendra.ai.launcher.R;
 import bhupendra.ai.launcher.commands.CommandAbstraction;
 import bhupendra.ai.launcher.commands.ExecutePack;
 import bhupendra.ai.launcher.commands.main.MainPack;
-import bhupendra.ai.launcher.commands.main.specific.APICommand;
 import bhupendra.ai.launcher.commands.main.specific.ParamCommand;
 import bhupendra.ai.launcher.managers.AppsManager;
 import bhupendra.ai.launcher.tuils.Tuils;
@@ -22,7 +21,7 @@ import bhupendra.ai.launcher.tuils.Tuils;
  */
 
 @TargetApi(Build.VERSION_CODES.N_MR1)
-public class shortcut extends ParamCommand implements APICommand {
+public class shortcut extends ParamCommand {
 
     private enum Param implements bhupendra.ai.launcher.commands.main.Param {
 
@@ -179,12 +178,6 @@ public class shortcut extends ParamCommand implements APICommand {
     @Override
     protected bhupendra.ai.launcher.commands.main.Param paramForString(MainPack pack, String param) {
         return Param.get(param);
-    }
-
-    @Override
-    public boolean willWorkOn(int api) {
-//        return false;
-        return api >= Build.VERSION_CODES.N_MR1;
     }
 
     @Override

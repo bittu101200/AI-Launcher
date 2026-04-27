@@ -31,7 +31,7 @@ android {
 
     defaultConfig {
         applicationId "bhupendra.ai.launcher"
-        minSdk 21
+        minSdk 29
         targetSdk 34
         versionCode 301
         versionName "v6.15.1-updated-v2"

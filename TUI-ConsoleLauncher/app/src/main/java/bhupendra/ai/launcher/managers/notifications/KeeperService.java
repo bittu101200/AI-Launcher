@@ -182,17 +182,14 @@ public class KeeperService extends Service {
             pendingIntent = null;
         }
 
-        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-                int oPriority = Tuils.scale(new int[] {0, 4}, new int[] {2,4}, priority + 2);
-                if(oPriority < 2 || oPriority > 4) oPriority = NotificationManager.IMPORTANCE_UNSPECIFIED;
+        int oPriority = Tuils.scale(new int[] {0, 4}, new int[] {2,4}, priority + 2);
+        if(oPriority < 2 || oPriority > 4) oPriority = NotificationManager.IMPORTANCE_UNSPECIFIED;
 
-                NotificationChannel notificationChannel = new NotificationChannel(BuildConfig.APPLICATION_ID, c.getString(R.string.app_name), oPriority);
-                ((NotificationManager) c.getSystemService(Context.NOTIFICATION_SERVICE)).createNotificationChannel(notificationChannel);
-            }
+        NotificationChannel notificationChannel = new NotificationChannel(BuildConfig.APPLICATION_ID, c.getString(R.string.app_name), oPriority);
+        ((NotificationManager) c.getSystemService(Context.NOTIFICATION_SERVICE)).createNotificationChannel(notificationChannel);
 
-            NotificationCompat.Builder builder = new NotificationCompat.Builder(c, BuildConfig.APPLICATION_ID)
-                    .setSmallIcon(R.mipmap.ic_launcher)
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(c, BuildConfig.APPLICATION_ID)
+                .setSmallIcon(R.mipmap.ic_launcher)
                     .setTicker(c.getString(R.string.start_notification))
                     .setWhen(System.currentTimeMillis())
                     .setPriority(priority)
@@ -239,40 +236,5 @@ public class KeeperService extends Service {
             builder.addAction(actionBuilder.build());
 
             return builder.build();
-        } else {
-            NotificationCompat.Builder builder = new NotificationCompat.Builder(c)
-                    .setSmallIcon(R.mipmap.ic_launcher)
-                    .setTicker(c.getString(R.string.start_notification))
-                    .setWhen(System.currentTimeMillis())
-                    .setPriority(priority)
-                    .setContentTitle(title)
-                    .setContentIntent(pendingIntent);
-
-            NotificationCompat.Style style = null;
-            if (lastCommands != null && lastCommands[0] != null) {
-                NotificationCompat.InboxStyle inboxStyle = new NotificationCompat.InboxStyle();
-
-                if (upDown) {
-                    for (CharSequence lastCommand : lastCommands) {
-                        if (lastCommand == null) break;
-                        inboxStyle.addLine(lastCommand);
-                    }
-                } else {
-                    for (int j = lastCommands.length - 1; j >= 0; j--) {
-                        if (lastCommands[j] == null) continue;
-                        inboxStyle.addLine(lastCommands[j]);
-                    }
-                }
-
-                style = inboxStyle;
-            }
-
-            if (style != null) builder.setStyle(style);
-            else {
-                builder.setContentTitle(title);
-                builder.setContentText(subtitle);
-            }
-            return builder.build();
-        }
     }
 }

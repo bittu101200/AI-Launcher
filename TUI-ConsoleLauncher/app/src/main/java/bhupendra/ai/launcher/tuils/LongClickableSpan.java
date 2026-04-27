@@ -179,15 +179,14 @@ public class LongClickableSpan extends ClickableSpan {
 
                 boolean forceMenu = count > 1;
 
-                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.HONEYCOMB) {
-                    if(showMenu || forceMenu) {
-                        PopupMenu menu = new PopupMenu(v.getContext().getApplicationContext(), v);
-                        menu.getMenuInflater().inflate(R.menu.notification_menu, menu.getMenu());
+                if(showMenu || forceMenu) {
+                    PopupMenu menu = new PopupMenu(v.getContext().getApplicationContext(), v);
+                    menu.getMenuInflater().inflate(R.menu.notification_menu, menu.getMenu());
 
-                        menu.getMenu().findItem(R.id.open_notification).setVisible(n.pendingIntent != null);
-                        menu.getMenu().findItem(R.id.exclude_app).setVisible(showExcludeApp);
-                        menu.getMenu().findItem(R.id.exclude_notification).setVisible(showExcludeNotification);
-                        menu.getMenu().findItem(R.id.reply_notification).setVisible(showReply);
+                    menu.getMenu().findItem(R.id.open_notification).setVisible(n.pendingIntent != null);
+                    menu.getMenu().findItem(R.id.exclude_app).setVisible(showExcludeApp);
+                    menu.getMenu().findItem(R.id.exclude_notification).setVisible(showExcludeNotification);
+                    menu.getMenu().findItem(R.id.reply_notification).setVisible(showReply);
 
                         menu.setOnMenuItemClickListener(item -> {
                             int id = item.getItemId();
@@ -225,7 +224,6 @@ public class LongClickableSpan extends ClickableSpan {
                         } else {
                             executeIntent(v.getContext(), n.pendingIntent, n.pkg);
                         }
-                    }
                 }
             } else {
                 executeIntent(v.getContext(), n.pendingIntent, n.pkg);

@@ -409,11 +409,6 @@ public class NotesManager {
     }
 
     private void cpNote(String s) {
-        if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.HONEYCOMB) {
-            Tuils.sendOutput(mContext, R.string.api_low);
-            return;
-        }
-
         int index = findNote(s);
         if(index == -1) {
             Tuils.sendOutput(mContext, R.string.note_not_found);

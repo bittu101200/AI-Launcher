@@ -1,7 +1,6 @@
 package bhupendra.ai.launcher.ai.platform;
 
 import android.app.Notification;
-import android.os.Build;
 import android.service.notification.StatusBarNotification;
 import android.util.Log;
 import java.util.HashSet;
@@ -29,7 +28,7 @@ public class JourneyManager {
         if (notification == null) return false;
 
         // Modern Android progress check
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N && notification.extras != null) {
+        if (notification.extras != null) {
             if (notification.extras.containsKey(Notification.EXTRA_PROGRESS) ||
                 notification.extras.containsKey(Notification.EXTRA_PROGRESS_MAX)) {
                 return true;

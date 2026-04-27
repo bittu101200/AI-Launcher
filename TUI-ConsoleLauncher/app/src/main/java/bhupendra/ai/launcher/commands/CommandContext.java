@@ -2,7 +2,6 @@ package bhupendra.ai.launcher.commands;
 
 import android.content.Context;
 import android.content.res.Resources;
-import android.net.ConnectivityManager;
 import android.net.wifi.WifiManager;
 
 import java.io.File;
@@ -24,8 +23,6 @@ public interface CommandContext {
     void setCurrentDirectory(File directory);
     
     WifiManager getWifiManager();
-    ConnectivityManager getConnectivityManager();
-    Object getConnectMgr();
     
     ContactManager getContactManager();
     MusicManager2 getMusicManager();

@@ -3,7 +3,6 @@ package bhupendra.ai.launcher.commands.main.raw;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Color;
-import android.os.Build;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -12,11 +11,10 @@ import bhupendra.ai.launcher.R;
 import bhupendra.ai.launcher.commands.CommandAbstraction;
 import bhupendra.ai.launcher.commands.ExecutePack;
 import bhupendra.ai.launcher.commands.main.MainPack;
-import bhupendra.ai.launcher.commands.main.specific.APICommand;
 import bhupendra.ai.launcher.tuils.TermuxManager;
 import bhupendra.ai.launcher.tuils.Tuils;
 
-public class termux implements APICommand, CommandAbstraction {
+public class termux implements CommandAbstraction {
 
     @Override
     public String exec(final ExecutePack pack) throws Exception {
@@ -74,8 +72,4 @@ public class termux implements APICommand, CommandAbstraction {
         return null;
     }
 
-    @Override
-    public boolean willWorkOn(int api) {
-        return api >= Build.VERSION_CODES.ICE_CREAM_SANDWICH;
-    }
 }

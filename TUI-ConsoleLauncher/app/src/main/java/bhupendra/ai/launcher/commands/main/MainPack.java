@@ -2,11 +2,9 @@ package bhupendra.ai.launcher.commands.main;
 
 import android.content.Context;
 import android.content.res.Resources;
-import android.net.ConnectivityManager;
 import android.net.wifi.WifiManager;
 
 import java.io.File;
-import java.lang.reflect.Method;
 
 import bhupendra.ai.launcher.commands.CommandGroup;
 import bhupendra.ai.launcher.commands.CommandsPreferences;
@@ -38,11 +36,6 @@ public class MainPack extends ExecutePack {
 
     //	internet
     public WifiManager wifi;
-
-    //	3g/data
-    public Method setMobileDataEnabledMethod;
-    public ConnectivityManager connectivityMgr;
-    public Object connectMgr;
 
     //	contacts
     public ContactManager contacts;
@@ -119,8 +112,6 @@ public class MainPack extends ExecutePack {
     @Override public File getCurrentDirectory() { return currentDirectory; }
     @Override public void setCurrentDirectory(File directory) { this.currentDirectory = directory; }
     @Override public WifiManager getWifiManager() { return wifi; }
-    @Override public ConnectivityManager getConnectivityManager() { return connectivityMgr; }
-    @Override public Object getConnectMgr() { return connectMgr; }
     @Override public ContactManager getContactManager() { return contacts; }
     @Override public MusicManager2 getMusicManager() { return player; }
     @Override public AliasManager getAliasManager() { return aliasManager; }

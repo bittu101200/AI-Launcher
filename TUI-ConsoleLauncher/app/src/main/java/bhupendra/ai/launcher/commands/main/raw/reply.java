@@ -1,14 +1,12 @@
 package bhupendra.ai.launcher.commands.main.raw;
 
 import android.content.Intent;
-import android.os.Build;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
 import bhupendra.ai.launcher.R;
 import bhupendra.ai.launcher.commands.CommandAbstraction;
 import bhupendra.ai.launcher.commands.ExecutePack;
 import bhupendra.ai.launcher.commands.main.MainPack;
-import bhupendra.ai.launcher.commands.main.specific.APICommand;
 import bhupendra.ai.launcher.commands.main.specific.ParamCommand;
 import bhupendra.ai.launcher.managers.AppsManager;
 import bhupendra.ai.launcher.managers.notifications.reply.ReplyManager;
@@ -18,7 +16,7 @@ import bhupendra.ai.launcher.tuils.Tuils;
  * Created by francescoandreuzzi on 05/11/2017.
  */
 
-public class reply extends ParamCommand implements APICommand {
+public class reply extends ParamCommand {
 
     private enum Param implements bhupendra.ai.launcher.commands.main.Param {
 
@@ -114,8 +112,4 @@ public class reply extends ParamCommand implements APICommand {
         return R.string.help_reply;
     }
 
-    @Override
-    public boolean willWorkOn(int api) {
-        return api >= Build.VERSION_CODES.KITKAT_WATCH;
-    }
 }

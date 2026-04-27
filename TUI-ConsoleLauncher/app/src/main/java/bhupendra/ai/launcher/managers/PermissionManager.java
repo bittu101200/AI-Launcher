@@ -99,11 +99,11 @@ public final class PermissionManager {
         requirements.add(special("notification_access", "Notification access",
                 "Allows T-UI to read selected notifications and display important messages in the terminal.",
                 hasNotificationAccess(context),
-                Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2));
+                true));
         requirements.add(special("usage_stats", "Usage access",
                 "Allows app usage/app-state detection for launcher intelligence and app capabilities.",
                 hasUsageStatsAccess(context),
-                Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP));
+                true));
         requirements.add(special("all_files", "All files access",
                 "Allows broad file commands outside the app-private folder on Android 11+.",
                 hasAllFilesAccess(context),
@@ -111,11 +111,11 @@ public final class PermissionManager {
         requirements.add(special("overlay", "Display over other apps",
                 "Allows overlay-style launcher behavior when enabled by supported features.",
                 canDrawOverlays(context),
-                Build.VERSION.SDK_INT >= Build.VERSION_CODES.M));
+                true));
         requirements.add(special("write_settings", "Modify system settings",
                 "Allows brightness and other system-setting commands to apply directly.",
                 canWriteSettings(context),
-                Build.VERSION.SDK_INT >= Build.VERSION_CODES.M));
+                true));
 
         return Collections.unmodifiableList(requirements);
     }
@@ -228,7 +228,6 @@ public final class PermissionManager {
     }
 
     public static boolean hasUsageStatsAccess(Context context) {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) return true;
         try {
             PackageManager packageManager = context.getPackageManager();
             ApplicationInfo applicationInfo = packageManager.getApplicationInfo(context.getPackageName(), 0);
@@ -243,11 +242,11 @@ public final class PermissionManager {
     }
 
     public static boolean canDrawOverlays(Context context) {
-        return Build.VERSION.SDK_INT < Build.VERSION_CODES.M || Settings.canDrawOverlays(context);
+        return Settings.canDrawOverlays(context);
     }
 
     public static boolean canWriteSettings(Context context) {
-        return Build.VERSION.SDK_INT < Build.VERSION_CODES.M || Settings.System.canWrite(context);
+        return Settings.System.canWrite(context);
     }
 
     public static boolean hasAllFilesAccess(Context context) {
@@ -274,25 +273,19 @@ public final class PermissionManager {
     }
 
     public static void openUsageStatsSettings(Context context) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            startSettings(context, new Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS));
-        }
+        startSettings(context, new Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS));
     }
 
     public static void openOverlaySettings(Context context) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            Intent intent = new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
-                    Uri.parse("package:" + context.getPackageName()));
-            startSettings(context, intent);
-        }
+        Intent intent = new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                Uri.parse("package:" + context.getPackageName()));
+        startSettings(context, intent);
     }
 
     public static void openWriteSettings(Context context) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            Intent intent = new Intent(Settings.ACTION_MANAGE_WRITE_SETTINGS,
-                    Uri.parse("package:" + context.getPackageName()));
-            startSettings(context, intent);
-        }
+        Intent intent = new Intent(Settings.ACTION_MANAGE_WRITE_SETTINGS,
+                Uri.parse("package:" + context.getPackageName()));
+        startSettings(context, intent);
     }
 
     public static void openAllFilesAccessSettings(Context context) {

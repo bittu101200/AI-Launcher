@@ -16,7 +16,6 @@ import android.content.ServiceConnection;
 import android.database.Cursor;
 import android.media.AudioManager;
 import android.net.Uri;
-import android.os.Build;
 import android.os.IBinder;
 import android.provider.MediaStore;
 import android.widget.MediaController;
@@ -69,12 +68,7 @@ public class MusicManager2 implements MediaController.MediaPlayerControl {
             }
         };
 
-        String action;
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            action = AudioManager.ACTION_HEADSET_PLUG;
-        } else {
-            action = Intent.ACTION_HEADSET_PLUG;
-        }
+        String action = AudioManager.ACTION_HEADSET_PLUG;
 
         mContext.getApplicationContext().registerReceiver(headsetBroadcast, new IntentFilter(action));
 
