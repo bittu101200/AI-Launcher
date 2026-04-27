@@ -43,7 +43,7 @@ import bhupendra.ai.launcher.managers.xml.XMLPrefsManager;
 import bhupendra.ai.launcher.managers.xml.classes.XMLPrefsElement;
 import bhupendra.ai.launcher.managers.xml.classes.XMLPrefsList;
 import bhupendra.ai.launcher.managers.xml.classes.XMLPrefsSave;
-import bhupendra.ai.launcher.tuils.StoppableThread;
+
 import bhupendra.ai.launcher.tuils.Tuils;
 import bhupendra.ai.launcher.tuils.html_escape.HtmlEscape;
 import okhttp3.OkHttpClient;
@@ -170,11 +170,7 @@ public class RssManager implements XMLPrefsElement {
         if(cmdRegexes != null) cmdRegexes.clear();
         else cmdRegexes = new ArrayList<>();
 
-        new StoppableThread() {
-            @Override
-            public void run() {
-                super.run();
-
+        bhupendra.ai.launcher.tuils.LauncherExecutors.bgExecutor.execute(() -> {
                 Object[] o;
                 try {
                     o = XMLPrefsManager.buildDocument(rssIndexFile, NAME);
@@ -355,8 +351,7 @@ public class RssManager implements XMLPrefsElement {
                 }
 
                 handler.post(updateRunnable);
-            }
-        }.start();
+        });
     }
 
     public void dispose() {
@@ -638,11 +633,7 @@ public class RssManager implements XMLPrefsElement {
             return;
         }
 
-        new StoppableThread() {
-            @Override
-            public void run() {
-                super.run();
-
+        bhupendra.ai.launcher.tuils.LauncherExecutors.bgExecutor.execute(() -> {
                 if(!DeviceStateManager.hasInternetAccess()) {
                     if(force) Tuils.sendOutput(Color.RED, context, R.string.no_internet);
                     return;
@@ -712,8 +703,7 @@ public class RssManager implements XMLPrefsElement {
                     Tuils.log(e);
                     FileSystemManager.toFile(e);
                 }
-            }
-        }.start();
+        });
     }
 
     private boolean parse(Rss feed, boolean time) throws Exception {

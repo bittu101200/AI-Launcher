@@ -25,7 +25,7 @@ import java.util.regex.Pattern;
 import bhupendra.ai.launcher.R;
 import bhupendra.ai.launcher.managers.xml.XMLPrefsManager;
 import bhupendra.ai.launcher.managers.xml.options.Theme;
-import bhupendra.ai.launcher.tuils.StoppableThread;
+
 import bhupendra.ai.launcher.tuils.Tuils;
 
 /**
@@ -45,12 +45,7 @@ public class RegexManager {
         if(regexes != null) regexes.clear();
         else regexes = new ArrayList<>();
 
-        new StoppableThread() {
-
-            @Override
-            public void run() {
-                super.run();
-
+        bhupendra.ai.launcher.tuils.LauncherExecutors.bgExecutor.execute(() -> {
                 try {
                     File root = FileSystemManager.getFolder();
                     if(root == null) {
@@ -114,8 +109,7 @@ public class RegexManager {
                     FileSystemManager.toFile(e);
                     return;
                 }
-            }
-        }.start();
+        });
 
         instance = this;
     }

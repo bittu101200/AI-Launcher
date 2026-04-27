@@ -35,7 +35,7 @@ import bhupendra.ai.launcher.commands.CommandTuils;
 import bhupendra.ai.launcher.managers.xml.XMLPrefsManager;
 import bhupendra.ai.launcher.managers.xml.options.Theme;
 import bhupendra.ai.launcher.managers.xml.options.Ui;
-import bhupendra.ai.launcher.tuils.StoppableThread;
+
 import bhupendra.ai.launcher.tuils.Tuils;
 
 /**
@@ -192,12 +192,7 @@ public class TuixtActivity extends Activity {
         pack = new TuixtPack(group, file, this, fileView);
 
         fileView.setText(getString(R.string.tuixt_reading) + Tuils.SPACE + path);
-        new StoppableThread() {
-
-            @Override
-            public void run() {
-                super.run();
-
+        bhupendra.ai.launcher.tuils.LauncherExecutors.bgExecutor.execute(() -> {
                 try {
                     BufferedReader reader = new BufferedReader(new FileReader(file));
 
@@ -230,8 +225,7 @@ public class TuixtActivity extends Activity {
                         Toast.makeText(TuixtActivity.this, R.string.tuixt_error, Toast.LENGTH_LONG).show();
                     });
                 }
-            }
-        }.start();
+        });
 
         SharedPreferences preferences = getPreferences(0);
         boolean firstAccess = preferences.getBoolean(FIRSTACCESS_KEY, true);

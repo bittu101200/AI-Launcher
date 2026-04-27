@@ -27,7 +27,7 @@ import java.util.List;
 
 import bhupendra.ai.launcher.managers.xml.XMLPrefsManager;
 import bhupendra.ai.launcher.managers.xml.options.Behavior;
-import bhupendra.ai.launcher.tuils.StoppableThread;
+
 import bhupendra.ai.launcher.tuils.Tuils;
 
 /**
@@ -177,9 +177,7 @@ public class MusicManager2 implements MediaController.MediaPlayerControl {
     }
 
     public void updateSongs() {
-        loader = new StoppableThread() {
-            @Override
-            public void run() {
+        bhupendra.ai.launcher.tuils.LauncherExecutors.bgExecutor.execute(() -> {
                 try {
                     if(songs == null) songs = new ArrayList<>();
                     else songs.clear();
@@ -219,9 +217,7 @@ public class MusicManager2 implements MediaController.MediaPlayerControl {
                 synchronized (songs) {
                     songs.notify();
                 }
-            }
-        };
-        loader.start();
+        });
     }
 
     private ServiceConnection musicConnection = new ServiceConnection(){

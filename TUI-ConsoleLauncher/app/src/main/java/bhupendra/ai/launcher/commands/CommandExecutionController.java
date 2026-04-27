@@ -27,7 +27,7 @@ import bhupendra.ai.launcher.managers.xml.XMLPrefsManager;
 import bhupendra.ai.launcher.managers.xml.options.Behavior;
 import bhupendra.ai.launcher.managers.xml.options.Theme;
 import bhupendra.ai.launcher.tuils.BeepPlayer;
-import bhupendra.ai.launcher.tuils.StoppableThread;
+
 import bhupendra.ai.launcher.tuils.Tuils;
 import bhupendra.ai.launcher.tuils.libsuperuser.Shell;
 import bhupendra.ai.launcher.managers.TextProcessor;
@@ -362,9 +362,8 @@ public class CommandExecutionController {
                 }
             }
 
-            new StoppableThread() {
-                @Override
-                public void run() {
+            bhupendra.ai.launcher.tuils.LauncherExecutors.commandExecutor.execute(() -> {
+                try {
                     Shell.Interactive interactive = bhupendra.ai.launcher.MainManager.interactive;
                     if (interactive == null) return;
                     
@@ -379,8 +378,11 @@ public class CommandExecutionController {
                     if (mainPack.aiSubsystem == null || !mainPack.aiSubsystem.isInFlight()) {
                         logCommandFinished(requestId);
                     }
+                } catch (Exception e) {
+                    Tuils.log(e);
+                    bhupendra.ai.launcher.managers.FileSystemManager.toFile(e);
                 }
-            }.start();
+            });
 
             return true;
         }
@@ -402,11 +404,7 @@ public class CommandExecutionController {
 
             mainPack.lastCommand = input;
 
-            new StoppableThread() {
-                @Override
-                public void run() {
-                    super.run();
-
+            bhupendra.ai.launcher.tuils.LauncherExecutors.commandExecutor.execute(() -> {
                     try {
                         String output = command.exec(info);
                         if(output != null) {
@@ -421,8 +419,7 @@ public class CommandExecutionController {
                         Tuils.sendOutput(mContext, Tuils.getStackTrace(e));
                         Tuils.log(e);
                     }
-                }
-            }.start();
+            });
 
             return true;
         }

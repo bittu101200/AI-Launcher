@@ -52,9 +52,7 @@ public final class BeepPlayer {
             alertGeneration = generation;
         }
 
-        Thread player = new Thread(new Runnable() {
-            @Override
-            public void run() {
+        bhupendra.ai.launcher.tuils.LauncherExecutors.bgExecutor.execute(() -> {
                 long startedAt = System.currentTimeMillis();
                 VolumeOverride volumeOverride = VolumeOverride.acquire(appContext, safeOptions.forceAudible);
                 try {
@@ -67,15 +65,15 @@ public final class BeepPlayer {
                         if (!safeOptions.repeatUntilAcknowledged) {
                             break;
                         }
-                        sleep(safeOptions.gapMs);
+                        try {
+                            Thread.sleep(safeOptions.gapMs);
+                        } catch (InterruptedException e) {}
                     } while (isCurrent(alertGeneration)
                             && System.currentTimeMillis() - startedAt < safeOptions.maxTotalMs);
                 } finally {
                     volumeOverride.restore();
                 }
-            }
-        }, safeOptions.repeatUntilAcknowledged ? "BeepPlayerUrgent" : "BeepPlayer");
-        player.start();
+        });
     }
 
     public static void stopRepeatingAlert() {

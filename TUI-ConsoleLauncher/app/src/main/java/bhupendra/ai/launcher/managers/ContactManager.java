@@ -23,7 +23,7 @@ import java.util.List;
 import it.andreuzzi.comparestring2.StringableObject;
 import bhupendra.ai.launcher.BuildConfig;
 import bhupendra.ai.launcher.LauncherActivity;
-import bhupendra.ai.launcher.tuils.StoppableThread;
+
 import bhupendra.ai.launcher.tuils.Tuils;
 
 public class ContactManager {
@@ -67,11 +67,7 @@ public class ContactManager {
             return;
         }
 
-        new StoppableThread() {
-            @Override
-            public void run() {
-                super.run();
-
+        bhupendra.ai.launcher.tuils.LauncherExecutors.bgExecutor.execute(() -> {
                 if(contacts == null) {
                     contacts = new ArrayList<>();
                 } else {
@@ -139,8 +135,7 @@ public class ContactManager {
                 }
 
                 Collections.sort(contacts);
-            }
-        }.start();
+        });
     }
 
     public List<String> listNames() {

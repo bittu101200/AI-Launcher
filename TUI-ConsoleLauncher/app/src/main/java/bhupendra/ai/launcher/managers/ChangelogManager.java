@@ -48,11 +48,7 @@ public class ChangelogManager {
         final String changelogUrl = url;
 
         if(force || !preferences.getBoolean(changelogUrl, false)) {
-            new Thread() {
-                @Override
-                public void run() {
-                    super.run();
-
+            bhupendra.ai.launcher.tuils.LauncherExecutors.bgExecutor.execute(() -> {
                     if (!DeviceStateManager.hasInternetAccess()) {
                         if(force) Tuils.sendOutput(context, R.string.no_internet);
                         return;
@@ -96,8 +92,7 @@ public class ChangelogManager {
                         Tuils.sendOutput(context, e.toString());
                         Tuils.log(e);
                     }
-                }
-            }.start();
+            });
         }
     }
 }

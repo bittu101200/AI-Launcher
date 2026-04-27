@@ -58,6 +58,9 @@ public class AISubsystem {
     private volatile Runnable pendingDeclineAction;
     private volatile ChoiceCallback pendingChoiceCallback;
 
+    private String cachedSystemPrompt;
+    private List<Tool> cachedTools;
+
     public interface AIListener {
         void onAIStateChanged(boolean running);
     }
@@ -385,6 +388,8 @@ public class AISubsystem {
         this.provider = buildProvider(providerName);
         requestManager.setProvider(this.provider);
         automationRequestManager.setProvider(this.provider);
+        cachedSystemPrompt = null;
+        cachedTools = null;
     }
 
     public void confirmCurrentTool() {
@@ -475,11 +480,12 @@ public class AISubsystem {
     public String submitAutomation(String userMessage, AICallback callback) {
         String requestId = UUID.randomUUID().toString();
         automationConversationManager.append(ConversationTurn.user(userMessage));
+        if (cachedTools == null) cachedTools = toolRegistry.getTools();
         AIRequest request = new AIRequest.Builder()
             .requestId(requestId)
             .userMessage(userMessage)
             .history(automationConversationManager.getHistory())
-            .tools(toolRegistry.getTools())
+            .tools(cachedTools)
             .systemPrompt(getSystemPrompt())
             .maxTokens(2048)
             .build();
@@ -580,11 +586,12 @@ public class AISubsystem {
         lastRequestId.set(requestId);
         conversationManager.append(ConversationTurn.user(userMessage));
         notifyListeners(true);
+        if (cachedTools == null) cachedTools = toolRegistry.getTools();
         AIRequest request = new AIRequest.Builder()
             .requestId(requestId)
             .userMessage(userMessage)
             .history(conversationManager.getHistory())
-            .tools(toolRegistry.getTools())
+            .tools(cachedTools)
             .systemPrompt(getSystemPrompt())
             .maxTokens(2048)
             .build();
@@ -606,63 +613,67 @@ public class AISubsystem {
     }
 
     private String getSystemPrompt() {
-        String bundledPrompt = "";
-        String localPrompt = "";
-        java.io.File promptFile = new java.io.File(FileSystemManager.getFolder(), "ai_system_prompt.md");
-        try {
-            if (appContext != null) {
-                java.io.InputStream in = appContext.getAssets().open("ai_system_prompt.md");
-                bundledPrompt = FileSystemManager.inputStreamToString(in);
-            }
-        } catch (Exception e) {}
-        try {
-            if (promptFile.exists()) {
-                java.io.BufferedReader reader = new java.io.BufferedReader(new java.io.FileReader(promptFile));
-                StringBuilder sb = new StringBuilder();
-                String line;
-                while ((line = reader.readLine()) != null) sb.append(line).append("\n");
-                reader.close();
-                localPrompt = sb.toString();
-            }
-        } catch (Exception e) {}
-
-        String basePrompt = bundledPrompt;
-        if (basePrompt.isEmpty()) {
-            basePrompt = localPrompt;
-        } else if (!localPrompt.isEmpty()) {
-            basePrompt = basePrompt + "\nLOCAL PROMPT OVERRIDES:\n" + localPrompt;
-        }
-
-        if (basePrompt.isEmpty() && appContext != null) {
+        if (cachedSystemPrompt == null) {
+            String bundledPrompt = "";
+            String localPrompt = "";
+            java.io.File promptFile = new java.io.File(FileSystemManager.getFolder(), "ai_system_prompt.md");
             try {
-                java.io.InputStream in = appContext.getAssets().open("ai_system_prompt.md");
-                basePrompt = FileSystemManager.inputStreamToString(in);
-            } catch (Exception ignored) {}
-        }
-        if (basePrompt.isEmpty()) basePrompt = "You are an AI assistant.";
-
-        StringBuilder cmds = new StringBuilder();
-        if (mainPack != null && mainPack.commandGroup != null) {
-            for (String n : mainPack.commandGroup.getCommandNames()) cmds.append(n).append(", ");
-        }
-        basePrompt = basePrompt.replace("{{AVAILABLE_COMMANDS}}", cmds.toString());
-
-        String pulseContent = "";
-        if (appContext != null) {
-            StringBuilder pulse = new StringBuilder();
-            pulse.append("Time: ").append(new SimpleDateFormat("HH:mm", Locale.getDefault()).format(new Date())).append("\n");
+                if (appContext != null) {
+                    java.io.InputStream in = appContext.getAssets().open("ai_system_prompt.md");
+                    bundledPrompt = FileSystemManager.inputStreamToString(in);
+                }
+            } catch (Exception e) {}
             try {
-                int battery = DeviceStateManager.getBatteryLevel(appContext);
-                pulse.append("Battery: ").append(battery).append("%\n");
-                
-                ActivityManager am = (ActivityManager) appContext.getSystemService(Context.ACTIVITY_SERVICE);
-                ActivityManager.MemoryInfo mi = new ActivityManager.MemoryInfo();
-                am.getMemoryInfo(mi);
-                pulse.append("Memory: ").append(mi.availMem / (1024*1024)).append("MB free\n");
-            } catch (Exception ignored) {}
-            pulseContent = pulse.toString();
+                if (promptFile.exists()) {
+                    java.io.BufferedReader reader = new java.io.BufferedReader(new java.io.FileReader(promptFile));
+                    StringBuilder sb = new StringBuilder();
+                    String line;
+                    while ((line = reader.readLine()) != null) sb.append(line).append("\n");
+                    reader.close();
+                    localPrompt = sb.toString();
+                }
+            } catch (Exception e) {}
+
+            String basePrompt = bundledPrompt;
+            if (basePrompt.isEmpty()) {
+                basePrompt = localPrompt;
+            } else if (!localPrompt.isEmpty()) {
+                basePrompt = basePrompt + "\nLOCAL PROMPT OVERRIDES:\n" + localPrompt;
+            }
+
+            if (basePrompt.isEmpty() && appContext != null) {
+                try {
+                    java.io.InputStream in = appContext.getAssets().open("ai_system_prompt.md");
+                    basePrompt = FileSystemManager.inputStreamToString(in);
+                } catch (Exception ignored) {}
+            }
+            if (basePrompt.isEmpty()) basePrompt = "You are an AI assistant.";
+
+            StringBuilder cmds = new StringBuilder();
+            if (mainPack != null && mainPack.commandGroup != null) {
+                for (String n : mainPack.commandGroup.getCommandNames()) cmds.append(n).append(", ");
+            }
+            cachedSystemPrompt = basePrompt.replace("{{AVAILABLE_COMMANDS}}", cmds.toString());
         }
-        return basePrompt.replace("{{SYSTEM_PULSE}}", pulseContent) + PROMPT_APPENDIX;
+
+        String pulseContent = getPulseContent();
+        return cachedSystemPrompt.replace("{{SYSTEM_PULSE}}", pulseContent) + PROMPT_APPENDIX;
+    }
+
+    private String getPulseContent() {
+        if (appContext == null) return "";
+        StringBuilder pulse = new StringBuilder();
+        pulse.append("Time: ").append(new SimpleDateFormat("HH:mm", Locale.getDefault()).format(new Date())).append("\n");
+        try {
+            int battery = DeviceStateManager.getBatteryLevel(appContext);
+            pulse.append("Battery: ").append(battery).append("%\n");
+            
+            ActivityManager am = (ActivityManager) appContext.getSystemService(Context.ACTIVITY_SERVICE);
+            ActivityManager.MemoryInfo mi = new ActivityManager.MemoryInfo();
+            am.getMemoryInfo(mi);
+            pulse.append("Memory: ").append(mi.availMem / (1024*1024)).append("MB free\n");
+        } catch (Exception ignored) {}
+        return pulse.toString();
     }
 
     private void beginToolExecution(final String requestId, List<ToolCall> toolCalls, final AICallback callback) {

@@ -82,11 +82,7 @@ public class ThemeManager {
     }
 
     public void apply(final String themeName) {
-        new Thread() {
-            @Override
-            public void run() {
-                super.run();
-
+        bhupendra.ai.launcher.tuils.LauncherExecutors.bgExecutor.execute(() -> {
                 if(!DeviceStateManager.hasInternetAccess()) {
                     Tuils.sendOutput(Color.RED, context, R.string.no_internet);
                     return;
@@ -130,8 +126,7 @@ public class ThemeManager {
                         return;
                     }
                 }
-            }
-        }.start();
+        });
     }
 
     public void apply(File zip) {

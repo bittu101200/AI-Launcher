@@ -370,11 +370,7 @@ public class HTMLExtractManager {
     Pattern weatherFormatPattern = Pattern.compile("%([a-z_]+)(\\d)*(?:\\$\\(([\\.\\+\\-\\*\\/\\^\\d]+)\\))?");
 
     private void query(final Context context, final String path, final StoreableValue.Type pathType, final String format, final String url, final boolean weatherArea) {
-        new Thread() {
-            @Override
-            public void run() {
-                super.run();
-
+        bhupendra.ai.launcher.tuils.LauncherExecutors.bgExecutor.execute(() -> {
                 if (!DeviceStateManager.hasInternetAccess()) {
                     output(R.string.no_internet, context, weatherArea);
                     return;
@@ -537,8 +533,7 @@ public class HTMLExtractManager {
                     FileSystemManager.toFile(e);
                     Tuils.log(e);
                 }
-            }
-        }.start();
+        });
     }
 
     private void query(final Context context, final String format, final String url) {

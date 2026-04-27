@@ -13,7 +13,7 @@ import bhupendra.ai.launcher.commands.ExecutePack;
 import bhupendra.ai.launcher.commands.main.MainPack;
 import bhupendra.ai.launcher.managers.xml.XMLPrefsManager;
 import bhupendra.ai.launcher.managers.xml.options.Behavior;
-import bhupendra.ai.launcher.tuils.StoppableThread;
+
 
 /**
  * Created by francescoandreuzzi on 26/07/2017.
@@ -23,11 +23,7 @@ public class ctrlc implements CommandAbstraction {
 
     @Override
     public String exec(final ExecutePack pack) throws Exception {
-        new StoppableThread() {
-            @Override
-            public void run() {
-                super.run();
-
+        bhupendra.ai.launcher.tuils.LauncherExecutors.commandExecutor.execute(() -> {
                 MainManager.interactive.kill();
                 MainManager.interactive.close();
                 MainManager.interactive = null;
@@ -36,8 +32,7 @@ public class ctrlc implements CommandAbstraction {
 
                 pack.setCurrentDirectory(XMLPrefsManager.get(File.class, Behavior.home_path));
                 LocalBroadcastManager.getInstance(pack.getContext().getApplicationContext()).sendBroadcast(new Intent(UIManager.ACTION_UPDATE_HINT));
-            }
-        }.start();
+        });
 
         LocalBroadcastManager.getInstance(pack.getContext().getApplicationContext()).sendBroadcast(new Intent(UIManager.ACTION_NOROOT));
 

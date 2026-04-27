@@ -59,7 +59,7 @@ import bhupendra.ai.launcher.managers.xml.options.Apps;
 import bhupendra.ai.launcher.managers.xml.options.Behavior;
 import bhupendra.ai.launcher.managers.xml.options.Theme;
 import bhupendra.ai.launcher.managers.xml.options.Ui;
-import bhupendra.ai.launcher.tuils.StoppableThread;
+
 import bhupendra.ai.launcher.tuils.Tuils;
 
 import static bhupendra.ai.launcher.managers.xml.XMLPrefsManager.VALUE_ATTRIBUTE;
@@ -162,15 +162,10 @@ public class AppsManager implements XMLPrefsElement {
 
         initAppListener(context);
 
-        new StoppableThread() {
-            @Override
-            public void run() {
-                super.run();
-
+        bhupendra.ai.launcher.tuils.LauncherExecutors.bgExecutor.execute(() -> {
                 fill();
                 LocalBroadcastManager.getInstance(context.getApplicationContext()).sendBroadcast(new Intent(UIManager.ACTION_UPDATE_SUGGESTIONS));
-            }
-        }.start();
+        });
     }
 
     private void initAppListener(Context c) {
@@ -249,11 +244,7 @@ public class AppsManager implements XMLPrefsElement {
                                     continue;
                                 }
 
-                                new StoppableThread() {
-                                    @Override
-                                    public void run() {
-                                        super.run();
-
+                                bhupendra.ai.launcher.tuils.LauncherExecutors.bgExecutor.execute(() -> {
                                         Group g = new Group(name);
 
                                         String apps = e.getAttribute(APPS_ATTRIBUTE);
@@ -278,7 +269,7 @@ public class AppsManager implements XMLPrefsElement {
                                             if(c.length() > 0) {
                                                 try {
                                                     g.setBgColor(Color.parseColor(c));
-                                                } catch (Exception e) {
+                                                } catch (Exception e1) {
                                                     Tuils.sendOutput(Color.RED, context, PATH + ": " + context.getString(R.string.output_invalidcolor) + ": " + c);
                                                 }
                                             }
@@ -289,15 +280,14 @@ public class AppsManager implements XMLPrefsElement {
                                             if(c.length() > 0) {
                                                 try {
                                                     g.setForeColor(Color.parseColor(c));
-                                                } catch (Exception e) {
+                                                } catch (Exception e1) {
                                                     Tuils.sendOutput(Color.RED, context, PATH + ": " + context.getString(R.string.output_invalidcolor) + ": " + c);
                                                 }
                                             }
                                         }
 
                                         groups.add(g);
-                                    }
-                                }.start();
+                                });
                             } else {
                                 boolean shown = !e.hasAttribute(SHOW_ATTRIBUTE) || Boolean.parseBoolean(e.getAttribute(SHOW_ATTRIBUTE));
                                 if (!shown) {
@@ -551,15 +541,10 @@ public class AppsManager implements XMLPrefsElement {
 
     public Intent getIntent(final LaunchInfo info) {
         info.launchedTimes++;
-        new StoppableThread() {
-            @Override
-            public void run() {
-                super.run();
-
+        bhupendra.ai.launcher.tuils.LauncherExecutors.bgExecutor.execute(() -> {
                 appsHolder.requestSuggestionUpdate(info);
                 writeLaunchTimes(info);
-            }
-        }.start();
+        });
 
        return new Intent(Intent.ACTION_MAIN)
                 .addCategory(Intent.CATEGORY_LAUNCHER)

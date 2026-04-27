@@ -49,7 +49,7 @@ import bhupendra.ai.launcher.managers.xml.options.Theme;
 import bhupendra.ai.launcher.tuils.BeepPlayer;
 import bhupendra.ai.launcher.tuils.TermuxManager;
 import bhupendra.ai.launcher.tuils.PrivateIOReceiver;
-import bhupendra.ai.launcher.tuils.StoppableThread;
+
 import bhupendra.ai.launcher.tuils.Tuils;
 import bhupendra.ai.launcher.tuils.interfaces.CommandExecuter;
 import bhupendra.ai.launcher.tuils.interfaces.OnRedirectionListener;
@@ -288,11 +288,7 @@ public class MainManager {
             platformReceiverRegistered = false;
         }
 
-        new StoppableThread() {
-            @Override
-            public void run() {
-                super.run();
-
+        bhupendra.ai.launcher.tuils.LauncherExecutors.bgExecutor.execute(() -> {
                 try {
                     interactive.kill();
                     interactive.close();
@@ -300,8 +296,7 @@ public class MainManager {
                     Tuils.log(e);
                     FileSystemManager.toFile(e);
                 }
-            }
-        }.start();
+        });
     }
 
     public void setAISubsystem(bhupendra.ai.launcher.ai.AISubsystem ai) {

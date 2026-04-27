@@ -40,7 +40,7 @@ import bhupendra.ai.launcher.managers.notifications.reply.ReplyManager;
 import bhupendra.ai.launcher.managers.xml.XMLPrefsManager;
 import bhupendra.ai.launcher.managers.xml.options.Behavior;
 import bhupendra.ai.launcher.managers.xml.options.Notifications;
-import bhupendra.ai.launcher.tuils.StoppableThread;
+
 import bhupendra.ai.launcher.tuils.Tuils;
 
 
@@ -79,7 +79,7 @@ public class NotificationService extends NotificationListenerService {
 
     private final Pattern formatPattern = Pattern.compile("%(?:\\[(\\d+)\\])?(?:\\[([^]]+)\\])?(?:(?:\\{)([a-zA-Z\\.\\:\\s]+)(?:\\})|([a-zA-Z\\.\\:]+))");
 
-    StoppableThread bgThread;
+
 
     @Override
     public void onCreate() {
@@ -104,15 +104,11 @@ public class NotificationService extends NotificationListenerService {
             replyManager = null;
         }
 
-        bgThread = new StoppableThread() {
-            @Override
-            public void run() {
-                super.run();
-
+        bhupendra.ai.launcher.tuils.LauncherExecutors.notificationExecutor.execute(() -> {
                 if(!enabled) return;
 
                 while(true) {
-                    if(isInterrupted()) return;
+                    if(Thread.currentThread().isInterrupted()) return;
 
                     StatusBarNotification sbn = null;
                     try {
@@ -122,21 +118,13 @@ public class NotificationService extends NotificationListenerService {
                     }
 
                     if(sbn == null) continue;
-                    if(isInterrupted()) return;
+                    if(Thread.currentThread().isInterrupted()) return;
 
                     do {
                         StatusBarNotification displaySbn = pickDisplayNotification(sbn);
                         android.app.Notification notification = displaySbn.getNotification();
                         if (notification == null) {
                             continue;
-                        }
-
-                        NotificationHookManager.getInstance(NotificationService.this).processNotification(sbn);
-
-                        bhupendra.ai.launcher.ai.AISubsystem ai =
-                            bhupendra.ai.launcher.ai.AISubsystem.getInstance();
-                        if (ai != null && ai.getJourneyManager().isJourneyNotification(notification)) {
-                            ai.getJourneyManager().processNotification(sbn);
                         }
 
                         String pack = displaySbn.getPackageName();
@@ -149,8 +137,6 @@ public class NotificationService extends NotificationListenerService {
                             continue;
                         }
 
-                        String appName = resolveAppName(pack);
-
                         NotificationManager.NotificatedApp nApp = notificationManager.getAppState(pack);
                         if ((nApp != null && !nApp.enabled)) {
                             continue;
@@ -159,6 +145,16 @@ public class NotificationService extends NotificationListenerService {
                         if (nApp == null && !notificationManager.default_app_state) {
                             continue;
                         }
+
+                        NotificationHookManager.getInstance(NotificationService.this).processNotification(sbn);
+
+                        bhupendra.ai.launcher.ai.AISubsystem ai =
+                            bhupendra.ai.launcher.ai.AISubsystem.getInstance();
+                        if (ai != null && ai.getJourneyManager().isJourneyNotification(notification)) {
+                            ai.getJourneyManager().processNotification(sbn);
+                        }
+
+                        String appName = resolveAppName(pack);
 
                         String f;
                         if(nApp != null && nApp.format != null) f = nApp.format;
@@ -301,10 +297,9 @@ public class NotificationService extends NotificationListenerService {
                         }
 
                         if(replyManager != null) replyManager.onNotification(sbn, s, resolvedContent.title);
-                    } while ((sbn = queue.poll()) != null && !isInterrupted());
+                    } while ((sbn = queue.poll()) != null && !Thread.currentThread().isInterrupted());
                 }
-            }
-        };
+        });
 
         manager = getPackageManager();
         enabled = XMLPrefsManager.getBoolean(Notifications.show_notifications) || XMLPrefsManager.get(Notifications.show_notifications).equalsIgnoreCase("enabled");
@@ -335,7 +330,7 @@ public class NotificationService extends NotificationListenerService {
         maxOptionalDepth = XMLPrefsManager.getInt(Behavior.max_optional_depth);
 
         queue = new ArrayBlockingQueue<>(QUEUE_CAPACITY);
-        bgThread.start();
+
 
         active = true;
     }
@@ -365,8 +360,7 @@ public class NotificationService extends NotificationListenerService {
 
         notificationDisplayManager = null;
 
-        bgThread.interrupt();
-        bgThread = null;
+
 
         if(queue != null) {
             queue.clear();
