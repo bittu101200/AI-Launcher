@@ -2,7 +2,7 @@
 
 > My attempt at building a truly agentic operating system — starting with the home screen.
 
-I'm a first-year BCA student and this is probably the most ambitious thing I've ever built. The idea is simple but kind of wild: what if your phone's home screen *understood* you? Not just responded to taps, but actually reasoned about what you want, used tools to get things done, and felt more like a thinking layer on top of Android than a grid of icons.
+The idea is simple but kind of wild: what if your phone's home screen *understood* you? Not just responded to taps, but actually reasoned about what you want, used tools to get things done, and felt more like a thinking layer on top of Android than a grid of icons.
 
 This is that experiment. It's a terminal-style Android launcher where an AI agent lives at the command line — and can actually *do* things: launch apps, toggle settings, read your notifications, send messages, search the web, run shell commands. It's not a chatbot wrapper. It's trying to be something closer to an OS shell with a brain.
 
