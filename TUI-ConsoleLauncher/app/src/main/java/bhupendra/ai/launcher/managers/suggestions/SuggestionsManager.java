@@ -924,15 +924,19 @@ public class SuggestionsManager {
             return;
         }
 
+        List<String> rankedParams = rankParams(pack, cmd, params);
+
         if(lastWord == null || lastWord.length() == 0) {
-            for (String s : cmd.params()) {
+            int rankScore = rankedParams.size();
+            for (String s : rankedParams) {
                 Param p = cmd.getParam(pack, s).getValue();
                 if(p == null) continue;
 
-                suggestions.add(new Suggestion(beforeLastSpace , s, p.args().length == 0 && clickToLaunch, 0));
+                suggestions.add(new Suggestion(beforeLastSpace , s, p.args().length == 0 && clickToLaunch, 0)
+                        .withScore(rankScore--));
             }
         } else {
-            for (String s : cmd.params()) {
+            for (String s : rankedParams) {
                 Param p = cmd.getParam(pack, s).getValue();
                 if(p == null) continue;
 
@@ -945,6 +949,26 @@ public class SuggestionsManager {
                 }
             }
         }
+    }
+
+    private List<String> rankParams(MainPack pack, ParamCommand cmd, String[] params) {
+        List<String> ranked = new ArrayList<>(Arrays.asList(params));
+        final String commandName = cmd.getClass().getSimpleName();
+        final java.util.HashMap<String, Integer> order = new java.util.HashMap<>();
+        for (int i = 0; i < params.length; i++) {
+            order.put(params[i], i);
+        }
+        Collections.sort(ranked, (lhs, rhs) -> {
+            int lhsScore = pack.cmdPrefs.getParamUsageScore(commandName, lhs);
+            int rhsScore = pack.cmdPrefs.getParamUsageScore(commandName, rhs);
+            int byScore = rhsScore - lhsScore;
+            if (byScore != 0) return byScore;
+            Integer lhsOrder = order.get(lhs);
+            Integer rhsOrder = order.get(rhs);
+            if (lhsOrder != null && rhsOrder != null) return lhsOrder - rhsOrder;
+            return lhs.compareToIgnoreCase(rhs);
+        });
+        return ranked;
     }
 
     private void suggestArgs(MainPack info, int type, List<Suggestion> suggestions, String afterLastSpace, String beforeLastSpace, boolean canExec) {

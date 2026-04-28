@@ -49,8 +49,8 @@ import bhupendra.ai.launcher.managers.PermissionManager;
 import bhupendra.ai.launcher.managers.TerminalManager;
 import bhupendra.ai.launcher.managers.TimeManager;
 import bhupendra.ai.launcher.managers.TuiLocationManager;
-import bhupendra.ai.launcher.managers.notifications.KeeperService;
 import bhupendra.ai.launcher.managers.notifications.NotificationManager;
+import bhupendra.ai.launcher.managers.notifications.KeeperService;
 import bhupendra.ai.launcher.managers.notifications.NotificationService;
 import bhupendra.ai.launcher.managers.suggestions.SuggestionsManager;
 import bhupendra.ai.launcher.managers.xml.XMLPrefsManager;
@@ -292,17 +292,6 @@ public class LauncherActivity extends AppCompatActivity implements Reloadable {
 
         backButtonEnabled = XMLPrefsManager.getBoolean(Behavior.back_button_enabled);
 
-        boolean showNotification = XMLPrefsManager.getBoolean(Behavior.tui_notification);
-        Intent keeperIntent = new Intent(this, KeeperService.class);
-        if (showNotification) {
-            keeperIntent.putExtra(KeeperService.PATH_KEY, XMLPrefsManager.get(Behavior.home_path));
-            startForegroundService(keeperIntent);
-        } else {
-            try {
-                stopService(keeperIntent);
-            } catch (Exception e) {}
-        }
-
         boolean fullscreen = XMLPrefsManager.getBoolean(Ui.fullscreen);
         if(fullscreen) {
             requestWindowFeature(Window.FEATURE_NO_TITLE);
@@ -321,6 +310,10 @@ public class LauncherActivity extends AppCompatActivity implements Reloadable {
         } catch (Exception e) {
             FileSystemManager.toFile(e);
         }
+
+        Intent keeperIntent = new Intent(this, KeeperService.class);
+        keeperIntent.putExtra(KeeperService.PATH_KEY, XMLPrefsManager.get(Behavior.home_path));
+        startForegroundService(keeperIntent);
 
         boolean notifications = XMLPrefsManager.getBoolean(Notifications.show_notifications) || XMLPrefsManager.get(Notifications.show_notifications).equalsIgnoreCase("enabled");
         if(notifications) {

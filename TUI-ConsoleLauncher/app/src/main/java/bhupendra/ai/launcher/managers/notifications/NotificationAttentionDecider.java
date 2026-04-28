@@ -209,7 +209,7 @@ public class NotificationAttentionDecider {
             return false;
         }
 
-        return !isLowSignal(candidate, title, text);
+        return true;
     }
 
     private boolean shouldDisplayMessaging(Candidate candidate, String title, String text) {

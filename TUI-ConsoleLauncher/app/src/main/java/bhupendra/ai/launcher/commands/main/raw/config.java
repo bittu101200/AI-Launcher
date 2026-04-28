@@ -39,7 +39,7 @@ import static bhupendra.ai.launcher.UIManager.PREFS_NAME;
 
 import bhupendra.ai.launcher.commands.CommandMetadata;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -52,12 +52,13 @@ public class config extends ParamCommand {
     @Override
     public CommandMetadata getMetadata(Context context) {
         String description = "Configure T-UI settings, colors, and behavior.";
-        Map<String, String> flags = new HashMap<>();
+        Map<String, String> flags = new LinkedHashMap<>();
         flags.put("-set", "Set the value of a configuration option.");
-        flags.put("-file", "Open a configuration file for editing.");
-        flags.put("-append", "Append a value to a configuration option.");
-        flags.put("-erase", "Clear the value of a configuration option.");
         flags.put("-get", "Get the current value of a configuration option.");
+        flags.put("-info", "Show information about a configuration option.");
+        flags.put("-erase", "Clear the value of a configuration option.");
+        flags.put("-append", "Append a value to a configuration option.");
+        flags.put("-file", "Open a configuration file for editing.");
         flags.put("-ls", "List available configuration files or options.");
         flags.put("-fontsize", "Change the global font size.");
         flags.put("-reset", "Reset a configuration option to its default value.");
@@ -439,7 +440,19 @@ public class config extends ParamCommand {
 
     @Override
     public String[] params() {
-        return Param.labels();
+        return new String[] {
+            Param.set.label(),
+            Param.get.label(),
+            Param.info.label(),
+            Param.erase.label(),
+            Param.append.label(),
+            Param.file.label(),
+            Param.ls.label(),
+            Param.fontsize.label(),
+            Param.reset.label(),
+            Param.apply.label(),
+            Param.tutorial.label()
+        };
     }
 
     @Override

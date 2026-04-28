@@ -18,6 +18,7 @@ public class CommandsPreferences {
     public static final String PRIORITY_SUFFIX = "_priority";
     private static final String USAGE_PREFS = "command_usage";
     private static final String USAGE_SUFFIX = "_usage";
+    private static final String PARAM_USAGE_SUFFIX = "_param_usage";
 
     private HashMap<String, String> preferenceHashMap;
     private final SharedPreferences usagePreferences;
@@ -72,6 +73,23 @@ public class CommandsPreferences {
     public void recordUsage(String commandName) {
         if (commandName == null || commandName.length() == 0) return;
         String key = commandName + USAGE_SUFFIX;
+        int current = usagePreferences.getInt(key, 0);
+        usagePreferences.edit().putInt(key, current + 1).apply();
+    }
+
+    public int getParamUsageCount(String commandName, String paramName) {
+        if (commandName == null || commandName.length() == 0 || paramName == null || paramName.length() == 0) return 0;
+        return usagePreferences.getInt(commandName + ":" + paramName + PARAM_USAGE_SUFFIX, 0);
+    }
+
+    public int getParamUsageScore(String commandName, String paramName) {
+        int usage = getParamUsageCount(commandName, paramName);
+        return usage * 1000;
+    }
+
+    public void recordParamUsage(String commandName, String paramName) {
+        if (commandName == null || commandName.length() == 0 || paramName == null || paramName.length() == 0) return;
+        String key = commandName + ":" + paramName + PARAM_USAGE_SUFFIX;
         int current = usagePreferences.getInt(key, 0);
         usagePreferences.edit().putInt(key, current + 1).apply();
     }

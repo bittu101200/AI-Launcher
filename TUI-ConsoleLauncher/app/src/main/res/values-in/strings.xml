@@ -215,6 +215,7 @@
     <string name="output_restore_success">Cadangan berhasil dipulihkan. Memulai ulang...</string>
     <string name="restore_hint">Pilih nomor cadangan atau masukkan jalur</string>
     <string name="help_restore">Pulihkan konfigurasi dari cadangan di Downloads/TUI_Backup</string>
+    <string name="help_speedtest">Jalankan tes kecepatan internet dan tampilkan latensi, unduhan, dan unggahan</string>
 
 
     <string name="help_airplane">Alihkan mode pesawat</string>

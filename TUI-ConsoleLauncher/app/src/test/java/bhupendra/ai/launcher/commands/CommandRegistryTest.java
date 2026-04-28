@@ -20,7 +20,7 @@ public class CommandRegistryTest {
             "htmlextract", "integrate", "kill", "location", "music", "notes",
             "notifications", "open", "pin", "rate", "refresh", "regex", "reply",
             "requirements", "restart", "restore", "rss", "search", "share", "shortcut",
-            "sms", "status", "termux", "theme", "time", "timer", "tui", "tuiweather",
+            "sms", "speedtest", "status", "termux", "theme", "time", "timer", "tui", "tuiweather",
             "tuixt", "tutorial", "uninstall", "username", "vibrate", "volume", "wifi"
         ));
 

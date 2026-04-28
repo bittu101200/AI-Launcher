@@ -151,7 +151,7 @@ public class KeeperService extends Service {
     }
 
     public static Notification buildNotification(Context c, String title, String subtitle, String cmdLabel, String clickCmd, boolean showHome, CharSequence[] lastCommands, boolean upDown, int priority) {
-        if(priority < -2 || priority > 2) priority = NotificationCompat.PRIORITY_DEFAULT;
+        if(priority < -2 || priority > 2) priority = NotificationCompat.PRIORITY_LOW;
 
         PendingIntent pendingIntent;
         if(showHome) {
@@ -185,8 +185,7 @@ public class KeeperService extends Service {
             pendingIntent = null;
         }
 
-        int oPriority = Tuils.scale(new int[] {0, 4}, new int[] {2,4}, priority + 2);
-        if(oPriority < 2 || oPriority > 4) oPriority = NotificationManager.IMPORTANCE_UNSPECIFIED;
+        int oPriority = NotificationManager.IMPORTANCE_LOW;
 
         NotificationChannel notificationChannel = new NotificationChannel(BuildConfig.APPLICATION_ID, c.getString(R.string.app_name), oPriority);
         ((NotificationManager) c.getSystemService(Context.NOTIFICATION_SERVICE)).createNotificationChannel(notificationChannel);
@@ -195,7 +194,11 @@ public class KeeperService extends Service {
                 .setSmallIcon(R.mipmap.ic_launcher)
                     .setTicker(c.getString(R.string.start_notification))
                     .setWhen(System.currentTimeMillis())
-                    .setPriority(priority)
+                    .setPriority(NotificationCompat.PRIORITY_LOW)
+                    .setSilent(true)
+                    .setOnlyAlertOnce(true)
+                    .setCategory(Notification.CATEGORY_SERVICE)
+                    .setDefaults(0)
                     .setContentTitle(title)
                     .setContentIntent(pendingIntent);
 

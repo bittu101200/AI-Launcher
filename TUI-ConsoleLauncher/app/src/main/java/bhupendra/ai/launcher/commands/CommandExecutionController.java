@@ -22,7 +22,6 @@ import bhupendra.ai.launcher.managers.AppsManager;
 import bhupendra.ai.launcher.managers.TerminalManager;
 import bhupendra.ai.launcher.managers.TimeManager;
 import bhupendra.ai.launcher.managers.music.MusicService;
-import bhupendra.ai.launcher.managers.notifications.KeeperService;
 import bhupendra.ai.launcher.managers.xml.XMLPrefsManager;
 import bhupendra.ai.launcher.managers.xml.options.Behavior;
 import bhupendra.ai.launcher.managers.xml.options.Theme;
@@ -41,7 +40,6 @@ public class CommandExecutionController {
     private boolean showAppHistory;
     private int aliasContentColor;
     private String multipleCmdSeparator;
-    private boolean keeperServiceRunning;
 
     private CmdTrigger[] triggers;
     private ShellCommandTrigger shellCommandTrigger;
@@ -59,7 +57,6 @@ public class CommandExecutionController {
         this.mContext = context;
         this.mainPack = mainPack;
         
-        keeperServiceRunning = XMLPrefsManager.getBoolean(Behavior.tui_notification);
         showAliasValue = XMLPrefsManager.getBoolean(Behavior.show_alias_content);
         showAppHistory = XMLPrefsManager.getBoolean(Behavior.show_launch_history);
         aliasContentColor = XMLPrefsManager.getColor(Theme.alias_content_color);
@@ -96,13 +93,6 @@ public class CommandExecutionController {
     }
 
     private void updateServices(String cmd, boolean wasMusicService) {
-        if(keeperServiceRunning) {
-            Intent i = new Intent(mContext, KeeperService.class);
-            i.putExtra(KeeperService.CMD_KEY, cmd);
-            i.putExtra(KeeperService.PATH_KEY, mainPack.currentDirectory.getAbsolutePath());
-            mContext.startService(i);
-        }
-
         if(wasMusicService) {
             Intent i = new Intent(mContext, MusicService.class);
             mContext.startService(i);
@@ -420,6 +410,15 @@ public class CommandExecutionController {
             if(command == null) return false;
 
             info.cmdPrefs.recordUsage(command.getClass().getSimpleName());
+            if (command.cmd instanceof bhupendra.ai.launcher.commands.main.specific.ParamCommand
+                    && command.mArgs != null
+                    && command.mArgs.length > 0
+                    && command.mArgs[0] instanceof bhupendra.ai.launcher.commands.main.Param) {
+                info.cmdPrefs.recordParamUsage(
+                        command.cmd.getClass().getSimpleName(),
+                        ((bhupendra.ai.launcher.commands.main.Param) command.mArgs[0]).label()
+                );
+            }
             mainPack.lastCommand = input;
 
             bhupendra.ai.launcher.tuils.LauncherExecutors.commandExecutor.execute(() -> {

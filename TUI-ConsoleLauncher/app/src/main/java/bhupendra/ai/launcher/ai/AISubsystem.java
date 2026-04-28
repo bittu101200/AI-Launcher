@@ -339,6 +339,8 @@ public class AISubsystem {
             "Fetch the full content of a specific URL.",
             Collections.singletonMap("url", "The URL to fetch"),
             ToolRiskClass.READ_ONLY));
+
+        toolRegistry.register(ToolRegistry.Tier.SYSTEM, new SystemSpeedTestTool());
             
         toolRegistry.register(ToolRegistry.Tier.SYSTEM, new SystemSearchWebTool(
             "system.search_web",

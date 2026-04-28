@@ -29,7 +29,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -52,8 +52,8 @@ public class NotificationService extends NotificationListenerService {
     public static NotificationService instance;
     public static final String DESTROY = "destroy";
 
-    private static final int QUEUE_CAPACITY = 32;
-    private static final long POLL_TIMEOUT_MS = 2000L;
+    private static final int QUEUE_CAPACITY = 128;
+    private static final long POLL_TIMEOUT_MS = 250L;
     private String LINES_LABEL = "Lines";
     private String ANDROID_LABEL_PREFIX = "android.";
     private String NULL_LABEL = "";
@@ -66,7 +66,7 @@ public class NotificationService extends NotificationListenerService {
 
     List<String> whitelist, blacklist;
 
-    ArrayBlockingQueue<StatusBarNotification> queue;
+    LinkedBlockingQueue<StatusBarNotification> queue;
     private final Map<String, String> appLabelCache = new HashMap<>();
 
     final String PKG = "%pkg", APP = "%app", NEWLINE = "%n";
@@ -132,7 +132,7 @@ public class NotificationService extends NotificationListenerService {
 
         maxOptionalDepth = XMLPrefsManager.getInt(Behavior.max_optional_depth);
 
-        queue = new ArrayBlockingQueue<>(QUEUE_CAPACITY);
+        queue = new LinkedBlockingQueue<>(QUEUE_CAPACITY);
 
         bhupendra.ai.launcher.tuils.LauncherExecutors.notificationExecutor.execute(() -> {
                 if(!enabled) return;
@@ -172,11 +172,6 @@ public class NotificationService extends NotificationListenerService {
                         NotificationManager.NotificatedApp nApp = notificationManager.getAppState(pack);
                         if ((nApp != null && !nApp.enabled)) {
                             Log.d(DEBUG_TAG, "Filtered by app state (disabled): " + pack);
-                            continue;
-                        }
-
-                        if (nApp == null && !notificationManager.default_app_state) {
-                            Log.d(DEBUG_TAG, "Filtered by default app state (null and default false): " + pack);
                             continue;
                         }
 

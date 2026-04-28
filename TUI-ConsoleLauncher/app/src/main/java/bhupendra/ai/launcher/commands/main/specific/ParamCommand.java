@@ -9,6 +9,8 @@ import bhupendra.ai.launcher.managers.xml.classes.XMLPrefsSave;
 import bhupendra.ai.launcher.tuils.SimpleMutableEntry;
 import bhupendra.ai.launcher.tuils.Tuils;
 
+import java.util.LinkedHashMap;
+
 /**
  * Created by francescoandreuzzi on 01/05/2017.
  */
@@ -126,7 +128,7 @@ public abstract class ParamCommand implements CommandAbstraction {
         String name = getClass().getSimpleName();
         String description = context.getString(helpRes());
         
-        java.util.Map<String, String> flags = new java.util.HashMap<>();
+        java.util.Map<String, String> flags = new LinkedHashMap<>();
         try {
             // Find the Param enum inside the subclass
             Class<?>[] nested = getClass().getDeclaredClasses();

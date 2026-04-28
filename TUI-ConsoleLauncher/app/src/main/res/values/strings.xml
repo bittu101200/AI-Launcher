@@ -216,6 +216,7 @@
     <string name="output_restore_success">Backup restored successfully. Restarting...</string>
     <string name="restore_hint">Select a backup number or enter path</string>
     <string name="help_restore">Restore configuration from a backup in Downloads/TUI_Backup</string>
+    <string name="help_speedtest">Run an internet speed test and report latency, download, and upload throughput</string>
 
 
     <string name="help_airplane">Toggle airplane mode</string>

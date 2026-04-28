@@ -162,7 +162,7 @@
             android:exported="false"
             android:foregroundServiceType="specialUse">
             <property android:name="android.app.PROPERTY_SPECIAL_USE_FGS_TYPE"
-                android:value="Maintains the launcher console state and provides persistent access to T-UI commands via notification."/>
+                android:value="Maintains the launcher console state and keeps T-UI running in the background."/>
         </service>
         <service
             android:name=".managers.music.MusicService"

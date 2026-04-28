@@ -47,6 +47,7 @@ public class CommandRegistry {
         list.add(new restore());
         list.add(new rss());
         list.add(new search());
+        list.add(new speedtest());
         list.add(new share());
         list.add(new shortcut());
         list.add(new sms());
