@@ -19,8 +19,7 @@ The project has undergone a significant architectural overhaul to ensure stabili
 - **Modern Terminal UI:** Configurable prompt, high-quality theme presets (`cyberpunk`, `bw`, etc.), and interactive shortcut buttons.
 - **Agentic AI Subsystem:** Modular AI core supporting Gemini, Claude, OpenAI, and Ollama with structured tool execution (launching apps, system toggles, web search).
 - **Hardened Notifications:** Secure ingestion, filtering, and AI-powered summarization/reply actions using Android's latest security primitives.
-- **Integrated Tooling:** Built-in BusyBox manager (`bbman`) for verified Linux binary installation.
-
+- **Integrated Tooling:** Built-in termux integration (`termux`) for Linux environment execution.
 ## Architecture Overview
 
 The app follows a service-oriented architecture with a clear separation between the UI, the command controller, and the AI agentic layer.
@@ -57,11 +56,3 @@ cd TUI-ConsoleLauncher
 ./gradlew :app:installDebug  # For development
 ./gradlew :app:installRelease # For production testing (hardened)
 ```
-
-## Security & Compliance
-
-The launcher is built with **Security-by-Design** principles:
-- **MASVS Alignment:** Scoped Storage, secure `FileProvider` URIs, and enforced TLS.
-- **Signature Permissions:** Programmable command entry is protected by signature-level custom permissions.
-- **PendingIntent Security:** Strict enforcement of `FLAG_IMMUTABLE` and `FLAG_MUTABLE` based on Android 14 requirements.
-
