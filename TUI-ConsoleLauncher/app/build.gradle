@@ -33,8 +33,8 @@ android {
         applicationId "bhupendra.ai.launcher"
         minSdk 29
         targetSdk 34
-        versionCode 301
-        versionName "v6.15.1-updated-v2"
+        versionCode 302
+        versionName "Alpha 2"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
