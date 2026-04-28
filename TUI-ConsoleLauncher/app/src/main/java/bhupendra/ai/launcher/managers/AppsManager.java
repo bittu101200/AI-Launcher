@@ -1206,6 +1206,7 @@ public class AppsManager implements XMLPrefsElement {
         private SuggestedAppMgr suggestedAppMgr;
 
         private class SuggestedAppMgr {
+            private static final int MAX_SUGGESTED_SLOTS = 5;
             private List<SuggestedApp> suggested;
             private int lastWriteable = -1;
 
@@ -1213,7 +1214,7 @@ public class AppsManager implements XMLPrefsElement {
                 suggested = new ArrayList<>();
 
                 final String PREFIX = "default_app_n";
-                for(int count = 0; count < 5; count++) {
+                for(int count = 0; count < MAX_SUGGESTED_SLOTS; count++) {
                     String vl = values.get(Apps.valueOf(PREFIX + (count + 1))).value;
 
                     if(vl.equals(Apps.NULL)) continue;
@@ -1302,10 +1303,24 @@ public class AppsManager implements XMLPrefsElement {
 
                 List<SuggestedApp> cp = new ArrayList<>(suggested);
                 Collections.sort(cp, (o1, o2) -> o1.index - o2.index);
+                java.util.HashSet<ComponentName> seen = new java.util.HashSet<>();
 
                 for(int count = 0; count < cp.size(); count++) {
                     SuggestedApp app = cp.get(count);
-                    if(app.type != NULL && app.app != null) list.add(app.app);
+                    if(app.type != NULL && app.app != null) {
+                        list.add(app.app);
+                        seen.add(app.app.componentName);
+                    }
+                }
+
+                if (list.size() < MAX_SUGGESTED_SLOTS) {
+                    for (LaunchInfo info : infos) {
+                        if (info == null || info.componentName == null || info.launchedTimes <= 0) continue;
+                        if (seen.contains(info.componentName)) continue;
+                        list.add(info);
+                        seen.add(info.componentName);
+                        if (list.size() >= MAX_SUGGESTED_SLOTS) break;
+                    }
                 }
                 return list;
             }

@@ -719,7 +719,7 @@ public class SuggestionsManager {
                     }
                 }
 
-                suggestCommand(pack, suggestionList, null);
+                suggestCommandNoInput(pack, suggestionList, null);
 
                 if(showAliasDefault) suggestAlias(pack.aliasManager, suggestionList, lastWord);
                 if(showAppsGpDefault) suggestAppGroup(pack, suggestionList, lastWord, beforeLastSpace );
@@ -1325,6 +1325,29 @@ public class SuggestionsManager {
         }
     }
 
+    private void suggestCommandNoInput(MainPack info, List<Suggestion> suggestions, String beforeLastSpace) {
+        CommandAbstraction[] cmds = info.commandGroup.getCommands();
+        if(cmds == null) return;
+
+        List<CommandAbstraction> cmdList = new ArrayList<>(Arrays.asList(cmds));
+        Collections.sort(cmdList, (c1, o2) -> info.cmdPrefs.getUsageScore(o2) - info.cmdPrefs.getUsageScore(c1));
+
+        int canInsert = noInputCounts[Suggestion.TYPE_COMMAND];
+        for (CommandAbstraction cmd : cmdList) {
+            if (canInsert == 0 || Thread.currentThread().isInterrupted()) return;
+
+            int priority = info.cmdPrefs.getPriority(cmd);
+            if (priority < minCmdPriority) continue;
+
+            int[] args = cmd.argType();
+            boolean exec = args == null || args.length == 0;
+
+            suggestions.add(new Suggestion(beforeLastSpace, cmd.getClass().getSimpleName(), exec && clickToLaunch, Suggestion.TYPE_COMMAND)
+                    .withScore(info.cmdPrefs.getUsageScore(cmd)));
+            canInsert--;
+        }
+    }
+
     private void suggestColor(List<Suggestion> suggestions, String afterLastSpace, String beforeLastSpace ) {
         if(afterLastSpace == null || afterLastSpace.length() == 0 || (afterLastSpace.length() == 1 && afterLastSpace.charAt(0) != '#')) {
             suggestions.add(new Suggestion(beforeLastSpace , "#", false, Suggestion.TYPE_COLOR));
@@ -1734,17 +1757,18 @@ public class SuggestionsManager {
         @Override
         public int compare(Suggestion o1, Suggestion o2) {
             if(o1.type == o2.type) {
-                if (o1.score != 0 || o2.score != 0) {
-                    int byScore = o2.score - o1.score;
-                    if (byScore != 0) return byScore;
-                    return o1.text.compareToIgnoreCase(o2.text);
-                }
+                int byScore = o2.score - o1.score;
+                if (byScore != 0) return byScore;
+                if (o1.text != null && o2.text != null) return o1.text.compareToIgnoreCase(o2.text);
                 return 0;
             }
 
             if(noInput) {
                 return noInputIndexes[o1.type] - noInputIndexes[o2.type];
             } else {
+                int byScore = o2.score - o1.score;
+                if (byScore != 0) return byScore;
+
                 if(o1.type < inputIndexes.length) {
                     if(o2.type < inputIndexes.length) return inputIndexes[o1.type] - inputIndexes[o2.type];
                     else return -1;
