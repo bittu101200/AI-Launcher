@@ -99,4 +99,4 @@ If you're a fellow student or just someone interested in agentic systems, feel f
 
 ---
 
-*Built on top of [T-UI Launcher](https://github.com/tui-dev/t-ui) — a terminal launcher for Android that I've been heavily modifying and extending.*
+*Built on top of [T-UI Launcher](https://github.com/fandreuz/TUI-ConsoleLauncher) — a terminal launcher for Android that I've been heavily modifying and extending.*
