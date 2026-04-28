@@ -5,6 +5,7 @@ import android.app.Activity;
 import android.app.AppOpsManager;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.net.Uri;
@@ -22,6 +23,10 @@ import java.util.List;
 import bhupendra.ai.launcher.LauncherActivity;
 
 public final class PermissionManager {
+
+    private static final String FLOW_PREFS = "permission_flow";
+    private static final String KEY_PENDING_SPECIAL_IDS = "pending_special_ids";
+    private static final String KEY_LAST_OPENED_ID = "last_opened_id";
 
     public enum PermissionKind {
         RUNTIME,
@@ -81,6 +86,10 @@ public final class PermissionManager {
                 "Enables flashlight/torch commands on devices that expose flash through camera.",
                 true,
                 Manifest.permission.CAMERA);
+        addRuntime(requirements, context, "sms", "SMS",
+                "Lets commands and AI send text messages.",
+                true,
+                Manifest.permission.SEND_SMS);
         addRuntime(requirements, context, "media", "Media storage",
                 "Lets T-UI browse user media outside its private app folder.",
                 Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU,
@@ -145,23 +154,65 @@ public final class PermissionManager {
         return missing;
     }
 
+    public static boolean requestMissingPermissions(Activity activity, int requestCode, String... permissions) {
+        List<String> missing = getMissingPermissions(activity, permissions);
+        if (missing.isEmpty()) {
+            return false;
+        }
+        ActivityCompat.requestPermissions(activity, missing.toArray(new String[0]), requestCode);
+        return true;
+    }
+
+    public static List<String> getMissingPermissions(Context context, String... permissions) {
+        List<String> missing = new ArrayList<>();
+        if (permissions == null) {
+            return missing;
+        }
+        for (String permission : permissions) {
+            if (permission == null || permission.length() == 0) {
+                continue;
+            }
+            if (ContextCompat.checkSelfPermission(context, permission) != PackageManager.PERMISSION_GRANTED
+                    && !missing.contains(permission)) {
+                missing.add(permission);
+            }
+        }
+        return missing;
+    }
+
     public static boolean isAnyRuntimePermissionMissing(Context context) {
         return !getMissingRuntimePermissions(context).isEmpty();
     }
 
     public static PermissionRequirement requestNextMissing(Activity activity) {
-        for (PermissionRequirement requirement : getRequirements(activity)) {
+        List<PermissionRequirement> requirements = getRequirements(activity);
+        List<String> missingRuntime = getMissingRuntimePermissions(activity);
+        List<String> pendingSpecialIds = new ArrayList<>();
+        for (PermissionRequirement requirement : requirements) {
             if (!requirement.available || requirement.granted) {
                 continue;
             }
             if (requirement.kind == PermissionKind.RUNTIME) {
-                ActivityCompat.requestPermissions(activity, requirement.permissions, LauncherActivity.COMMAND_REQUEST_PERMISSION);
-            } else {
-                openSpecialPermission(activity, requirement.id);
+                if (!missingRuntime.isEmpty()) {
+                    ActivityCompat.requestPermissions(activity, missingRuntime.toArray(new String[0]), LauncherActivity.COMMAND_REQUEST_PERMISSION);
+                    savePendingSpecialIds(activity, pendingSpecialIds);
+                    clearLastOpenedId(activity);
+                    return requirement;
+                }
             }
-            return requirement;
+            pendingSpecialIds.add(requirement.id);
         }
-        return null;
+        savePendingSpecialIds(activity, pendingSpecialIds);
+        clearLastOpenedId(activity);
+        if (pendingSpecialIds.isEmpty()) {
+            return null;
+        }
+        PermissionRequirement requirement = findRequirement(requirements, pendingSpecialIds.get(0));
+        if (requirement != null) {
+            openSpecialPermission(activity, requirement.id);
+            setLastOpenedId(activity, requirement.id);
+        }
+        return requirement;
     }
 
     public static boolean checkAndRequestRuntime(Activity activity) {
@@ -181,6 +232,50 @@ public final class PermissionManager {
                 return;
             }
         }
+    }
+
+    public static PermissionRequirement resumePendingSpecialFlow(Activity activity) {
+        List<PermissionRequirement> requirements = getRequirements(activity);
+        List<String> pendingIds = getPendingSpecialIds(activity);
+        if (pendingIds.isEmpty()) {
+            clearLastOpenedId(activity);
+            return null;
+        }
+
+        String lastOpenedId = getLastOpenedId(activity);
+        if (lastOpenedId != null) {
+            PermissionRequirement lastOpened = findRequirement(requirements, lastOpenedId);
+            if (lastOpened != null && !lastOpened.available) {
+                pendingIds.remove(lastOpenedId);
+                clearLastOpenedId(activity);
+                savePendingSpecialIds(activity, pendingIds);
+            } else if (lastOpened != null && lastOpened.granted) {
+                pendingIds.remove(lastOpenedId);
+                clearLastOpenedId(activity);
+                savePendingSpecialIds(activity, pendingIds);
+            } else if (lastOpened != null) {
+                return lastOpened;
+            }
+        }
+
+        while (!pendingIds.isEmpty()) {
+            PermissionRequirement head = findRequirement(requirements, pendingIds.get(0));
+            if (head == null || !head.available) {
+                pendingIds.remove(0);
+                continue;
+            }
+            if (head.granted) {
+                pendingIds.remove(0);
+                continue;
+            }
+            openSpecialPermission(activity, head.id);
+            setLastOpenedId(activity, head.id);
+            savePendingSpecialIds(activity, pendingIds);
+            return head;
+        }
+
+        clearPendingSpecialFlow(activity);
+        return null;
     }
 
     public static String buildRequirementsReport(Context context, PermissionRequirement requesting) {
@@ -327,5 +422,69 @@ public final class PermissionManager {
         if (intent.resolveActivity(context.getPackageManager()) != null) {
             context.startActivity(intent);
         }
+    }
+
+    private static PermissionRequirement findRequirement(List<PermissionRequirement> requirements, String id) {
+        if (id == null) {
+            return null;
+        }
+        for (PermissionRequirement requirement : requirements) {
+            if (id.equals(requirement.id)) {
+                return requirement;
+            }
+        }
+        return null;
+    }
+
+    private static SharedPreferences flowPrefs(Context context) {
+        return context.getSharedPreferences(FLOW_PREFS, Context.MODE_PRIVATE);
+    }
+
+    private static List<String> getPendingSpecialIds(Context context) {
+        String encoded = flowPrefs(context).getString(KEY_PENDING_SPECIAL_IDS, null);
+        List<String> ids = new ArrayList<>();
+        if (encoded == null || encoded.length() == 0) {
+            return ids;
+        }
+        String[] split = encoded.split(",");
+        for (String id : split) {
+            if (id != null && id.length() > 0 && !ids.contains(id)) {
+                ids.add(id);
+            }
+        }
+        return ids;
+    }
+
+    private static void savePendingSpecialIds(Context context, List<String> ids) {
+        StringBuilder builder = new StringBuilder();
+        for (String id : ids) {
+            if (id == null || id.length() == 0) {
+                continue;
+            }
+            if (builder.length() > 0) {
+                builder.append(',');
+            }
+            builder.append(id);
+        }
+        flowPrefs(context).edit().putString(KEY_PENDING_SPECIAL_IDS, builder.toString()).apply();
+    }
+
+    private static void clearPendingSpecialFlow(Context context) {
+        flowPrefs(context).edit()
+                .remove(KEY_PENDING_SPECIAL_IDS)
+                .remove(KEY_LAST_OPENED_ID)
+                .apply();
+    }
+
+    private static void setLastOpenedId(Context context, String id) {
+        flowPrefs(context).edit().putString(KEY_LAST_OPENED_ID, id).apply();
+    }
+
+    private static String getLastOpenedId(Context context) {
+        return flowPrefs(context).getString(KEY_LAST_OPENED_ID, null);
+    }
+
+    private static void clearLastOpenedId(Context context) {
+        flowPrefs(context).edit().remove(KEY_LAST_OPENED_ID).apply();
     }
 }

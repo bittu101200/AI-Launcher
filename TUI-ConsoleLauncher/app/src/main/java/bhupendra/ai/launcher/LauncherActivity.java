@@ -45,6 +45,7 @@ import bhupendra.ai.launcher.commands.main.MainPack;
 import bhupendra.ai.launcher.commands.tuixt.TuixtActivity;
 import bhupendra.ai.launcher.managers.ContactManager;
 import bhupendra.ai.launcher.managers.RegexManager;
+import bhupendra.ai.launcher.managers.PermissionManager;
 import bhupendra.ai.launcher.managers.TerminalManager;
 import bhupendra.ai.launcher.managers.TimeManager;
 import bhupendra.ai.launcher.managers.TuiLocationManager;
@@ -395,6 +396,7 @@ public class LauncherActivity extends AppCompatActivity implements Reloadable {
         super.onStart();
 
         if (ui != null) ui.onStart(openKeyboardOnStart);
+        PermissionManager.resumePendingSpecialFlow(this);
     }
 
     @Override
@@ -464,7 +466,14 @@ public class LauncherActivity extends AppCompatActivity implements Reloadable {
         try {
             switch (requestCode) {
                 case COMMAND_REQUEST_PERMISSION:
-                    if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    boolean allGranted = grantResults.length > 0;
+                    for (int grantResult : grantResults) {
+                        if (grantResult != PackageManager.PERMISSION_GRANTED) {
+                            allGranted = false;
+                            break;
+                        }
+                    }
+                    if (allGranted) {
                         MainPack info = main.getMainPack();
                         main.onCommand(info.lastCommand, (String) null, false);
                     } else {

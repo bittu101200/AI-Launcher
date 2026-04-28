@@ -1423,6 +1423,11 @@ public class UIManager implements OnTouchListener {
             LinearLayout suggestionsView = (LinearLayout) rootView.findViewById(R.id.suggestions_group);
 
             suggestionsManager = new SuggestionsManager(suggestionsView, mainPack, mTerminalAdapter);
+            mTerminalAdapter.setSuggestionsRefreshCallback(() -> {
+                if (suggestionsManager != null) {
+                    suggestionsManager.requestSuggestion(mTerminalAdapter.getInput());
+                }
+            });
 
             inputView.addTextChangedListener(new SuggestionTextWatcher(suggestionsManager, (currentText, before) -> {
                 if(!hideToolbarNoInput) return;

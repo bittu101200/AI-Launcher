@@ -24,6 +24,7 @@ import bhupendra.ai.launcher.commands.main.MainPack;
 import bhupendra.ai.launcher.managers.xml.XMLPrefsManager;
 import bhupendra.ai.launcher.managers.xml.classes.XMLPrefsSave;
 import bhupendra.ai.launcher.managers.CronManager;
+import bhupendra.ai.launcher.managers.PermissionManager;
 import bhupendra.ai.launcher.tuils.TermuxManager;
 import bhupendra.ai.launcher.ai.AISubsystem;
 import bhupendra.ai.launcher.ai.ToolRiskClass;
@@ -53,14 +54,9 @@ public class SystemAddContactTool extends BaseAITool {
             String name = args.getString("name");
             String phone = args.getString("phone");
 
-            if (androidx.core.content.ContextCompat.checkSelfPermission(context, Manifest.permission.WRITE_CONTACTS) != PackageManager.PERMISSION_GRANTED ||
-                androidx.core.content.ContextCompat.checkSelfPermission(context, Manifest.permission.READ_CONTACTS) != PackageManager.PERMISSION_GRANTED) {
-                
-                if (context instanceof Activity) {
-                    androidx.core.app.ActivityCompat.requestPermissions((Activity) context, 
-                        new String[]{Manifest.permission.WRITE_CONTACTS, Manifest.permission.READ_CONTACTS}, 
-                        bhupendra.ai.launcher.LauncherActivity.COMMAND_REQUEST_PERMISSION);
-                }
+            if (context instanceof Activity && PermissionManager.requestMissingPermissions((Activity) context,
+                    bhupendra.ai.launcher.LauncherActivity.COMMAND_REQUEST_PERMISSION,
+                    Manifest.permission.WRITE_CONTACTS, Manifest.permission.READ_CONTACTS)) {
                 return "[waiting for contacts permission - please grant it and try again]";
             }
 

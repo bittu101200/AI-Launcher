@@ -13,6 +13,7 @@ import bhupendra.ai.launcher.commands.CommandAbstraction;
 import bhupendra.ai.launcher.commands.ExecutePack;
 import bhupendra.ai.launcher.commands.main.MainPack;
 import bhupendra.ai.launcher.commands.main.specific.RedirectCommand;
+import bhupendra.ai.launcher.managers.PermissionManager;
 
 /**
  * Created by francescoandreuzzi on 02/03/2017.
@@ -23,9 +24,8 @@ public class sms extends RedirectCommand {
     @Override
     public String exec(ExecutePack pack) throws Exception {
         MainPack info = (MainPack) pack;
-        if (ContextCompat.checkSelfPermission(info.context, Manifest.permission.READ_CONTACTS) != PackageManager.PERMISSION_GRANTED) {
-
-            ActivityCompat.requestPermissions((Activity) info.context, new String[]{Manifest.permission.READ_CONTACTS}, LauncherActivity.COMMAND_REQUEST_PERMISSION);
+        if (PermissionManager.requestMissingPermissions((Activity) info.context, LauncherActivity.COMMAND_REQUEST_PERMISSION,
+                Manifest.permission.READ_CONTACTS, Manifest.permission.SEND_SMS)) {
             return info.context.getString(R.string.output_waitingpermission);
         }
 

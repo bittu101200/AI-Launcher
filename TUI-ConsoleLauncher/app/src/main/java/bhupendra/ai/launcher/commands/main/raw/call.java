@@ -13,6 +13,7 @@ import bhupendra.ai.launcher.R;
 import bhupendra.ai.launcher.commands.CommandAbstraction;
 import bhupendra.ai.launcher.commands.ExecutePack;
 import bhupendra.ai.launcher.commands.main.MainPack;
+import bhupendra.ai.launcher.managers.PermissionManager;
 import bhupendra.ai.launcher.tuils.Tuils;
 
 public class call implements CommandAbstraction {
@@ -20,10 +21,8 @@ public class call implements CommandAbstraction {
     @Override
     public String exec(ExecutePack pack) {
         final MainPack info = (MainPack) pack;
-        if (ContextCompat.checkSelfPermission(info.getContext(), Manifest.permission.READ_CONTACTS) != PackageManager.PERMISSION_GRANTED ||
-                ContextCompat.checkSelfPermission(info.getContext(), Manifest.permission.CALL_PHONE) != PackageManager.PERMISSION_GRANTED) {
-
-            ActivityCompat.requestPermissions((Activity) info.getContext(), new String[]{Manifest.permission.READ_CONTACTS, Manifest.permission.CALL_PHONE}, LauncherActivity.COMMAND_REQUEST_PERMISSION);
+        if (PermissionManager.requestMissingPermissions((Activity) info.getContext(), LauncherActivity.COMMAND_REQUEST_PERMISSION,
+                Manifest.permission.READ_CONTACTS, Manifest.permission.CALL_PHONE)) {
             return info.getContext().getString(R.string.output_waitingpermission);
         }
 

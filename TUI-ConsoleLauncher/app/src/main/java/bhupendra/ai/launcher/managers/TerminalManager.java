@@ -89,6 +89,7 @@ public class TerminalManager {
     private MainPack mainPack;
 
     private boolean defaultHint = true;
+    private Runnable suggestionsRefreshCallback;
 
     private int clearCmdsCount= 0;
 
@@ -321,6 +322,10 @@ public class TerminalManager {
         }
 
         requestInputFocus();
+
+        if (suggestionsRefreshCallback != null) {
+            mInputView.post(suggestionsRefreshCallback);
+        }
     }
 
     private boolean onNewInput() {
@@ -536,6 +541,10 @@ public class TerminalManager {
 
     public void simulateEnter() {
         onNewInput();
+    }
+
+    public void setSuggestionsRefreshCallback(Runnable suggestionsRefreshCallback) {
+        this.suggestionsRefreshCallback = suggestionsRefreshCallback;
     }
 
     public String getInput() {
