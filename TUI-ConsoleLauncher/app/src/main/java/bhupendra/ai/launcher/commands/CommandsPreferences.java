@@ -1,5 +1,8 @@
 package bhupendra.ai.launcher.commands;
 
+import android.content.Context;
+import android.content.SharedPreferences;
+
 import java.util.HashMap;
 
 import bhupendra.ai.launcher.managers.xml.XMLPrefsManager;
@@ -13,11 +16,15 @@ import bhupendra.ai.launcher.managers.xml.options.Cmd;
 public class CommandsPreferences {
 
     public static final String PRIORITY_SUFFIX = "_priority";
+    private static final String USAGE_PREFS = "command_usage";
+    private static final String USAGE_SUFFIX = "_usage";
 
     private HashMap<String, String> preferenceHashMap;
+    private final SharedPreferences usagePreferences;
 
-    public CommandsPreferences() {
+    public CommandsPreferences(Context context) {
         preferenceHashMap = new HashMap<>();
+        usagePreferences = context.getSharedPreferences(USAGE_PREFS, Context.MODE_PRIVATE);
 
         for(XMLPrefsSave save : Cmd.values()) {
             preferenceHashMap.put(save.label(), XMLPrefsManager.get(save));
@@ -49,5 +56,23 @@ public class CommandsPreferences {
         int priority = userSetPriority(c);
         if(priority == Integer.MAX_VALUE) return c.priority();
         return priority;
+    }
+
+    public int getUsageCount(CommandAbstraction c) {
+        if (c == null) return 0;
+        return usagePreferences.getInt(c.getClass().getSimpleName() + USAGE_SUFFIX, 0);
+    }
+
+    public int getUsageScore(CommandAbstraction c) {
+        int usage = getUsageCount(c);
+        int priority = Math.max(-999, getPriority(c));
+        return usage * 1000 + priority;
+    }
+
+    public void recordUsage(String commandName) {
+        if (commandName == null || commandName.length() == 0) return;
+        String key = commandName + USAGE_SUFFIX;
+        int current = usagePreferences.getInt(key, 0);
+        usagePreferences.edit().putInt(key, current + 1).apply();
     }
 }

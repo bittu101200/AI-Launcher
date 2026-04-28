@@ -1551,6 +1551,9 @@ public class UIManager implements OnTouchListener {
     }
 
     public void onStart(boolean openKeyboardOnStart) {
+        if (suggestionsManager != null) {
+            suggestionsManager.requestSuggestion(mTerminalAdapter.getInput());
+        }
         if(openKeyboardOnStart) openKeyboard();
     }
 

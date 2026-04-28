@@ -419,6 +419,7 @@ public class CommandExecutionController {
             final Command command = CommandTuils.parse(input, info);
             if(command == null) return false;
 
+            info.cmdPrefs.recordUsage(command.getClass().getSimpleName());
             mainPack.lastCommand = input;
 
             bhupendra.ai.launcher.tuils.LauncherExecutors.commandExecutor.execute(() -> {

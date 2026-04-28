@@ -5,6 +5,7 @@ import bhupendra.ai.launcher.managers.FileSystemManager;
 
 import android.app.Activity;
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.os.Build;
 import android.os.HandlerThread;
@@ -132,6 +133,9 @@ public class SuggestionsManager {
 
     private static final long DIR_CACHE_TTL_MS = 3000L;
     private final HashMap<String, DirCacheEntry> dirCache = new HashMap<>();
+    private static final String LEARNING_PREFS = "suggestion_learning";
+    private static final int QUERY_AFFINITY_BONUS = 700;
+    private final SharedPreferences learningPrefs;
 
     private static class DirCacheEntry {
         final String[] files;
@@ -161,6 +165,7 @@ public class SuggestionsManager {
         this.suggestionsView = suggestionsView;
         this.pack = mainPack;
         this.mTerminalAdapter = mTerminalAdapter;
+        this.learningPrefs = mainPack.context.getSharedPreferences(LEARNING_PREFS, Context.MODE_PRIVATE);
 
         setAlgorithm(XMLPrefsManager.getInt(Suggestions.suggestions_algorithm));
 
@@ -439,6 +444,8 @@ public class SuggestionsManager {
     public void clickSuggestion(SuggestionsManager.Suggestion suggestion) {
         if (suggestion == null) return;
 
+        recordSuggestionLearning(suggestion, mTerminalAdapter.getInput());
+
         bhupendra.ai.launcher.ai.AISubsystem ai = bhupendra.ai.launcher.ai.AISubsystem.getInstance();
         if (suggestion.type == SuggestionsManager.Suggestion.TYPE_CHOICE) {
             if (ai != null) ai.resolvePendingUserInteraction(suggestion.text);
@@ -498,6 +505,49 @@ public class SuggestionsManager {
         } else {
             mTerminalAdapter.focusInputEnd();
         }
+    }
+
+    private void recordSuggestionLearning(Suggestion suggestion, String input) {
+        if (suggestion.type != Suggestion.TYPE_APP || suggestion.object == null) return;
+        if (!(suggestion.object instanceof AppsManager.LaunchInfo)) return;
+
+        String query = extractLearningQuery(input);
+        if (query.length() < 2) return;
+
+        AppsManager.LaunchInfo info = (AppsManager.LaunchInfo) suggestion.object;
+        String key = query + "|" + info.componentName.getPackageName();
+        int current = learningPrefs.getInt(key, 0);
+        learningPrefs.edit().putInt(key, current + 1).apply();
+    }
+
+    private String extractLearningQuery(String input) {
+        if (input == null) return Tuils.EMPTYSTRING;
+
+        String activeInput = input;
+        if (multipleCmdSeparator.length() > 0) {
+            String[] split = input.split(multipleCmdSeparator);
+            if (split.length > 0) {
+                activeInput = split[split.length - 1];
+            }
+        }
+
+        int lastSpace = activeInput.lastIndexOf(Tuils.SPACE);
+        String query = lastSpace == -1 ? activeInput : activeInput.substring(lastSpace + 1);
+        return SuggestionScorer.normalize(query);
+    }
+
+    private int getQueryAffinityBonus(String query, AppsManager.LaunchInfo info) {
+        if (query == null || query.length() < 2 || info == null) return 0;
+        int count = learningPrefs.getInt(query + "|" + info.componentName.getPackageName(), 0);
+        return Math.min(QUERY_AFFINITY_BONUS, count * QUERY_AFFINITY_BONUS);
+    }
+
+    private int scoreAppSuggestion(String query, AppsManager.LaunchInfo info) {
+        if (info == null) return 0;
+        int score = SuggestionScorer.score(query, info.publicLabel);
+        score += Math.min(80, info.launchedTimes * 4);
+        score += getQueryAffinityBonus(SuggestionScorer.normalize(query), info);
+        return score;
     }
 
     public void requestSuggestion(final String input) {
@@ -840,7 +890,7 @@ public class SuggestionsManager {
         if (lastWord == null || lastWord.length() == 0) {
             for(AliasManager.Alias a : aliases) {
                 if (canInsert == 0) return;
-                suggestions.add(new Suggestion(Tuils.EMPTYSTRING, a.name, clickToLaunch && !a.isParametrized, Suggestion.TYPE_ALIAS));
+                suggestions.add(new Suggestion(Tuils.EMPTYSTRING, a.name, clickToLaunch && !a.isParametrized, Suggestion.TYPE_ALIAS).withScore(1));
                 canInsert--;
             }
             return;
@@ -1100,8 +1150,16 @@ public class SuggestionsManager {
             if(counter >= max) break;
 
             StringableObject o = scored.value;
-            suggestions.add(new Suggestion(beforeLastSpace, o.getString(), exec, type, tag instanceof Boolean ? ((boolean) tag ? o : null) : tag)
-                    .withScore(scored.score));
+            Object object = tag instanceof Boolean ? ((boolean) tag ? o : null) : tag;
+            if (type == Suggestion.TYPE_APP && object == null && o instanceof AppsManager.LaunchInfo) {
+                object = o;
+            }
+            int score = scored.score;
+            if (type == Suggestion.TYPE_APP && o instanceof AppsManager.LaunchInfo) {
+                score = scoreAppSuggestion(s1, (AppsManager.LaunchInfo) o);
+            }
+            suggestions.add(new Suggestion(beforeLastSpace, o.getString(), exec, type, object)
+                    .withScore(score));
 
             Iterator<? extends StringableObject> it = ss.iterator();
             while (it.hasNext()) {
@@ -1249,19 +1307,21 @@ public class SuggestionsManager {
         CommandAbstraction[] cmds = info.commandGroup.getCommands();
         if(cmds == null) return;
 
-//        if there's a beforelastspace -> help ...
-        int canInsert = beforeLastSpace != null && beforeLastSpace.length() > 0 ? Integer.MAX_VALUE : noInputCounts[Suggestion.TYPE_COMMAND];
+        List<CommandAbstraction> cmdList = new ArrayList<>(Arrays.asList(cmds));
+        Collections.sort(cmdList, (c1, o2) -> info.cmdPrefs.getUsageScore(o2) - info.cmdPrefs.getUsageScore(c1));
 
-        for (CommandAbstraction cmd : cmds) {
+//        show the full command set; ranking and minCmdPriority will keep the noise down
+        int canInsert = Integer.MAX_VALUE;
+
+        for (CommandAbstraction cmd : cmdList) {
             if(canInsert == 0 || Thread.currentThread().isInterrupted()) return;
 
-            if (info.cmdPrefs.getPriority(cmd) >= minCmdPriority) {
-                int[] args = cmd.argType();
-                boolean exec = args == null || args.length == 0;
+            int[] args = cmd.argType();
+            boolean exec = args == null || args.length == 0;
 
-                suggestions.add(new Suggestion(beforeLastSpace , cmd.getClass().getSimpleName(), exec && clickToLaunch, Suggestion.TYPE_COMMAND));
-                canInsert--;
-            }
+            suggestions.add(new Suggestion(beforeLastSpace , cmd.getClass().getSimpleName(), exec && clickToLaunch, Suggestion.TYPE_COMMAND)
+                    .withScore(info.cmdPrefs.getUsageScore(cmd)));
+            canInsert--;
         }
     }
 
@@ -1303,7 +1363,7 @@ public class SuggestionsManager {
                 if(canInsert == 0) return;
                 canInsert--;
 
-                suggestions.add(new Suggestion(beforeLastSpace , l.publicLabel, canClickToLaunch && clickToLaunch, Suggestion.TYPE_APP, l));
+                suggestions.add(new Suggestion(beforeLastSpace , l.publicLabel, canClickToLaunch && clickToLaunch, Suggestion.TYPE_APP, l).withScore(l.launchedTimes));
             }
         } else {
             int counter = quickCompare(afterLastSpace, apps, suggestions, beforeLastSpace, canInsert, canClickToLaunch && clickToLaunch, Suggestion.TYPE_APP, canClickToLaunch && clickToLaunch);
@@ -1314,7 +1374,7 @@ public class SuggestionsManager {
                 if(i == null) break;
 
                 if(canInsert == 0) return;
-                int score = SuggestionScorer.score(afterLastSpace, i.publicLabel) + Math.min(80, i.launchedTimes * 4);
+                int score = scoreAppSuggestion(afterLastSpace, i);
                 if (score >= SuggestionScorer.minimumScore(afterLastSpace)) {
                     suggestions.add(new Suggestion(beforeLastSpace , i.publicLabel, canClickToLaunch && clickToLaunch, Suggestion.TYPE_APP, canClickToLaunch && clickToLaunch ? i : null)
                             .withScore(score));

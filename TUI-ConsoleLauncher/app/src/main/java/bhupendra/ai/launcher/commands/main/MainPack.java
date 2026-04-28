@@ -83,7 +83,7 @@ public class MainPack extends ExecutePack {
         this.aliasManager = alMgr;
         this.appsManager = appmgr;
 
-        this.cmdPrefs = new CommandsPreferences();
+        this.cmdPrefs = new CommandsPreferences(context);
 
         this.player = p;
         this.contacts = c;
