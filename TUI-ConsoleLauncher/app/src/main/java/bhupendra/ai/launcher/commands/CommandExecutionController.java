@@ -84,6 +84,19 @@ public class CommandExecutionController {
         return onCommandInternal(input, null, false, requestId, false, false);
     }
 
+    public String validateAICommand(String input) {
+        String normalized = TextProcessor.removeUnncesarySpaces(input);
+        try {
+            Command command = CommandTuils.parse(normalized, mainPack);
+            if (command == null) {
+                return null;
+            }
+            return command.validationError(mainPack);
+        } catch (Exception e) {
+            return Tuils.getStackTrace(e);
+        }
+    }
+
     private void logCommandFinished(String requestId) {
         if (requestId == null || requestId.length() == 0) {
             android.util.Log.i("AI_OUTPUT", "CMD_FINISHED");

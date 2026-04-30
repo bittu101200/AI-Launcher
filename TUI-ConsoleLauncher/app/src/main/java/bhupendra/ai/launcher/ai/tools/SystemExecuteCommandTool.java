@@ -59,6 +59,12 @@ public class SystemExecuteCommandTool extends BaseAITool {
 
             mainHandler.post(() -> {
                 try {
+                    String validationError = mainPack.commandController.validateAICommand(commandLine);
+                    if (validationError != null && validationError.trim().length() > 0) {
+                        resultRef.set("[command failed before execution: " + validationError + "]");
+                        return;
+                    }
+
                     String requestId = UUID.randomUUID().toString();
                     boolean dispatched = mainPack.commandController.onAICommand(commandLine, requestId);
                     if (dispatched) {

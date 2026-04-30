@@ -532,6 +532,17 @@ public class AppsManager implements XMLPrefsElement {
         return null;
     }
 
+    public LaunchInfo findLaunchInfo(String query) {
+        List<LaunchInfo> candidates = new ArrayList<>();
+        if (appsHolder != null) {
+            candidates.addAll(appsHolder.getApps());
+        }
+        if (hiddenApps != null) {
+            candidates.addAll(hiddenApps);
+        }
+        return AppUtils.findLaunchInfoWithQuery(candidates, query);
+    }
+
     public void writeLaunchTimes(LaunchInfo info) {
         editor.putInt(info.write(), info.launchedTimes);
         editor.apply();
@@ -1470,6 +1481,68 @@ public class AppsManager implements XMLPrefsElement {
             label = TextProcessor.removeSpaces(label);
             for(LaunchInfo i : appList) if(i.unspacedLowercaseLabel.equalsIgnoreCase(label)) return i;
             return null;
+        }
+
+        public static LaunchInfo findLaunchInfoWithQuery(List<? extends LaunchInfo> appList, String query) {
+            if (appList == null || query == null) {
+                return null;
+            }
+
+            String normalizedQuery = TextProcessor.removeSpaces(query).trim().toLowerCase();
+            if (normalizedQuery.length() == 0) {
+                return null;
+            }
+
+            LaunchInfo best = null;
+            int bestScore = Integer.MIN_VALUE;
+
+            for (LaunchInfo info : appList) {
+                if (info == null || info.componentName == null || info.publicLabel == null) {
+                    continue;
+                }
+
+                int score = scoreLaunchInfo(info, normalizedQuery);
+                if (score > bestScore) {
+                    bestScore = score;
+                    best = info;
+                }
+            }
+
+            return best;
+        }
+
+        private static int scoreLaunchInfo(LaunchInfo info, String query) {
+            String label = info.unspacedLowercaseLabel != null
+                    ? info.unspacedLowercaseLabel
+                    : TextProcessor.removeSpaces(info.publicLabel != null ? info.publicLabel.toLowerCase() : "");
+            return scoreLaunchCandidate(label, info.componentName.getPackageName(), info.componentName.getClassName(), info.launchedTimes, query);
+        }
+
+        public static int scoreLaunchCandidate(String label, String packageName, String className, int launchedTimes, String query) {
+            String normalizedLabel = label != null ? TextProcessor.removeSpaces(label).toLowerCase() : "";
+            String normalizedPackage = packageName != null ? packageName.toLowerCase() : "";
+            String normalizedClass = className != null ? className.toLowerCase() : "";
+            String componentKey = (normalizedPackage + "-" + normalizedClass).toLowerCase();
+
+            int score;
+            if (query.equals(normalizedLabel) || query.equals(normalizedPackage) || query.equals(normalizedClass) || query.equals(componentKey)) {
+                score = 100000;
+            } else if (normalizedPackage.startsWith(query) || normalizedClass.startsWith(query)) {
+                score = 90000 - Math.min(normalizedPackage.length(), normalizedClass.length());
+            } else if (normalizedLabel.startsWith(query)) {
+                score = 85000 - normalizedLabel.length();
+            } else if (normalizedPackage.contains(query) || normalizedClass.contains(query)) {
+                int index = normalizedPackage.contains(query) ? normalizedPackage.indexOf(query) : normalizedClass.indexOf(query);
+                score = 80000 - Math.max(index, 0);
+            } else if (normalizedLabel.contains(query)) {
+                score = 75000 - normalizedLabel.indexOf(query);
+            } else {
+                return Integer.MIN_VALUE;
+            }
+
+            score += Math.min(launchedTimes, 1000);
+            score -= normalizedLabel.length();
+            return score;
         }
 
         private static List<LaunchInfo> findLaunchInfosWithPackage(String packageName, List<LaunchInfo> infos) {

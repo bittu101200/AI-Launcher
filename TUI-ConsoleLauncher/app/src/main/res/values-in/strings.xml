@@ -432,7 +432,6 @@
         \nPenggunaan:
         \n$ open [jalurKeFile]
     </string>
-
     <string name="help_username">Ubah nama pengguna dan nama perangkat: username [pengguna_baru] [perangkat_baru]</string>
     <string name="help_termux">Jalankan perintah di lingkungan Termux. Penggunaan: termux [perintah] [argumen]</string>
     <string name="help_ai">ai [kueri] — kirim kueri langsung ke AI</string>

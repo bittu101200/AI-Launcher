@@ -14,6 +14,15 @@ public class Command {
     public int indexNotFound = -1;
 
     public String exec(ExecutePack info) throws Exception {
+        String validationError = validationError(info);
+        if (validationError != null) {
+            return validationError;
+        }
+
+        return cmd.exec(info);
+    }
+
+    public String validationError(ExecutePack info) {
         info.set(mArgs);
 
         if(cmd instanceof ParamCommand) {
@@ -53,7 +62,7 @@ public class Command {
             }
         }
 
-        return cmd.exec(info);
+        return null;
     }
 
     public int nextArg() {

@@ -433,7 +433,6 @@
         \nUsage:
         \n$ open [pathToFile]
     </string>
-
     <string name="help_username">Change the username and device name: username [new_user] [new_device]</string>
     <string name="help_termux">Run commands in Termux environment. Usage: termux [command] [args]</string>
 <string name="help_ai">ai [query] — send a query directly to AI</string>

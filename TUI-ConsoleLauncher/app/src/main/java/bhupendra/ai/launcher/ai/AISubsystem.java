@@ -33,7 +33,10 @@ public class AISubsystem {
         "\nFINAL EXECUTION RULES:\n" +
         "1. No preamble: execute tool first, then report. No 'Sure' or 'I will'.\n" +
         "2. Direct Path: call system.config directly for known visibility keys (e.g. show_ram=true).\n" +
-        "3. Ambiguity: If intent is unclear, ask one short question before tool use.\n";
+        "3. App Launches: Use system.launch_app for app-open requests instead of system.execute_command.\n" +
+        "4. Skills: If the user teaches a reusable workflow, call system.save_skill with a concise trigger. If a task matches the skill index, call system.load_skill before acting.\n" +
+        "5. Tool Errors: If a tool output starts with [error:, [not dispatched:, or [command failed, do not claim success; correct the call or report the failure.\n" +
+        "6. Ambiguity: If intent is unclear, ask one short question before tool use.\n";
 
     private static volatile AISubsystem instance;
 
@@ -48,6 +51,7 @@ public class AISubsystem {
     private final RequestManager automationRequestManager;
 
     private final LongTermMemory longTermMemory;
+    private final SkillRegistry skillRegistry;
     private final bhupendra.ai.launcher.ai.platform.LauncherIndex launcherIndex = new bhupendra.ai.launcher.ai.platform.LauncherIndex();
     private final AtomicReference<String> lastRequestId = new AtomicReference<>();
     private final bhupendra.ai.launcher.ai.platform.JourneyManager journeyManager = new bhupendra.ai.launcher.ai.platform.JourneyManager();
@@ -150,6 +154,7 @@ public class AISubsystem {
         this.requestManager = new RequestManager(provider, 10_000, 30_000);
         this.automationRequestManager = new RequestManager(provider, 10_000, 30_000);
         this.longTermMemory = this.appContext != null ? new LongTermMemory(this.appContext) : null;
+        this.skillRegistry = this.appContext != null ? new SkillRegistry(this.appContext) : null;
         
         if (this.appContext != null) {
             syncSystemPromptToDisk();
@@ -214,9 +219,11 @@ public class AISubsystem {
 
         toolRegistry.register(ToolRegistry.Tier.SYSTEM, new SystemExecuteCommandTool(
             "system.execute_command",
-            "Execute a raw TUI command (e.g., 'wifi -on', 'status').",
+            "Execute a raw TUI command (e.g., 'wifi -on', 'status'). Do not use this for app launching; use system.launch_app instead.",
             Collections.singletonMap("command", "The full command string to execute"),
             ToolRiskClass.STATE_CHANGING));
+
+        toolRegistry.register(ToolRegistry.Tier.SYSTEM, new SystemLaunchAppTool());
 
         Map<String, String> aliasArgs = new HashMap<>();
         aliasArgs.put("name", "The alias name (trigger).");
@@ -360,6 +367,9 @@ public class AISubsystem {
             Collections.singletonMap("query", "Search term for memory"),
             ToolRiskClass.READ_ONLY));
 
+        toolRegistry.register(ToolRegistry.Tier.SYSTEM, new SystemSaveSkillTool());
+        toolRegistry.register(ToolRegistry.Tier.SYSTEM, new SystemLoadSkillTool());
+
         toolRegistry.register(ToolRegistry.Tier.SYSTEM, new SystemSetVolumeTool(
             "system.set_volume",
             "Set system volume percentage (0-100)",
@@ -403,6 +413,7 @@ public class AISubsystem {
     }
     public bhupendra.ai.launcher.ai.platform.LauncherIndex getLauncherIndex() { return launcherIndex; }
     public LongTermMemory getLongTermMemory() { return longTermMemory; }
+    public SkillRegistry getSkillRegistry() { return skillRegistry; }
     public void setInstance() { instance = this; }
     public ToolRegistry getToolRegistry() { return toolRegistry; }
     public ConversationManager getConversationManager() { return conversationManager; }
@@ -424,6 +435,10 @@ public class AISubsystem {
         automationRequestManager.setProvider(this.provider);
         cachedSystemPrompt = null;
         cachedTools = null;
+    }
+
+    public synchronized void invalidatePromptCache() {
+        cachedSystemPrompt = null;
     }
 
     public void confirmCurrentTool() {
@@ -615,8 +630,9 @@ public class AISubsystem {
             requireConfirmation = XMLPrefsManager.getBoolean(Ai.confirm_state_changing);
         }
         
-        if (tool.riskClass == ToolRiskClass.READ_ONLY || 
+        if (tool.riskClass == ToolRiskClass.READ_ONLY || tool.riskClass == ToolRiskClass.LAUNCH_ONLY ||
             "system.execute_command".equals(tool.name) ||
+            "system.save_skill".equals(tool.name) ||
             !requireConfirmation) {
             runTool.run();
             return;
@@ -717,7 +733,8 @@ public class AISubsystem {
             if (mainPack != null && mainPack.commandGroup != null) {
                 for (String n : mainPack.commandGroup.getCommandNames()) cmds.append(n).append(", ");
             }
-            cachedSystemPrompt = basePrompt.replace("{{AVAILABLE_COMMANDS}}", cmds.toString());
+            String skillReminder = skillRegistry != null ? skillRegistry.promptReminder() : "";
+            cachedSystemPrompt = basePrompt.replace("{{AVAILABLE_COMMANDS}}", cmds.toString()) + skillReminder;
         }
 
         String pulseContent = getPulseContent();
@@ -791,8 +808,9 @@ public class AISubsystem {
             requireConfirmation = XMLPrefsManager.getBoolean(Ai.confirm_state_changing);
         }
         
-        if (tool.riskClass == ToolRiskClass.READ_ONLY || 
+        if (tool.riskClass == ToolRiskClass.READ_ONLY || tool.riskClass == ToolRiskClass.LAUNCH_ONLY ||
             "system.execute_command".equals(tool.name) ||
+            "system.save_skill".equals(tool.name) ||
             !requireConfirmation) {
             runTool.run();
             return;
