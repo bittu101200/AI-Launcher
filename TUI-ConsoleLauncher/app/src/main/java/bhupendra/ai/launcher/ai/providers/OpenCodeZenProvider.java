@@ -107,6 +107,7 @@ public class OpenCodeZenProvider implements AIProvider {
                 .addHeader("content-type", "application/json")
                 .post(RequestBody.create(body.toString(), JSON_TYPE));
             if (apiKey != null && !apiKey.isEmpty()) {
+                reqBuilder.addHeader("Authorization", "Bearer " + apiKey);
                 reqBuilder.addHeader("x-api-key", apiKey);
             }
 
