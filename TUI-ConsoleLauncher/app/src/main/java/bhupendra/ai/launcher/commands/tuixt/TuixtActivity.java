@@ -232,7 +232,7 @@ public class TuixtActivity extends Activity {
         if (firstAccess) {
             SharedPreferences.Editor editor = preferences.edit();
             editor.putBoolean(FIRSTACCESS_KEY, false);
-            editor.commit();
+            editor.apply();
 
             inputView.setText("help");
             inputView.setSelection(inputView.getText().length());

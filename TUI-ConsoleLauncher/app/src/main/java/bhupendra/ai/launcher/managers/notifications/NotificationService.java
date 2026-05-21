@@ -142,7 +142,7 @@ public class NotificationService extends NotificationListenerService {
 
                     StatusBarNotification sbn = null;
                     try {
-                        sbn = queue.poll(POLL_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+                        sbn = queue.take();
                     } catch (InterruptedException e) {
                         return;
                     }

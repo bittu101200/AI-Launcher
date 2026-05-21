@@ -286,6 +286,14 @@ public class MainManager {
         mainPack.dispose();
     }
 
+    public void pause() {
+        if(rssManager != null) rssManager.pause();
+    }
+
+    public void resume() {
+        if(rssManager != null) rssManager.resume();
+    }
+
     public void destroy() {
         mainPack.destroy();
         TuiLocationManager.disposeStatic();

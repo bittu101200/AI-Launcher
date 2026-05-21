@@ -61,6 +61,7 @@ import static bhupendra.ai.launcher.managers.xml.XMLPrefsManager.writeTo;
 public class RssManager implements XMLPrefsElement {
 
     private final int RSS_CHECK_DELAY = 5000;
+    private boolean isPaused = false;
 
     private final String RSS_FOLDER = "rss";
 
@@ -355,6 +356,23 @@ public class RssManager implements XMLPrefsElement {
 
     public void dispose() {
         if(handler != null) handler.removeCallbacksAndMessages(null);
+        isPaused = false;
+    }
+
+    public void pause() {
+        isPaused = true;
+        if(handler != null) {
+            handler.removeCallbacks(updateRunnable);
+        }
+    }
+
+    public void resume() {
+        if(!isPaused) return;
+        isPaused = false;
+        if(handler != null) {
+            handler.removeCallbacks(updateRunnable);
+            handler.post(updateRunnable);
+        }
     }
 
     public String add(int id, long timeInSeconds, String url) {

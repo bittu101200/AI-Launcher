@@ -796,6 +796,7 @@ public class UIManager implements OnTouchListener {
     public MainPack pack;
 
     private boolean clearOnLock;
+    private boolean isPaused = false;
     private final ViewGroup rootView;
     private final boolean canApplyTheme;
 
@@ -1604,6 +1605,54 @@ public class UIManager implements OnTouchListener {
 
     public void pause() {
         closeKeyboard();
+        isPaused = true;
+        if (handler != null) {
+            if (timeRunnable != null) handler.removeCallbacks(timeRunnable);
+            if (ramRunnable != null) handler.removeCallbacks(ramRunnable);
+            if (storageRunnable != null) handler.removeCallbacks(storageRunnable);
+            if (networkRunnable != null) handler.removeCallbacks(networkRunnable);
+            if (notesRunnable != null) handler.removeCallbacks(notesRunnable);
+            if (weatherRunnable != null) handler.removeCallbacks(weatherRunnable);
+            if (unlockTimeRunnable != null) handler.removeCallbacks(unlockTimeRunnable);
+        }
+    }
+
+    public void resume() {
+        if (!isPaused) return;
+        isPaused = false;
+        if (handler != null) {
+            if (timeRunnable != null && XMLPrefsManager.getBoolean(Ui.show_time)) {
+                handler.removeCallbacks(timeRunnable);
+                handler.post(timeRunnable);
+            }
+            if (ramRunnable != null && XMLPrefsManager.getBoolean(Ui.show_ram)) {
+                handler.removeCallbacks(ramRunnable);
+                handler.post(ramRunnable);
+            }
+            if (storageRunnable != null && XMLPrefsManager.getBoolean(Ui.show_storage_info)) {
+                handler.removeCallbacks(storageRunnable);
+                handler.post(storageRunnable);
+            }
+            if (networkRunnable != null && XMLPrefsManager.getBoolean(Ui.show_network_info)) {
+                handler.removeCallbacks(networkRunnable);
+                handler.post(networkRunnable);
+            }
+            if (notesRunnable != null && XMLPrefsManager.getBoolean(Ui.show_notes)) {
+                handler.removeCallbacks(notesRunnable);
+                handler.post(notesRunnable);
+            }
+            if (weatherRunnable != null && XMLPrefsManager.getBoolean(Ui.show_weather)) {
+                String where = XMLPrefsManager.get(Behavior.weather_location);
+                if (where != null && (where.contains(",") || TextProcessor.isNumber(where))) {
+                    handler.removeCallbacks(weatherRunnable);
+                    handler.post(weatherRunnable);
+                }
+            }
+            if (unlockTimeRunnable != null && XMLPrefsManager.getBoolean(Ui.show_unlock_counter) && lastUnlocks != null) {
+                handler.removeCallbacks(unlockTimeRunnable);
+                handler.post(unlockTimeRunnable);
+            }
+        }
     }
 
     @Override

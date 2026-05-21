@@ -22,7 +22,19 @@ public final class NotificationContentResolver {
         "com.google.android.apps.googlevoice",
         "com.discord",
         "com.instagram.android",
-        "com.snapchat.android"
+        "com.snapchat.android",
+        "com.android.mms",
+        "com.android.messaging",
+        "com.samsung.android.messaging",
+        "com.oneplus.messaging",
+        "com.oneplus.mms",
+        "com.sonyericsson.conversations",
+        "com.motorola.messaging",
+        "com.textra",
+        "com.jb.gosms",
+        "com.handcent.nextsms",
+        "com.chompry.chomp",
+        "org.fossify.messages"
     ));
 
     private static final Pattern SINGLE_MESSAGE_SUMMARY_PATTERN = Pattern.compile(

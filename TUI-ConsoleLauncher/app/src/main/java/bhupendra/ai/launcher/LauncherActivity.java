@@ -311,9 +311,14 @@ public class LauncherActivity extends AppCompatActivity implements Reloadable {
             FileSystemManager.toFile(e);
         }
 
+        boolean tuiNotification = XMLPrefsManager.getBoolean(Behavior.tui_notification);
         Intent keeperIntent = new Intent(this, KeeperService.class);
-        keeperIntent.putExtra(KeeperService.PATH_KEY, XMLPrefsManager.get(Behavior.home_path));
-        startForegroundService(keeperIntent);
+        if (tuiNotification) {
+            keeperIntent.putExtra(KeeperService.PATH_KEY, XMLPrefsManager.get(Behavior.home_path));
+            startForegroundService(keeperIntent);
+        } else {
+            stopService(keeperIntent);
+        }
 
         boolean notifications = XMLPrefsManager.getBoolean(Notifications.show_notifications) || XMLPrefsManager.get(Notifications.show_notifications).equalsIgnoreCase("enabled");
         if(notifications) {
@@ -393,9 +398,17 @@ public class LauncherActivity extends AppCompatActivity implements Reloadable {
     }
 
     @Override
+    protected void onResume() {
+        super.onResume();
+        if(ui != null) ui.resume();
+        if(main != null) main.resume();
+    }
+
+    @Override
     protected void onPause() {
         super.onPause();
         if(ui != null) ui.pause();
+        if(main != null) main.pause();
     }
 
     @Override
