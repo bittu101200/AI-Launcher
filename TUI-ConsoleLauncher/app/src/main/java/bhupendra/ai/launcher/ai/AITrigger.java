@@ -52,28 +52,48 @@ public class AITrigger {
     private boolean submitQuery(final String query, final String fallbackInput) {
         if (aiSubsystem == null || !aiSubsystem.isAvailable()) return false;
 
-        Tuils.sendOutput(Color.GRAY, context, "[thinking...]", TerminalManager.CATEGORY_OUTPUT);
+        final boolean supportsStreaming = aiSubsystem.supportsStreaming();
 
-        aiSubsystem.submit(query, new AICallback() {
-            private StringBuilder tokenBuffer = new StringBuilder();
+        if (!supportsStreaming) {
+            Tuils.sendOutput(Color.GRAY, context, "[thinking...]", TerminalManager.CATEGORY_OUTPUT);
+        }
+
+        final boolean[] streamStartedHolder = new boolean[]{false};
+
+        final AICallback callback = new AICallback() {
+            private final StringBuilder apiThinkingBuffer = new StringBuilder();
+            private final StringBuilder apiContentBuffer = new StringBuilder();
             private final java.util.regex.Pattern TOOL_CALL_PATTERN = java.util.regex.Pattern.compile("^tool_[A-Za-z0-9_]+\\(.*\\)$", java.util.regex.Pattern.DOTALL);
-            private boolean streamStarted = false;
 
-            @Override public void onToken(String rid, String token) {
-                tokenBuffer.append(token);
-                if (aiSubsystem.supportsStreaming()) {
-                    if (!streamStarted) {
-                        streamStarted = true;
-                        TerminalEventBus.get().post(new TerminalEventBus.StartStreamEvent(rid));
-                    }
-                    TerminalEventBus.get().post(new TerminalEventBus.UpdateStreamEvent(tokenBuffer.toString(), TerminalManager.CATEGORY_AI, rid));
+            @Override public void onThinkingToken(String rid, String token) {
+                apiThinkingBuffer.append(token);
+                if (supportsStreaming) {
+                    postUpdate(rid);
                 }
             }
 
+            @Override public void onToken(String rid, String token) {
+                apiContentBuffer.append(token);
+                if (supportsStreaming) {
+                    postUpdate(rid);
+                }
+            }
+
+            private void postUpdate(String rid) {
+                ContentSplit split = ContentSplit.split(apiContentBuffer.toString());
+                String combinedThinking = apiThinkingBuffer.toString() + split.thinking;
+                TerminalEventBus.get().post(new TerminalEventBus.UpdateStreamEvent(combinedThinking, split.content, TerminalManager.CATEGORY_AI, rid));
+            }
+
             @Override public void onResponse(AIResponse response) {
-                if (aiSubsystem.supportsStreaming() && streamStarted) {
-                    TerminalEventBus.get().post(new TerminalEventBus.FinishStreamEvent(response.text != null ? response.text : tokenBuffer.toString(), response.requestId));
-                    streamStarted = false;
+                String rid = response.requestId;
+                ContentSplit split = ContentSplit.split(apiContentBuffer.toString());
+                String combinedThinking = apiThinkingBuffer.toString() + split.thinking;
+                if (supportsStreaming && streamStartedHolder[0]) {
+                    ContentSplit finalSplit = ContentSplit.split(response.text != null ? response.text : split.content);
+                    String finalCombinedThinking = apiThinkingBuffer.length() > 0 ? apiThinkingBuffer.toString() : finalSplit.thinking;
+                    TerminalEventBus.get().post(new TerminalEventBus.FinishStreamEvent(finalCombinedThinking, finalSplit.content, rid));
+                    streamStartedHolder[0] = false;
                 }
                 if (response.type == AIResponse.Type.TEXT && response.text != null) {
                     if (response.isToolOutput) {
@@ -90,8 +110,12 @@ public class AITrigger {
                     if (TOOL_CALL_PATTERN.matcher(currentText).matches()) {
                         return;
                     }
-                    if (!aiSubsystem.supportsStreaming()) {
-                        Tuils.sendOutput(Color.WHITE, context, response.text, TerminalManager.CATEGORY_AI);
+                    if (!supportsStreaming) {
+                        ContentSplit finalSplit = ContentSplit.split(response.text);
+                        if (finalSplit.thinking != null && finalSplit.thinking.length() > 0) {
+                            Tuils.sendOutput(Color.GRAY, context, finalSplit.thinking, TerminalManager.CATEGORY_OUTPUT);
+                        }
+                        Tuils.sendOutput(Color.WHITE, context, finalSplit.content, TerminalManager.CATEGORY_AI);
                     }
                 } else if (response.type == AIResponse.Type.ERROR) {
                     Tuils.sendOutput(Color.RED, context, "[AI error: " + response.errorMessage + "]", TerminalManager.CATEGORY_ERROR);
@@ -99,10 +123,12 @@ public class AITrigger {
             }
 
             @Override public void onStateChange(String rid, AIRequestState state) {
-                if (aiSubsystem.supportsStreaming() && streamStarted) {
-                    if (state != AIRequestState.THINKING && state != AIRequestState.FOLLOWUP) {
-                        TerminalEventBus.get().post(new TerminalEventBus.FinishStreamEvent(tokenBuffer.toString(), rid));
-                        streamStarted = false;
+                ContentSplit split = ContentSplit.split(apiContentBuffer.toString());
+                String combinedThinking = apiThinkingBuffer.toString() + split.thinking;
+                if (supportsStreaming && streamStartedHolder[0]) {
+                    if (state != AIRequestState.THINKING && state != AIRequestState.FOLLOWUP && state != AIRequestState.STREAMING) {
+                        TerminalEventBus.get().post(new TerminalEventBus.FinishStreamEvent(combinedThinking, split.content, rid));
+                        streamStartedHolder[0] = false;
                     }
                 }
                 switch (state) {
@@ -114,7 +140,7 @@ public class AITrigger {
                         break;
                     case TIMED_OUT_CONNECT:
                         if (shellFallback != null && shouldFallbackToShell(fallbackInput)) {
-                            Tuils.sendOutput(Color.YELLOW, context, "[AI unavailable \u2014 retrying as shell command]", TerminalManager.CATEGORY_OUTPUT);
+                            Tuils.sendOutput(Color.YELLOW, context, "[AI unavailable — retrying as shell command]", TerminalManager.CATEGORY_OUTPUT);
                             shellFallback.triggerShell(fallbackInput);
                         } else {
                             Tuils.sendOutput(Color.YELLOW, context, "[AI unavailable]", TerminalManager.CATEGORY_OUTPUT);
@@ -130,7 +156,13 @@ public class AITrigger {
                         break;
                 }
             }
-        });
+        };
+
+        String rid = aiSubsystem.submit(query, callback);
+        if (supportsStreaming) {
+            streamStartedHolder[0] = true;
+            TerminalEventBus.get().post(new TerminalEventBus.StartStreamEvent(rid));
+        }
 
         return true;
     }
@@ -168,5 +200,65 @@ public class AITrigger {
             }
         } catch (Exception ignored) {}
         return "[executed: " + response.toolCall.toolName + "]";
+    }
+
+    public static class ContentSplit {
+        public final String thinking;
+        public final String content;
+
+        public ContentSplit(String thinking, String content) {
+            this.thinking = thinking;
+            this.content = content;
+        }
+
+        public static ContentSplit split(String rawContent) {
+            if (rawContent == null) {
+                return new ContentSplit("", "");
+            }
+            int thinkStart = rawContent.indexOf("<think>");
+            if (thinkStart != -1) {
+                int thinkEnd = rawContent.indexOf("</think>", thinkStart + 7);
+                if (thinkEnd != -1) {
+                    String prefix = stripPartialThink(rawContent.substring(0, thinkStart));
+                    String thinking = rawContent.substring(thinkStart + 7, thinkEnd);
+                    String suffix = stripPartialThink(rawContent.substring(thinkEnd + 8));
+                    return new ContentSplit(thinking, prefix + suffix);
+                } else {
+                    String prefix = stripPartialThink(rawContent.substring(0, thinkStart));
+                    String thinking = rawContent.substring(thinkStart + 7);
+                    String lowercaseThinking = thinking.toLowerCase();
+                    if (lowercaseThinking.endsWith("</think")) {
+                        thinking = thinking.substring(0, thinking.length() - 7);
+                    } else if (lowercaseThinking.endsWith("</thin")) {
+                        thinking = thinking.substring(0, thinking.length() - 6);
+                    } else if (lowercaseThinking.endsWith("</thi")) {
+                        thinking = thinking.substring(0, thinking.length() - 5);
+                    } else if (lowercaseThinking.endsWith("</th")) {
+                        thinking = thinking.substring(0, thinking.length() - 4);
+                    } else if (lowercaseThinking.endsWith("</t")) {
+                        thinking = thinking.substring(0, thinking.length() - 3);
+                    } else if (lowercaseThinking.endsWith("</")) {
+                        thinking = thinking.substring(0, thinking.length() - 2);
+                    } else if (lowercaseThinking.endsWith("<")) {
+                        thinking = thinking.substring(0, thinking.length() - 1);
+                    }
+                    return new ContentSplit(thinking, prefix);
+                }
+            } else {
+                return new ContentSplit("", stripPartialThink(rawContent));
+            }
+        }
+
+        private static String stripPartialThink(String s) {
+            if (s == null || s.isEmpty()) return s;
+            String lower = s.toLowerCase();
+            String[] tags = {"<think>", "<think", "<thin", "<thi", "<th", "<t", "<"};
+            for (String tag : tags) {
+                if (lower.endsWith(tag)) {
+                    return s.substring(0, s.length() - tag.length());
+                }
+            }
+            return s;
+        }
     }
 }

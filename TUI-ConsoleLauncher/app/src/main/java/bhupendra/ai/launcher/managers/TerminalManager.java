@@ -650,20 +650,46 @@ public class TerminalManager {
         mTerminalView.post(() -> {
             mTerminalView.append(Tuils.NEWLINE);
             streamStartOffset = mTerminalView.getText().length();
+            
+            SpannableString initial = new SpannableString("[thinking...]");
+            initial.setSpan(new ForegroundColorSpan(android.graphics.Color.GRAY), 0, initial.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            mTerminalView.append(initial);
+            
             synchronized (streamLock) {
-                pendingStreamContent = "";
+                pendingStreamContent = initial;
             }
             streamUpdatePending = false;
         });
     }
 
-    public void updateStream(final String text, final int category) {
+    public void updateStream(final String thinkingText, final String contentText, final int category) {
         final int aiCol = XMLPrefsManager.getColor(Theme.output_color);
-        final SpannableString spannable = new SpannableString(text);
-        spannable.setSpan(new ForegroundColorSpan(aiCol), 0, text.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        final SpannableStringBuilder builder = new SpannableStringBuilder();
+
+        boolean hasThinking = (thinkingText != null && thinkingText.length() > 0);
+        boolean hasContent = (contentText != null && contentText.length() > 0);
+
+        if (hasThinking) {
+            SpannableString thinkingSpan = new SpannableString(thinkingText);
+            thinkingSpan.setSpan(new ForegroundColorSpan(android.graphics.Color.GRAY), 0, thinkingText.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            builder.append(thinkingSpan);
+        } else if (!hasContent) {
+            SpannableString initial = new SpannableString("[thinking...]");
+            initial.setSpan(new ForegroundColorSpan(android.graphics.Color.GRAY), 0, initial.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            builder.append(initial);
+        }
+
+        if (hasContent) {
+            if (hasThinking) {
+                builder.append(Tuils.NEWLINE);
+            }
+            SpannableString contentSpan = new SpannableString(contentText);
+            contentSpan.setSpan(new ForegroundColorSpan(aiCol), 0, contentText.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            builder.append(contentSpan);
+        }
 
         synchronized (streamLock) {
-            pendingStreamContent = spannable;
+            pendingStreamContent = builder;
             if (!streamUpdatePending) {
                 streamUpdatePending = true;
                 streamHandler.postDelayed(streamUpdater, STREAM_THROTTLE_MS);
@@ -671,7 +697,7 @@ public class TerminalManager {
         }
     }
 
-    public void finishStreaming(final String finalText) {
+    public void finishStreaming(final String thinkingText, final String finalText) {
         synchronized (streamLock) {
             streamHandler.removeCallbacks(streamUpdater);
             streamUpdatePending = false;
@@ -682,8 +708,18 @@ public class TerminalManager {
                 if (currentText instanceof Editable) {
                     Editable editable = (Editable) currentText;
                     if (streamStartOffset <= editable.length()) {
+                        SpannableStringBuilder builder = new SpannableStringBuilder();
+                        if (thinkingText != null && thinkingText.length() > 0) {
+                            SpannableString thinkingSpan = new SpannableString(thinkingText);
+                            thinkingSpan.setSpan(new ForegroundColorSpan(android.graphics.Color.GRAY), 0, thinkingText.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                            builder.append(thinkingSpan);
+                            builder.append(Tuils.NEWLINE);
+                        }
+                        
                         CharSequence formattedText = getFinalText(finalText, CATEGORY_AI);
-                        editable.replace(streamStartOffset, editable.length(), formattedText);
+                        builder.append(formattedText);
+                        
+                        editable.replace(streamStartOffset, editable.length(), builder);
                     }
                 }
                 streamStartOffset = -1;

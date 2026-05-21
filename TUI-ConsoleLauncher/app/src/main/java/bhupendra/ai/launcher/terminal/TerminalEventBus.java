@@ -77,21 +77,25 @@ public final class TerminalEventBus {
     }
 
     public static final class UpdateStreamEvent extends TerminalEvent {
+        public final String thinkingText;
         public final String text;
         public final int category;
 
-        public UpdateStreamEvent(String text, int category, String requestId) {
+        public UpdateStreamEvent(String thinkingText, String text, int category, String requestId) {
             super(requestId);
+            this.thinkingText = thinkingText;
             this.text = text;
             this.category = category;
         }
     }
 
     public static final class FinishStreamEvent extends TerminalEvent {
+        public final String thinkingText;
         public final String finalText;
 
-        public FinishStreamEvent(String finalText, String requestId) {
+        public FinishStreamEvent(String thinkingText, String finalText, String requestId) {
             super(requestId);
+            this.thinkingText = thinkingText;
             this.finalText = finalText;
         }
     }

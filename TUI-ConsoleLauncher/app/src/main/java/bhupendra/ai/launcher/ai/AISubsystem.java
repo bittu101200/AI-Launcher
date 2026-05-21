@@ -552,6 +552,9 @@ public class AISubsystem {
             @Override public void onToken(String rid, String token) {
                 if (requestManager.isActive(requestId)) callback.onToken(rid, token);
             }
+            @Override public void onThinkingToken(String rid, String token) {
+                if (requestManager.isActive(requestId)) callback.onThinkingToken(rid, token);
+            }
             @Override public void onResponse(AIResponse response) { handleAIResponse(requestId, response, callback); }
             @Override public void onStateChange(String rid, AIRequestState s) {
                 if (requestManager.isActive(requestId)) callback.onStateChange(rid, s);
@@ -587,6 +590,7 @@ public class AISubsystem {
             
         automationRequestManager.submit(request, new AICallback() {
             @Override public void onToken(String rid, String token) { callback.onToken(rid, token); }
+            @Override public void onThinkingToken(String rid, String token) { callback.onThinkingToken(rid, token); }
             @Override public void onResponse(AIResponse response) { handleAutomationResponse(requestId, contextId, response, callback); }
             @Override public void onStateChange(String rid, AIRequestState s) { callback.onStateChange(rid, s); }
         });
@@ -683,6 +687,7 @@ public class AISubsystem {
             .build();
         provider.complete(request, requestId, new AICallback() {
             @Override public void onToken(String rid, String token) { callback.onToken(rid, token); }
+            @Override public void onThinkingToken(String rid, String token) { callback.onThinkingToken(rid, token); }
             @Override public void onResponse(AIResponse response) { handleAutomationResponse(requestId, contextId, response, callback); }
             @Override public void onStateChange(String rid, AIRequestState s) { callback.onStateChange(rid, s); }
         });
@@ -704,6 +709,7 @@ public class AISubsystem {
             .build();
         requestManager.submit(request, new AICallback() {
             @Override public void onToken(String rid, String token) { callback.onToken(rid, token); }
+            @Override public void onThinkingToken(String rid, String token) { callback.onThinkingToken(rid, token); }
             @Override public void onResponse(AIResponse response) { handleAIResponse(requestId, response, callback); }
             @Override public void onStateChange(String rid, AIRequestState s) {
                 callback.onStateChange(rid, s);

@@ -232,12 +232,12 @@ public class LauncherActivity extends AppCompatActivity implements Reloadable {
         } else if (event instanceof TerminalEventBus.UpdateStreamEvent) {
             TerminalEventBus.UpdateStreamEvent update = (TerminalEventBus.UpdateStreamEvent) event;
             runOnUiThread(() -> {
-                if (ui != null) ui.updateStream(update.text, update.category);
+                if (ui != null) ui.updateStream(update.thinkingText, update.text, update.category);
             });
         } else if (event instanceof TerminalEventBus.FinishStreamEvent) {
             TerminalEventBus.FinishStreamEvent finish = (TerminalEventBus.FinishStreamEvent) event;
             runOnUiThread(() -> {
-                if (ui != null) ui.finishStreaming(finish.finalText);
+                if (ui != null) ui.finishStreaming(finish.thinkingText, finish.finalText);
             });
         }
     }

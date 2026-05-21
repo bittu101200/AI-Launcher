@@ -69,9 +69,19 @@ public class RequestManager {
             public void onToken(String rid, String token) {
                 if (!rid.equals(activeId.get()) || cancelRequested) return;
                 cancelTimer();
-                transition(rid, AIRequestState.STREAMING, activeCallback);
+                if (state.get() != AIRequestState.STREAMING) {
+                    transition(rid, AIRequestState.STREAMING, activeCallback);
+                }
                 resetTimer(rid, inactivityTimeoutMs, AIRequestState.TIMED_OUT_INACTIVITY);
                 activeCallback.onToken(rid, token);
+            }
+
+            @Override
+            public void onThinkingToken(String rid, String token) {
+                if (!rid.equals(activeId.get()) || cancelRequested) return;
+                cancelTimer();
+                resetTimer(rid, inactivityTimeoutMs, AIRequestState.TIMED_OUT_INACTIVITY);
+                activeCallback.onThinkingToken(rid, token);
             }
 
             @Override

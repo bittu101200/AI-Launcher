@@ -1591,12 +1591,12 @@ public class UIManager implements OnTouchListener {
         if (mTerminalAdapter != null) mTerminalAdapter.startStreaming();
     }
 
-    public void updateStream(String text, int category) {
-        if (mTerminalAdapter != null) mTerminalAdapter.updateStream(text, category);
+    public void updateStream(String thinkingText, String text, int category) {
+        if (mTerminalAdapter != null) mTerminalAdapter.updateStream(thinkingText, text, category);
     }
 
-    public void finishStreaming(String finalText) {
-        if (mTerminalAdapter != null) mTerminalAdapter.finishStreaming(finalText);
+    public void finishStreaming(String thinkingText, String finalText) {
+        if (mTerminalAdapter != null) mTerminalAdapter.finishStreaming(thinkingText, finalText);
     }
 
     public void disableSuggestions() {

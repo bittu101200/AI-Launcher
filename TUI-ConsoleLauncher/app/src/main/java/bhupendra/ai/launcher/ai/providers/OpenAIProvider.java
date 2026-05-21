@@ -157,7 +157,11 @@ public class OpenAIProvider implements AIProvider {
                                             JSONObject choice = choices.getJSONObject(0);
                                             JSONObject delta = choice.optJSONObject("delta");
                                             if (delta != null) {
-                                                if (delta.has("content")) {
+                                                if (delta.has("reasoning_content") && !delta.isNull("reasoning_content")) {
+                                                    String thinkingToken = delta.getString("reasoning_content");
+                                                    callback.onThinkingToken(requestId, thinkingToken);
+                                                }
+                                                if (delta.has("content") && !delta.isNull("content")) {
                                                     String token = delta.getString("content");
                                                     accumulatedContent.append(token);
                                                     callback.onToken(requestId, token);
