@@ -5,6 +5,7 @@ import android.graphics.Color;
 import org.json.JSONObject;
 import bhupendra.ai.launcher.managers.TerminalManager;
 import bhupendra.ai.launcher.tuils.Tuils;
+import bhupendra.ai.launcher.terminal.TerminalEventBus;
 
 public class AITrigger {
 
@@ -56,13 +57,24 @@ public class AITrigger {
         aiSubsystem.submit(query, new AICallback() {
             private StringBuilder tokenBuffer = new StringBuilder();
             private final java.util.regex.Pattern TOOL_CALL_PATTERN = java.util.regex.Pattern.compile("^tool_[A-Za-z0-9_]+\\(.*\\)$", java.util.regex.Pattern.DOTALL);
+            private boolean streamStarted = false;
 
             @Override public void onToken(String rid, String token) {
-                // Hold tokens until the final response so markdown is rendered consistently.
                 tokenBuffer.append(token);
+                if (aiSubsystem.supportsStreaming()) {
+                    if (!streamStarted) {
+                        streamStarted = true;
+                        TerminalEventBus.get().post(new TerminalEventBus.StartStreamEvent(rid));
+                    }
+                    TerminalEventBus.get().post(new TerminalEventBus.UpdateStreamEvent(tokenBuffer.toString(), TerminalManager.CATEGORY_AI, rid));
+                }
             }
 
             @Override public void onResponse(AIResponse response) {
+                if (aiSubsystem.supportsStreaming() && streamStarted) {
+                    TerminalEventBus.get().post(new TerminalEventBus.FinishStreamEvent(response.text != null ? response.text : tokenBuffer.toString(), response.requestId));
+                    streamStarted = false;
+                }
                 if (response.type == AIResponse.Type.TEXT && response.text != null) {
                     if (response.isToolOutput) {
                         if (response.toolCall != null) {
@@ -78,13 +90,21 @@ public class AITrigger {
                     if (TOOL_CALL_PATTERN.matcher(currentText).matches()) {
                         return;
                     }
-                    Tuils.sendOutput(Color.WHITE, context, response.text, TerminalManager.CATEGORY_AI);
+                    if (!aiSubsystem.supportsStreaming()) {
+                        Tuils.sendOutput(Color.WHITE, context, response.text, TerminalManager.CATEGORY_AI);
+                    }
                 } else if (response.type == AIResponse.Type.ERROR) {
                     Tuils.sendOutput(Color.RED, context, "[AI error: " + response.errorMessage + "]", TerminalManager.CATEGORY_ERROR);
                 }
             }
 
             @Override public void onStateChange(String rid, AIRequestState state) {
+                if (aiSubsystem.supportsStreaming() && streamStarted) {
+                    if (state != AIRequestState.THINKING && state != AIRequestState.FOLLOWUP) {
+                        TerminalEventBus.get().post(new TerminalEventBus.FinishStreamEvent(tokenBuffer.toString(), rid));
+                        streamStarted = false;
+                    }
+                }
                 switch (state) {
                     case EXECUTING_TOOLS:
                         Tuils.sendOutput(Color.GRAY, context, "[executing tools...]", TerminalManager.CATEGORY_OUTPUT);

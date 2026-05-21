@@ -1,7 +1,9 @@
 package bhupendra.ai.launcher.managers;
 
 import bhupendra.ai.launcher.managers.TextProcessor;
-
+import android.os.Handler;
+import android.os.Looper;
+import android.text.Editable;
 
 import android.app.Activity;
 import android.content.Context;
@@ -115,6 +117,34 @@ public class TerminalManager {
     private int toolbarColor;
     private boolean aiRunning = false;
 
+    // Streaming fields
+    private int streamStartOffset = -1;
+    private final Object streamLock = new Object();
+    private CharSequence pendingStreamContent = "";
+    private boolean streamUpdatePending = false;
+    private final Handler streamHandler = new Handler(Looper.getMainLooper());
+    private static final long STREAM_THROTTLE_MS = 40; // ~25 FPS
+    private final Runnable streamUpdater = new Runnable() {
+        @Override
+        public void run() {
+            CharSequence content;
+            synchronized (streamLock) {
+                content = pendingStreamContent;
+                streamUpdatePending = false;
+            }
+            if (streamStartOffset != -1 && mTerminalView != null) {
+                CharSequence currentText = mTerminalView.getText();
+                if (currentText instanceof Editable) {
+                    Editable editable = (Editable) currentText;
+                    if (streamStartOffset <= editable.length()) {
+                        editable.replace(streamStartOffset, editable.length(), content);
+                        scrollToEnd();
+                    }
+                }
+            }
+        }
+    };
+
     public Context getContext() {
         return mContext;
     }
@@ -201,6 +231,7 @@ public class TerminalManager {
         }
 
         this.mTerminalView = terminalView;
+        this.mTerminalView.setText("", TextView.BufferType.EDITABLE);
         this.mTerminalView.setTypeface(Tuils.getTypeface(context));
         this.mTerminalView.setTextSize(ioSize);
         this.mTerminalView.setFocusable(false);
@@ -250,7 +281,7 @@ public class TerminalManager {
                         excessive--;
                     }
 
-                    terminalView.setText(text);
+                    terminalView.setText(text, TextView.BufferType.EDITABLE);
                 }
 
                 return true;
@@ -610,9 +641,55 @@ public class TerminalManager {
     }
 
     public void clear() {
-        mTerminalView.post(() -> mTerminalView.setText(Tuils.EMPTYSTRING));
+        mTerminalView.post(() -> mTerminalView.setText(Tuils.EMPTYSTRING, TextView.BufferType.EDITABLE));
         cmdList.clear();
         clearCmdsCount = 0;
+    }
+
+    public void startStreaming() {
+        mTerminalView.post(() -> {
+            mTerminalView.append(Tuils.NEWLINE);
+            streamStartOffset = mTerminalView.getText().length();
+            synchronized (streamLock) {
+                pendingStreamContent = "";
+            }
+            streamUpdatePending = false;
+        });
+    }
+
+    public void updateStream(final String text, final int category) {
+        final int aiCol = XMLPrefsManager.getColor(Theme.output_color);
+        final SpannableString spannable = new SpannableString(text);
+        spannable.setSpan(new ForegroundColorSpan(aiCol), 0, text.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+
+        synchronized (streamLock) {
+            pendingStreamContent = spannable;
+            if (!streamUpdatePending) {
+                streamUpdatePending = true;
+                streamHandler.postDelayed(streamUpdater, STREAM_THROTTLE_MS);
+            }
+        }
+    }
+
+    public void finishStreaming(final String finalText) {
+        synchronized (streamLock) {
+            streamHandler.removeCallbacks(streamUpdater);
+            streamUpdatePending = false;
+        }
+        mTerminalView.post(() -> {
+            if (streamStartOffset != -1 && mTerminalView != null) {
+                CharSequence currentText = mTerminalView.getText();
+                if (currentText instanceof Editable) {
+                    Editable editable = (Editable) currentText;
+                    if (streamStartOffset <= editable.length()) {
+                        CharSequence formattedText = getFinalText(finalText, CATEGORY_AI);
+                        editable.replace(streamStartOffset, editable.length(), formattedText);
+                    }
+                }
+                streamStartOffset = -1;
+                scrollToEnd();
+            }
+        });
     }
 
     public void onRoot() {

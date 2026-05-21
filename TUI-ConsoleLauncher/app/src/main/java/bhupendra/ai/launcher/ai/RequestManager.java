@@ -14,9 +14,14 @@ public class RequestManager {
     private volatile boolean cancelRequested;
 
     private Handler handler;
-    private final long connectTimeoutMs;
-    private final long inactivityTimeoutMs;
+    private volatile long connectTimeoutMs;
+    private volatile long inactivityTimeoutMs;
     private Runnable timeoutRunnable;
+
+    public void setTimeouts(long connectTimeoutMs, long inactivityTimeoutMs) {
+        this.connectTimeoutMs = connectTimeoutMs;
+        this.inactivityTimeoutMs = inactivityTimeoutMs;
+    }
 
     public RequestManager(AIProvider provider, long connectTimeoutMs, long inactivityTimeoutMs) {
         this.provider = provider;

@@ -52,7 +52,7 @@ public enum Ai implements XMLPrefsSave {
         @Override public String type() { return XMLPrefsSave.INTEGER; }
     },
     connect_timeout_ms {
-        @Override public String defaultValue() { return "10000"; }
+        @Override public String defaultValue() { return "30000"; }
         @Override public String info() { return "Connect timeout ms before TIMED_OUT_CONNECT"; }
         @Override public String type() { return XMLPrefsSave.INTEGER; }
     },

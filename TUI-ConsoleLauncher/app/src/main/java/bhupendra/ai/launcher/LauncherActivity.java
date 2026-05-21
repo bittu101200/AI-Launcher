@@ -225,6 +225,20 @@ public class LauncherActivity extends AppCompatActivity implements Reloadable {
             }
             if (output.color != Integer.MAX_VALUE) out.onOutput(output.color, text);
             else out.onOutput(text, output.type);
+        } else if (event instanceof TerminalEventBus.StartStreamEvent) {
+            runOnUiThread(() -> {
+                if (ui != null) ui.startStreaming();
+            });
+        } else if (event instanceof TerminalEventBus.UpdateStreamEvent) {
+            TerminalEventBus.UpdateStreamEvent update = (TerminalEventBus.UpdateStreamEvent) event;
+            runOnUiThread(() -> {
+                if (ui != null) ui.updateStream(update.text, update.category);
+            });
+        } else if (event instanceof TerminalEventBus.FinishStreamEvent) {
+            TerminalEventBus.FinishStreamEvent finish = (TerminalEventBus.FinishStreamEvent) event;
+            runOnUiThread(() -> {
+                if (ui != null) ui.finishStreaming(finish.finalText);
+            });
         }
     }
 

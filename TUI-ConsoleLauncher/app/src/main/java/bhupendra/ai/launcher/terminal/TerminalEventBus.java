@@ -69,4 +69,30 @@ public final class TerminalEventBus {
             this.longAction = longAction;
         }
     }
+
+    public static final class StartStreamEvent extends TerminalEvent {
+        public StartStreamEvent(String requestId) {
+            super(requestId);
+        }
+    }
+
+    public static final class UpdateStreamEvent extends TerminalEvent {
+        public final String text;
+        public final int category;
+
+        public UpdateStreamEvent(String text, int category, String requestId) {
+            super(requestId);
+            this.text = text;
+            this.category = category;
+        }
+    }
+
+    public static final class FinishStreamEvent extends TerminalEvent {
+        public final String finalText;
+
+        public FinishStreamEvent(String finalText, String requestId) {
+            super(requestId);
+            this.finalText = finalText;
+        }
+    }
 }

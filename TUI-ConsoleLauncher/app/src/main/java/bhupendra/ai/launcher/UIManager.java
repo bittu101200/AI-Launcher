@@ -1587,6 +1587,18 @@ public class UIManager implements OnTouchListener {
         mTerminalAdapter.setOutput(color, output);
     }
 
+    public void startStreaming() {
+        if (mTerminalAdapter != null) mTerminalAdapter.startStreaming();
+    }
+
+    public void updateStream(String text, int category) {
+        if (mTerminalAdapter != null) mTerminalAdapter.updateStream(text, category);
+    }
+
+    public void finishStreaming(String finalText) {
+        if (mTerminalAdapter != null) mTerminalAdapter.finishStreaming(finalText);
+    }
+
     public void disableSuggestions() {
         if(suggestionsManager != null) suggestionsManager.disable();
     }

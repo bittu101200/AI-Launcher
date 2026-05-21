@@ -151,8 +151,20 @@ public class AISubsystem {
         this.toolExecutor = toolExecutor != null ? toolExecutor : new AndroidToolExecutor();
         this.toolRegistry = new ToolRegistry();
         this.conversationManager = new ConversationManager(ConversationManager.Mode.SESSION, 4000);
-        this.requestManager = new RequestManager(provider, 10_000, 30_000);
-        this.automationRequestManager = new RequestManager(provider, 10_000, 30_000);
+        int connectTimeout = 10_000;
+        int inactivityTimeout = 30_000;
+        if (this.appContext != null) {
+            try {
+                int c = XMLPrefsManager.getInt(Ai.connect_timeout_ms);
+                if (c > 0) connectTimeout = c;
+            } catch (Exception ignored) {}
+            try {
+                int i = XMLPrefsManager.getInt(Ai.inactivity_timeout_ms);
+                if (i > 0) inactivityTimeout = i;
+            } catch (Exception ignored) {}
+        }
+        this.requestManager = new RequestManager(provider, connectTimeout, inactivityTimeout);
+        this.automationRequestManager = new RequestManager(provider, connectTimeout, inactivityTimeout);
         this.longTermMemory = this.appContext != null ? new LongTermMemory(this.appContext) : null;
         this.skillRegistry = this.appContext != null ? new SkillRegistry(this.appContext) : null;
         
@@ -421,6 +433,7 @@ public class AISubsystem {
     public void setMainPack(MainPack mainPack) { this.mainPack = mainPack; }
     public bhupendra.ai.launcher.ai.platform.JourneyManager getJourneyManager() { return journeyManager; }
     public boolean isAvailable() { return provider != null; }
+    public boolean supportsStreaming() { return provider != null && provider.supportsStreaming(); }
     public boolean isInFlight() { return requestManager.isInFlight(); }
     public boolean isAwaitingConfirmation() { return awaitingConfirmation; }
 
@@ -433,6 +446,20 @@ public class AISubsystem {
         this.provider = buildProvider(providerName);
         requestManager.setProvider(this.provider);
         automationRequestManager.setProvider(this.provider);
+
+        int connectTimeout = 10_000;
+        int inactivityTimeout = 30_000;
+        try {
+            int c = XMLPrefsManager.getInt(Ai.connect_timeout_ms);
+            if (c > 0) connectTimeout = c;
+        } catch (Exception ignored) {}
+        try {
+            int i = XMLPrefsManager.getInt(Ai.inactivity_timeout_ms);
+            if (i > 0) inactivityTimeout = i;
+        } catch (Exception ignored) {}
+        requestManager.setTimeouts(connectTimeout, inactivityTimeout);
+        automationRequestManager.setTimeouts(connectTimeout, inactivityTimeout);
+
         cachedSystemPrompt = null;
         cachedTools = null;
     }

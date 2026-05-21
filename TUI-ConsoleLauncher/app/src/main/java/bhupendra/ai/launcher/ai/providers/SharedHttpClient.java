@@ -6,8 +6,8 @@ import okhttp3.OkHttpClient;
 public class SharedHttpClient {
 
     private static final OkHttpClient SHARED_CLIENT = new OkHttpClient.Builder()
-        .connectTimeout(10, TimeUnit.SECONDS)
-        .readTimeout(30, TimeUnit.SECONDS)
+        .connectTimeout(30, TimeUnit.SECONDS)
+        .readTimeout(60, TimeUnit.SECONDS)
         .build();
 
     public static OkHttpClient get() {

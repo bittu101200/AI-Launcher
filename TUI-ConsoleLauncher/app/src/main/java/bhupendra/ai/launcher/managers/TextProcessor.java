@@ -30,14 +30,23 @@ public class TextProcessor {
     public static final Pattern calculusPattern = Pattern.compile("([\\+\\-\\*\\/\\^])(\\d+\\.?\\d*)");
     public static final String SPACE_REGEXP = "\\s";
 
+    // Caching Markdown patterns for top-notch rendering performance
+    private static final Pattern CODE_BLOCK_PATTERN = Pattern.compile("```[\\s\\S]*?```");
+    private static final Pattern BOLD_PATTERN = Pattern.compile("\\*\\*(.*?)\\*\\*");
+    private static final Pattern ITALIC_PATTERN = Pattern.compile("\\*(.*?)\\*");
+    private static final Pattern INLINE_CODE_PATTERN = Pattern.compile("`(.*?)`");
+    private static final Pattern HEADER_PATTERN = Pattern.compile("(?m)^#{1,6}\\s+(.*)$");
+    private static final Pattern LIST_PATTERN = Pattern.compile("(?m)^\\s*[\\*\\-]\\s+");
+    private static final Pattern STRIP_BOLD_PATTERN = Pattern.compile("\\*\\*");
+    private static final Pattern STRIP_HEADER3_PATTERN = Pattern.compile("###");
+    private static final Pattern STRIP_HEADER2_PATTERN = Pattern.compile("##");
 
     private interface RegexAction {
         void apply(SpannableStringBuilder builder, int start, int end);
     }
 
-    private static void applyRegex(SpannableStringBuilder builder, String regex, RegexAction action) {
+    private static void applyRegex(SpannableStringBuilder builder, Pattern pattern, RegexAction action) {
         try {
-            Pattern pattern = Pattern.compile(regex);
             Matcher matcher = pattern.matcher(builder);
             
             // Extract all matches first to avoid index shifting issues while iterating
@@ -349,7 +358,7 @@ public class TextProcessor {
             SpannableStringBuilder ssb = new SpannableStringBuilder(text);
     
             // 1. Code Blocks (``` ... ```)
-            applyRegex(ssb, "```[\\s\\S]*?```", (builder, start, end) -> {
+            applyRegex(ssb, CODE_BLOCK_PATTERN, (builder, start, end) -> {
                 builder.setSpan(new ForegroundColorSpan(0xFF888888), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                 builder.setSpan(new android.text.style.TypefaceSpan("monospace"), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                 builder.delete(end - 3, end);
@@ -357,21 +366,21 @@ public class TextProcessor {
             });
     
             // 2. Bold (**text**)
-            applyRegex(ssb, "\\*\\*(.*?)\\*\\*", (builder, start, end) -> {
+            applyRegex(ssb, BOLD_PATTERN, (builder, start, end) -> {
                 builder.setSpan(new android.text.style.StyleSpan(android.graphics.Typeface.BOLD), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                 builder.delete(end - 2, end);
                 builder.delete(start, start + 2);
             });
     
             // 3. Italic (*text*)
-            applyRegex(ssb, "\\*(.*?)\\*", (builder, start, end) -> {
+            applyRegex(ssb, ITALIC_PATTERN, (builder, start, end) -> {
                 builder.setSpan(new android.text.style.StyleSpan(android.graphics.Typeface.ITALIC), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                 builder.delete(end - 1, end);
                 builder.delete(start, start + 1);
             });
     
             // 4. Inline Code (`text`)
-            applyRegex(ssb, "`(.*?)`", (builder, start, end) -> {
+            applyRegex(ssb, INLINE_CODE_PATTERN, (builder, start, end) -> {
                 builder.setSpan(new ForegroundColorSpan(0xFF888888), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                 builder.setSpan(new android.text.style.TypefaceSpan("monospace"), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                 builder.delete(end - 1, end);
@@ -379,7 +388,7 @@ public class TextProcessor {
             });
     
             // 5. Headers (### text)
-            applyRegex(ssb, "(?m)^#{1,6}\\s+(.*)$", (builder, start, end) -> {
+            applyRegex(ssb, HEADER_PATTERN, (builder, start, end) -> {
                 builder.setSpan(new android.text.style.StyleSpan(android.graphics.Typeface.BOLD), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                 builder.setSpan(new android.text.style.RelativeSizeSpan(1.1f), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                 int hashEnd = start;
@@ -389,16 +398,16 @@ public class TextProcessor {
             });
     
             // 6. Lists (* text or - text)
-            applyRegex(ssb, "(?m)^\\s*[\\*\\-]\\s+", (builder, start, end) -> {
+            applyRegex(ssb, LIST_PATTERN, (builder, start, end) -> {
                 builder.replace(start, end, " • ");
             });
     
             // 7. Final Cleanup: If any ** or ### still exist, strip them (fallback)
             String finalStr = ssb.toString();
             if (finalStr.contains("**") || finalStr.contains("###")) {
-                 applyRegex(ssb, "\\*\\*", (builder, start, end) -> builder.delete(start, end));
-                 applyRegex(ssb, "###", (builder, start, end) -> builder.delete(start, end));
-                 applyRegex(ssb, "##", (builder, start, end) -> builder.delete(start, end));
+                 applyRegex(ssb, STRIP_BOLD_PATTERN, (builder, start, end) -> builder.delete(start, end));
+                 applyRegex(ssb, STRIP_HEADER3_PATTERN, (builder, start, end) -> builder.delete(start, end));
+                 applyRegex(ssb, STRIP_HEADER2_PATTERN, (builder, start, end) -> builder.delete(start, end));
             }
     
             return ssb;

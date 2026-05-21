@@ -22,6 +22,12 @@ import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
+import okhttp3.ResponseBody;
+import java.util.Map;
+import java.util.HashMap;
+import java.util.List;
+import java.util.ArrayList;
+import java.util.Collections;
 
 public class OpenCodeZenProvider implements AIProvider {
 
@@ -47,6 +53,7 @@ public class OpenCodeZenProvider implements AIProvider {
             JSONObject body = new JSONObject();
             body.put("model", model);
             body.put("max_tokens", request.maxTokens);
+            body.put("stream", true);
 
             JSONArray messages = new JSONArray();
             if (request.systemPrompt != null) {
@@ -124,23 +131,138 @@ public class OpenCodeZenProvider implements AIProvider {
 
                 @Override
                 public void onResponse(Call call, Response response) throws IOException {
-                    try {
+                    Log.d(TAG, "onResponse: code=" + response.code());
+                    if (!response.isSuccessful()) {
                         String respBody = response.body() != null ? response.body().string() : "";
-                        Log.d(TAG, "onResponse: code=" + response.code());
-                        if (!response.isSuccessful()) {
-                            callback.onResponse(AIResponse.error(requestId, "HTTP " + response.code() + ": " + respBody));
-                            return;
-                        }
-
-                        JSONObject json = new JSONObject(respBody);
-                        AIResponse aiResponse = OpenAIToolSupport.parseResponse(requestId, json);
-                        callback.onResponse(aiResponse);
-                    } catch (Exception e) {
-                        Log.e(TAG, "onResponse parse error: " + e.getMessage(), e);
-                        callback.onResponse(AIResponse.error(requestId, e.getMessage()));
-                    } finally {
+                        callback.onResponse(AIResponse.error(requestId, "HTTP " + response.code() + ": " + respBody));
                         response.close();
+                        return;
                     }
+
+                    bhupendra.ai.launcher.tuils.LauncherExecutors.aiExecutor.execute(() -> {
+                        try (ResponseBody body = response.body()) {
+                            if (body == null) {
+                                callback.onResponse(AIResponse.error(requestId, "Empty response body"));
+                                return;
+                            }
+
+                            okio.BufferedSource source = body.source();
+                            StringBuilder accumulatedContent = new StringBuilder();
+                            Map<Integer, StreamedToolCall> toolCallMap = new HashMap<>();
+
+                            while (!source.exhausted()) {
+                                String line = source.readUtf8Line();
+                                if (line == null) break;
+                                line = line.trim();
+                                if (line.isEmpty()) continue;
+
+                                if (line.startsWith("data: ")) {
+                                    String data = line.substring(6).trim();
+                                    if ("[DONE]".equals(data)) {
+                                        break;
+                                    }
+
+                                    try {
+                                        JSONObject chunk = new JSONObject(data);
+                                        JSONArray choices = chunk.optJSONArray("choices");
+                                        if (choices != null && choices.length() > 0) {
+                                            JSONObject choice = choices.getJSONObject(0);
+                                            JSONObject delta = choice.optJSONObject("delta");
+                                            if (delta != null) {
+                                                if (delta.has("content")) {
+                                                    String token = delta.getString("content");
+                                                    accumulatedContent.append(token);
+                                                    callback.onToken(requestId, token);
+                                                }
+
+                                                JSONArray toolCalls = delta.optJSONArray("tool_calls");
+                                                if (toolCalls != null) {
+                                                    for (int i = 0; i < toolCalls.length(); i++) {
+                                                        JSONObject tc = toolCalls.getJSONObject(i);
+                                                        int index = tc.optInt("index", 0);
+                                                        StreamedToolCall stc = toolCallMap.get(index);
+                                                        if (stc == null) {
+                                                            stc = new StreamedToolCall();
+                                                            stc.index = index;
+                                                            toolCallMap.put(index, stc);
+                                                        }
+                                                        if (tc.has("id")) {
+                                                            stc.id = tc.getString("id");
+                                                        }
+                                                        JSONObject function = tc.optJSONObject("function");
+                                                        if (function != null) {
+                                                            if (function.has("name")) {
+                                                                stc.name = function.getString("name");
+                                                            }
+                                                            if (function.has("arguments")) {
+                                                                stc.arguments.append(function.getString("arguments"));
+                                                            }
+                                                        }
+                                                        JSONObject extra = tc.optJSONObject("extra_content");
+                                                        if (extra != null) {
+                                                            JSONObject google = extra.optJSONObject("google");
+                                                            if (google != null && google.has("thought_signature")) {
+                                                                stc.thoughtSignature = google.getString("thought_signature");
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    } catch (Exception e) {
+                                        Log.w(TAG, "Failed to parse SSE chunk: " + line, e);
+                                    }
+                                }
+                            }
+
+                            JSONObject finalJson = new JSONObject();
+                            JSONArray choicesArray = new JSONArray();
+                            JSONObject choiceObj = new JSONObject();
+                            JSONObject messageObj = new JSONObject();
+
+                            messageObj.put("role", "assistant");
+                            messageObj.put("content", accumulatedContent.toString());
+
+                            if (!toolCallMap.isEmpty()) {
+                                JSONArray finalToolCalls = new JSONArray();
+                                List<Integer> keys = new ArrayList<>(toolCallMap.keySet());
+                                Collections.sort(keys);
+                                for (int key : keys) {
+                                    StreamedToolCall stc = toolCallMap.get(key);
+                                    JSONObject callObj = new JSONObject();
+                                    callObj.put("id", stc.id);
+                                    callObj.put("type", "function");
+
+                                    JSONObject function = new JSONObject();
+                                    function.put("name", stc.name);
+                                    function.put("arguments", stc.arguments.toString());
+                                    callObj.put("function", function);
+
+                                    if (stc.thoughtSignature != null) {
+                                        JSONObject extra = new JSONObject();
+                                        JSONObject google = new JSONObject();
+                                        google.put("thought_signature", stc.thoughtSignature);
+                                        extra.put("google", google);
+                                        callObj.put("extra_content", extra);
+                                    }
+
+                                    finalToolCalls.put(callObj);
+                                }
+                                messageObj.put("tool_calls", finalToolCalls);
+                            }
+
+                            choiceObj.put("message", messageObj);
+                            choicesArray.put(choiceObj);
+                            finalJson.put("choices", choicesArray);
+
+                            AIResponse aiResponse = OpenAIToolSupport.parseResponse(requestId, finalJson);
+                            callback.onResponse(aiResponse);
+
+                        } catch (Exception e) {
+                            Log.e(TAG, "Error during streaming: " + e.getMessage(), e);
+                            callback.onResponse(AIResponse.error(requestId, e.getMessage()));
+                        }
+                    });
                 }
             });
         } catch (Exception e) {
@@ -156,11 +278,19 @@ public class OpenCodeZenProvider implements AIProvider {
 
     @Override
     public boolean supportsStreaming() {
-        return false;
+        return true;
     }
 
     @Override
     public String providerId() {
         return "opencode_zen";
+    }
+
+    private static class StreamedToolCall {
+        int index;
+        String id = "";
+        String name = "";
+        final StringBuilder arguments = new StringBuilder();
+        String thoughtSignature = null;
     }
 }
