@@ -36,7 +36,8 @@ public class AISubsystem {
         "3. App Launches: Use system.launch_app for app-open requests instead of system.execute_command.\n" +
         "4. Skills: If the user teaches a reusable workflow, call system.save_skill with a concise trigger. If a task matches the skill index, call system.load_skill before acting.\n" +
         "5. Tool Errors: If a tool output starts with [error:, [not dispatched:, or [command failed, do not claim success; correct the call or report the failure.\n" +
-        "6. Ambiguity: If intent is unclear, ask one short question before tool use.\n";
+        "6. Ambiguity: If intent is unclear, ask one short question before tool use.\n" +
+        "7. Structured Web Reports: Synthesize information retrieved from the web (search or fetch) cleanly. Never dump raw search snippets, list items, or long/redundant URLs. Instead, present findings in a structured, hierarchical layout using bold headers for main sections and bullet lists for details. Format links cleanly as '[source name](url)' with concise labels, keeping links minimal and relevant.\n";
 
     private static volatile AISubsystem instance;
 

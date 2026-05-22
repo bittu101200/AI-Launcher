@@ -516,42 +516,64 @@ public class TerminalManager {
                     finalSsb.append(processedInput);
                     break;
                 case CATEGORY_OUTPUT:
-                    t = TextProcessor.parseMarkdown(t);
-                    String outputTemplate = XMLPrefsManager.get(Behavior.output_format);
                     int outCol = XMLPrefsManager.getColor(Theme.output_color);
+                    t = TextProcessor.parseMarkdown(t, outCol);
+                    String outputTemplate = XMLPrefsManager.get(Behavior.output_format);
                     
                     if (outputTemplate != null) {
                         int oIndex = outputTemplate.indexOf(FORMAT_OUTPUT);
                         if (oIndex != -1) {
+                            int start1 = finalSsb.length();
                             finalSsb.append(outputTemplate.substring(0, oIndex));
+                            int end1 = finalSsb.length();
+                            if (end1 > start1) {
+                                finalSsb.setSpan(new ForegroundColorSpan(outCol), start1, end1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                            }
+                            
                             finalSsb.append(t);
+                            
+                            int start2 = finalSsb.length();
                             finalSsb.append(outputTemplate.substring(oIndex + FORMAT_OUTPUT.length()));
+                            int end2 = finalSsb.length();
+                            if (end2 > start2) {
+                                finalSsb.setSpan(new ForegroundColorSpan(outCol), start2, end2, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                            }
                         } else {
                             finalSsb.append(t);
                         }
                     } else {
                         finalSsb.append(t);
                     }
-                    finalSsb.setSpan(new ForegroundColorSpan(outCol), 0, finalSsb.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                     break;
                 case CATEGORY_AI:
-                    t = TextProcessor.parseMarkdown(t);
-                    String aiTemplate = XMLPrefsManager.get(Behavior.output_format);
                     int aiCol = XMLPrefsManager.getColor(Theme.output_color);
+                    t = TextProcessor.parseMarkdown(t, aiCol);
+                    String aiTemplate = XMLPrefsManager.get(Behavior.output_format);
 
                     if (aiTemplate != null) {
                         int aiIndex = aiTemplate.indexOf(FORMAT_OUTPUT);
                         if (aiIndex != -1) {
+                            int start1 = finalSsb.length();
                             finalSsb.append(aiTemplate.substring(0, aiIndex));
+                            int end1 = finalSsb.length();
+                            if (end1 > start1) {
+                                finalSsb.setSpan(new ForegroundColorSpan(aiCol), start1, end1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                            }
+                            
                             finalSsb.append(t);
+                            
+                            int start2 = finalSsb.length();
                             finalSsb.append(aiTemplate.substring(aiIndex + FORMAT_OUTPUT.length()));
+                            int end2 = finalSsb.length();
+                            if (end2 > start2) {
+                                finalSsb.setSpan(new ForegroundColorSpan(aiCol), start2, end2, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                            }
                         } else {
                             finalSsb.append(t);
                         }
                     } else {
                         finalSsb.append(t);
                     }
-                    finalSsb.setSpan(new ForegroundColorSpan(aiCol), 0, finalSsb.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                     break;
                 case CATEGORY_ERROR:
                     SpannableString ser = TextProcessor.span(outputFormat, Color.RED);

@@ -15,6 +15,8 @@ import android.text.style.StyleSpan;
 import android.text.style.TypefaceSpan;
 import android.text.style.AbsoluteSizeSpan;
 import android.text.style.BackgroundColorSpan;
+import android.text.style.UnderlineSpan;
+import bhupendra.ai.launcher.ui.views.LongClickableSpan;
 
 import android.util.Log;
 
@@ -40,6 +42,7 @@ public class TextProcessor {
     private static final Pattern STRIP_BOLD_PATTERN = Pattern.compile("\\*\\*");
     private static final Pattern STRIP_HEADER3_PATTERN = Pattern.compile("###");
     private static final Pattern STRIP_HEADER2_PATTERN = Pattern.compile("##");
+    private static final Pattern LINK_PATTERN = Pattern.compile("\\[([^\\]]+)\\]\\(([^)]+)\\)");
 
     private interface RegexAction {
         void apply(SpannableStringBuilder builder, int start, int end);
@@ -354,64 +357,89 @@ public class TextProcessor {
         }
 
     public static CharSequence parseMarkdown(CharSequence text) {
-            if (text == null) return null;
-            SpannableStringBuilder ssb = new SpannableStringBuilder(text);
-    
-            // 1. Code Blocks (``` ... ```)
-            applyRegex(ssb, CODE_BLOCK_PATTERN, (builder, start, end) -> {
-                builder.setSpan(new ForegroundColorSpan(0xFF888888), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-                builder.setSpan(new android.text.style.TypefaceSpan("monospace"), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-                builder.delete(end - 3, end);
-                builder.delete(start, start + 3);
-            });
-    
-            // 2. Bold (**text**)
-            applyRegex(ssb, BOLD_PATTERN, (builder, start, end) -> {
-                builder.setSpan(new android.text.style.StyleSpan(android.graphics.Typeface.BOLD), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-                builder.delete(end - 2, end);
-                builder.delete(start, start + 2);
-            });
-    
-            // 3. Italic (*text*)
-            applyRegex(ssb, ITALIC_PATTERN, (builder, start, end) -> {
-                builder.setSpan(new android.text.style.StyleSpan(android.graphics.Typeface.ITALIC), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-                builder.delete(end - 1, end);
-                builder.delete(start, start + 1);
-            });
-    
-            // 4. Inline Code (`text`)
-            applyRegex(ssb, INLINE_CODE_PATTERN, (builder, start, end) -> {
-                builder.setSpan(new ForegroundColorSpan(0xFF888888), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-                builder.setSpan(new android.text.style.TypefaceSpan("monospace"), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-                builder.delete(end - 1, end);
-                builder.delete(start, start + 1);
-            });
-    
-            // 5. Headers (### text)
-            applyRegex(ssb, HEADER_PATTERN, (builder, start, end) -> {
-                builder.setSpan(new android.text.style.StyleSpan(android.graphics.Typeface.BOLD), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-                builder.setSpan(new android.text.style.RelativeSizeSpan(1.1f), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-                int hashEnd = start;
-                while(hashEnd < end && builder.charAt(hashEnd) == '#') hashEnd++;
-                while(hashEnd < end && Character.isWhitespace(builder.charAt(hashEnd))) hashEnd++;
-                builder.delete(start, hashEnd);
-            });
-    
-            // 6. Lists (* text or - text)
-            applyRegex(ssb, LIST_PATTERN, (builder, start, end) -> {
-                builder.replace(start, end, " • ");
-            });
-    
-            // 7. Final Cleanup: If any ** or ### still exist, strip them (fallback)
-            String finalStr = ssb.toString();
-            if (finalStr.contains("**") || finalStr.contains("###")) {
-                 applyRegex(ssb, STRIP_BOLD_PATTERN, (builder, start, end) -> builder.delete(start, end));
-                 applyRegex(ssb, STRIP_HEADER3_PATTERN, (builder, start, end) -> builder.delete(start, end));
-                 applyRegex(ssb, STRIP_HEADER2_PATTERN, (builder, start, end) -> builder.delete(start, end));
+        return parseMarkdown(text, Color.WHITE);
+    }
+
+    public static CharSequence parseMarkdown(CharSequence text, int defaultColor) {
+        if (text == null) return null;
+        SpannableStringBuilder ssb = new SpannableStringBuilder(text);
+
+        // Apply default color span first, so specific markdown styles applied later can override it
+        ssb.setSpan(new ForegroundColorSpan(defaultColor), 0, ssb.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+
+        // 1. Code Blocks (``` ... ```)
+        applyRegex(ssb, CODE_BLOCK_PATTERN, (builder, start, end) -> {
+            builder.setSpan(new ForegroundColorSpan(0xFF888888), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            builder.setSpan(new android.text.style.TypefaceSpan("monospace"), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            builder.delete(end - 3, end);
+            builder.delete(start, start + 3);
+        });
+
+        // 2. Bold (**text**)
+        applyRegex(ssb, BOLD_PATTERN, (builder, start, end) -> {
+            builder.setSpan(new android.text.style.StyleSpan(android.graphics.Typeface.BOLD), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            builder.delete(end - 2, end);
+            builder.delete(start, start + 2);
+        });
+
+        // 3. Italic (*text*)
+        applyRegex(ssb, ITALIC_PATTERN, (builder, start, end) -> {
+            builder.setSpan(new android.text.style.StyleSpan(android.graphics.Typeface.ITALIC), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            builder.delete(end - 1, end);
+            builder.delete(start, start + 1);
+        });
+
+        // 4. Inline Code (`text`)
+        applyRegex(ssb, INLINE_CODE_PATTERN, (builder, start, end) -> {
+            builder.setSpan(new ForegroundColorSpan(0xFF888888), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            builder.setSpan(new android.text.style.TypefaceSpan("monospace"), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            builder.delete(end - 1, end);
+            builder.delete(start, start + 1);
+        });
+
+        // 5. Headers (### text)
+        applyRegex(ssb, HEADER_PATTERN, (builder, start, end) -> {
+            builder.setSpan(new android.text.style.StyleSpan(android.graphics.Typeface.BOLD), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            builder.setSpan(new android.text.style.RelativeSizeSpan(1.1f), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            int hashEnd = start;
+            while(hashEnd < end && builder.charAt(hashEnd) == '#') hashEnd++;
+            while(hashEnd < end && Character.isWhitespace(builder.charAt(hashEnd))) hashEnd++;
+            builder.delete(start, hashEnd);
+        });
+
+        // 6. Lists (* text or - text)
+        applyRegex(ssb, LIST_PATTERN, (builder, start, end) -> {
+            builder.replace(start, end, " • ");
+        });
+
+        // 7. Links ([text](url))
+        applyRegex(ssb, LINK_PATTERN, (builder, start, end) -> {
+            Matcher m = LINK_PATTERN.matcher(builder.subSequence(start, end));
+            if (m.matches()) {
+                String linkText = m.group(1);
+                String url = m.group(2);
+                builder.replace(start, end, linkText);
+                int newEnd = start + linkText.length();
+                builder.setSpan(new UnderlineSpan(), start, newEnd, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                try {
+                    builder.setSpan(new LongClickableSpan(android.net.Uri.parse(url)), start, newEnd, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                } catch (Exception e) {
+                    android.util.Log.e("TextProcessor", "Failed to parse link URL: " + url, e);
+                }
+                builder.setSpan(new ForegroundColorSpan(0xFF448AFF), start, newEnd, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
             }
-    
-            return ssb;
+        });
+
+        // 8. Final Cleanup: If any ** or ### still exist, strip them (fallback)
+        String finalStr = ssb.toString();
+        if (finalStr.contains("**") || finalStr.contains("###")) {
+             applyRegex(ssb, STRIP_BOLD_PATTERN, (builder, start, end) -> builder.delete(start, end));
+             applyRegex(ssb, STRIP_HEADER3_PATTERN, (builder, start, end) -> builder.delete(start, end));
+             applyRegex(ssb, STRIP_HEADER2_PATTERN, (builder, start, end) -> builder.delete(start, end));
         }
+
+        return ssb;
+    }
 
     public static SpannableString span(CharSequence text, int color) {
             return span(null, text, color, Integer.MAX_VALUE);
