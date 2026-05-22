@@ -64,7 +64,7 @@ public class NotificationService extends NotificationListenerService {
     int color, maxOptionalDepth;
     boolean enabled, click, longClick, active;
 
-    List<String> whitelist, blacklist;
+    volatile List<String> whitelist, blacklist;
 
     LinkedBlockingQueue<StatusBarNotification> queue;
     private final Map<String, String> appLabelCache = new HashMap<>();
@@ -116,16 +116,18 @@ public class NotificationService extends NotificationListenerService {
 
         String wl = XMLPrefsManager.get(Notifications.notification_whitelist);
         if (wl != null && wl.length() > 0) {
-            whitelist = new ArrayList<>(Arrays.asList(wl.split(",")));
-            for (int i = 0; i < whitelist.size(); i++) whitelist.set(i, whitelist.get(i).trim());
+            List<String> list = new ArrayList<>(Arrays.asList(wl.split(",")));
+            for (int i = 0; i < list.size(); i++) list.set(i, list.get(i).trim());
+            whitelist = list;
         } else {
             whitelist = null;
         }
 
         String bl = XMLPrefsManager.get(Notifications.notification_blacklist);
         if (bl != null && bl.length() > 0) {
-            blacklist = new ArrayList<>(Arrays.asList(bl.split(",")));
-            for (int i = 0; i < blacklist.size(); i++) blacklist.set(i, blacklist.get(i).trim());
+            List<String> list = new ArrayList<>(Arrays.asList(bl.split(",")));
+            for (int i = 0; i < list.size(); i++) list.set(i, list.get(i).trim());
+            blacklist = list;
         } else {
             blacklist = null;
         }
@@ -377,7 +379,15 @@ public class NotificationService extends NotificationListenerService {
 
     @Override
     public void onNotificationPosted(StatusBarNotification sbn) {
-        Log.d(TAG, "onNotificationPosted: " + (sbn != null ? sbn.getPackageName() : "null"));
+        if (sbn == null) return;
+        String pack = sbn.getPackageName();
+        if (blacklist != null && blacklist.contains(pack)) {
+            return;
+        }
+        if (whitelist != null && !whitelist.isEmpty() && !whitelist.contains(pack)) {
+            return;
+        }
+        Log.d(TAG, "onNotificationPosted: " + pack);
         if(!enabled) return;
 
         if (!queue.offer(sbn)) {
@@ -389,16 +399,18 @@ public class NotificationService extends NotificationListenerService {
     public void updateFiltering() {
         String wl = XMLPrefsManager.get(Notifications.notification_whitelist);
         if (wl != null && wl.length() > 0) {
-            whitelist = new ArrayList<>(Arrays.asList(wl.split(",")));
-            for (int i = 0; i < whitelist.size(); i++) whitelist.set(i, whitelist.get(i).trim());
+            List<String> list = new ArrayList<>(Arrays.asList(wl.split(",")));
+            for (int i = 0; i < list.size(); i++) list.set(i, list.get(i).trim());
+            whitelist = list;
         } else {
             whitelist = null;
         }
 
         String bl = XMLPrefsManager.get(Notifications.notification_blacklist);
         if (bl != null && bl.length() > 0) {
-            blacklist = new ArrayList<>(Arrays.asList(bl.split(",")));
-            for (int i = 0; i < blacklist.size(); i++) blacklist.set(i, blacklist.get(i).trim());
+            List<String> list = new ArrayList<>(Arrays.asList(bl.split(",")));
+            for (int i = 0; i < list.size(); i++) list.set(i, list.get(i).trim());
+            blacklist = list;
         } else {
             blacklist = null;
         }
