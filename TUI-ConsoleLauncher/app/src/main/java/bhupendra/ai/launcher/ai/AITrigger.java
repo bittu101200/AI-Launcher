@@ -87,6 +87,12 @@ public class AITrigger {
 
             @Override public void onResponse(AIResponse response) {
                 String rid = response.requestId;
+                if (response.isToolOutput) {
+                    if (response.toolCall != null) {
+                        Tuils.sendOutput(Color.GRAY, context, buildToolStatus(response), TerminalManager.CATEGORY_OUTPUT);
+                    }
+                    return;
+                }
                 ContentSplit split = ContentSplit.split(apiContentBuffer.toString());
                 String combinedThinking = apiThinkingBuffer.toString() + split.thinking;
                 if (supportsStreaming && streamStartedHolder[0]) {
@@ -96,12 +102,6 @@ public class AITrigger {
                     streamStartedHolder[0] = false;
                 }
                 if (response.type == AIResponse.Type.TEXT && response.text != null) {
-                    if (response.isToolOutput) {
-                        if (response.toolCall != null) {
-                            Tuils.sendOutput(Color.GRAY, context, buildToolStatus(response), TerminalManager.CATEGORY_OUTPUT);
-                        }
-                        return;
-                    }
                     String currentText = response.text.trim();
                     if (currentText.startsWith("[AI wants to]")) {
                         Tuils.sendOutput(Color.GRAY, context, response.text, TerminalManager.CATEGORY_OUTPUT);
