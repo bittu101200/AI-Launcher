@@ -8,14 +8,26 @@ import java.util.Map;
 import bhupendra.ai.launcher.ai.Tool;
 import bhupendra.ai.launcher.ai.ToolRiskClass;
 import bhupendra.ai.launcher.commands.main.MainPack;
+import bhupendra.ai.launcher.di.ManagerEntryPoint;
+import dagger.hilt.EntryPoints;
 
 public abstract class BaseAITool extends Tool {
+
+    @Deprecated
+    protected MainPack mainPack;
 
     public BaseAITool(String name, String description, Map<String, String> parameters, ToolRiskClass riskClass) {
         super(name, description, parameters, riskClass);
     }
 
-    public void setMainPack(MainPack mainPack) {}
+    @Deprecated
+    public void setMainPack(MainPack mainPack) {
+        this.mainPack = mainPack;
+    }
+
+    protected ManagerEntryPoint getEntryPoint(Context context) {
+        return EntryPoints.get(context.getApplicationContext(), ManagerEntryPoint.class);
+    }
 
     /**
      * Executes the tool logic.

@@ -1,4 +1,4 @@
-package bhupendra.ai.launcher.tuils;
+package bhupendra.ai.launcher.integration.termux;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;

@@ -10,10 +10,7 @@ import bhupendra.ai.launcher.managers.FileSystemManager;
 
 
 import android.app.Activity;
-import android.app.ActivityManager;
-import android.app.KeyguardManager;
 import android.app.admin.DevicePolicyManager;
-import android.bluetooth.BluetoothAdapter;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
@@ -24,11 +21,6 @@ import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.graphics.drawable.GradientDrawable;
 import android.location.Location;
-import android.net.ConnectivityManager;
-import android.net.wifi.WifiInfo;
-import android.net.wifi.WifiManager;
-import android.os.BatteryManager;
-import android.os.Build;
 import android.os.Handler;
 import androidx.core.app.ActivityCompat;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
@@ -57,22 +49,16 @@ import android.widget.TextView;
 
 import java.io.File;
 import java.io.FileOutputStream;
-import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Calendar;
 import java.util.Collections;
 import java.util.List;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import bhupendra.ai.launcher.commands.main.MainPack;
 import bhupendra.ai.launcher.commands.main.specific.RedirectCommand;
-import bhupendra.ai.launcher.managers.HTMLExtractManager;
 import bhupendra.ai.launcher.managers.NotesManager;
 import bhupendra.ai.launcher.managers.TerminalManager;
-import bhupendra.ai.launcher.managers.TimeManager;
-import bhupendra.ai.launcher.managers.TuiLocationManager;
 import bhupendra.ai.launcher.managers.suggestions.SuggestionTextWatcher;
 import bhupendra.ai.launcher.managers.suggestions.SuggestionsManager;
 import bhupendra.ai.launcher.managers.xml.XMLPrefsManager;
@@ -82,17 +68,17 @@ import bhupendra.ai.launcher.managers.xml.options.Theme;
 import bhupendra.ai.launcher.managers.xml.options.Toolbar;
 import bhupendra.ai.launcher.managers.xml.options.Ui;
 import bhupendra.ai.launcher.tuils.AllowEqualsSequence;
-import bhupendra.ai.launcher.tuils.NetworkUtils;
-import bhupendra.ai.launcher.tuils.OutlineEditText;
-import bhupendra.ai.launcher.tuils.OutlineTextView;
+import bhupendra.ai.launcher.ui.views.OutlineEditText;
+import bhupendra.ai.launcher.ui.views.OutlineTextView;
 import bhupendra.ai.launcher.tuils.Tuils;
 import bhupendra.ai.launcher.tuils.interfaces.CommandExecuter;
-import bhupendra.ai.launcher.tuils.interfaces.OnBatteryUpdate;
 import bhupendra.ai.launcher.tuils.interfaces.OnRedirectionListener;
 import bhupendra.ai.launcher.tuils.interfaces.OnTextChanged;
 import bhupendra.ai.launcher.tuils.stuff.PolicyReceiver;
+import bhupendra.ai.launcher.ui.status.StatusUIController;
+import bhupendra.ai.launcher.ui.status.WeatherUIController;
 
-public class UIManager implements OnTouchListener {
+public class UIManager implements OnTouchListener, LabelUpdater {
 
     public static String ACTION_UPDATE_SUGGESTIONS = BuildConfig.APPLICATION_ID + ".ui_update_suggestions";
     public static String ACTION_UPDATE_HINT = BuildConfig.APPLICATION_ID + ".ui_update_hint";
@@ -115,7 +101,10 @@ public class UIManager implements OnTouchListener {
     public static String FILE_NAME = "fileName";
     public static String PREFS_NAME = "ui";
 
-    private enum Label {
+    public static final String UNLOCK_KEY = "unlockTimes";
+    public static final String NEXT_UNLOCK_CYCLE_RESTART = "nextUnlockRestart";
+
+    public enum Label {
         ram,
         device,
         time,
@@ -127,9 +116,8 @@ public class UIManager implements OnTouchListener {
         unlock
     }
 
-    private final int RAM_DELAY = 3000;
-    private final int TIME_DELAY = 1000;
-    private final int STORAGE_DELAY = 60 * 1000;
+    private StatusUIController statusUIController;
+    private WeatherUIController weatherUIController;
 
     protected Context mContext;
 
@@ -143,9 +131,6 @@ public class UIManager implements OnTouchListener {
 
     private InputMethodManager imm;
     private TerminalManager mTerminalAdapter;
-
-    int mediumPercentage, lowPercentage;
-    String batteryFormat;
 
     boolean hideToolbarNoInput;
     View toolbarView;
@@ -166,593 +151,9 @@ public class UIManager implements OnTouchListener {
         if (index < 0 || index >= labelViews.length) return null;
         return labelViews[index];
     }
-
-    private int notesMaxLines;
-    private NotesManager notesManager;
-    private NotesRunnable notesRunnable;
-    private class NotesRunnable implements Runnable {
-
-        int updateTime = 2000;
-
-        @Override
-        public void run() {
-            if(notesManager != null) {
-                if(notesManager.hasChanged) {
-                    UIManager.this.updateText(Label.notes, TextProcessor.span(mContext, labelSizes[Label.notes.ordinal()], notesManager.getNotes()));
-                }
-
-                handler.postDelayed(this, updateTime);
-            }
-        }
-    };
-
-    private BatteryUpdate batteryUpdate;
-    private class BatteryUpdate implements OnBatteryUpdate {
-
-//        %(charging:not charging)
-
-        //        final Pattern optionalCharging = Pattern.compile("%\\(([^\\/]*)\\/([^)]*)\\)", Pattern.CASE_INSENSITIVE);
-        Pattern optionalCharging;
-        final Pattern value = Pattern.compile("%v", Pattern.LITERAL | Pattern.CASE_INSENSITIVE);
-
-        boolean manyStatus, loaded;
-        int colorHigh, colorMedium, colorLow;
-
-        boolean charging;
-        float last = -1;
-
-        @Override
-        public void update(float p) {
-            if(batteryFormat == null) {
-                batteryFormat = XMLPrefsManager.get(Behavior.battery_format);
-
-                Intent intent = mContext.registerReceiver(null, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
-                if(intent == null) charging = false;
-                else {
-                    int plugged = intent.getIntExtra(BatteryManager.EXTRA_PLUGGED, -1);
-                    charging = plugged == BatteryManager.BATTERY_PLUGGED_AC || plugged == BatteryManager.BATTERY_PLUGGED_USB;
-                }
-
-                String optionalSeparator = "\\" + XMLPrefsManager.get(Behavior.optional_values_separator);
-                String optional = "%\\(([^" + optionalSeparator + "]*)" + optionalSeparator + "([^)]*)\\)";
-                optionalCharging = Pattern.compile(optional, Pattern.CASE_INSENSITIVE);
-            }
-
-            if(p == -1) p = last;
-            last = p;
-
-            if(!loaded) {
-                loaded = true;
-
-                manyStatus = XMLPrefsManager.getBoolean(Ui.enable_battery_status);
-                colorHigh = XMLPrefsManager.getColor(Theme.battery_color_high);
-                colorMedium = XMLPrefsManager.getColor(Theme.battery_color_medium);
-                colorLow = XMLPrefsManager.getColor(Theme.battery_color_low);
-            }
-
-            int percentage = (int) p;
-
-            int color;
-
-            if(manyStatus) {
-                if(percentage > mediumPercentage) color = colorHigh;
-                else if(percentage > lowPercentage) color = colorMedium;
-                else color = colorLow;
-            } else {
-                color = colorHigh;
-            }
-
-            String cp = batteryFormat;
-
-            Matcher m = optionalCharging.matcher(cp);
-            while (m.find()) {
-                cp = cp.replace(m.group(0), m.groupCount() == 2 ? m.group(charging ? 1 : 2) : Tuils.EMPTYSTRING);
-            }
-
-            cp = value.matcher(cp).replaceAll(String.valueOf(percentage));
-            cp = Tuils.patternNewline.matcher(cp).replaceAll(Tuils.NEWLINE);
-
-            UIManager.this.updateText(Label.battery, TextProcessor.span(mContext, cp, color, labelSizes[Label.battery.ordinal()]));
-        }
-
-        @Override
-        public void onCharging() {
-            charging = true;
-            update(-1);
-        }
-
-        @Override
-        public void onNotCharging() {
-            charging = false;
-            update(-1);
-        }
-    };
-
-    private StorageRunnable storageRunnable;
-    private class StorageRunnable implements Runnable {
-
-        private final String INT_AV = "%iav";
-        private final String INT_TOT = "%itot";
-        private final String EXT_AV = "%eav";
-        private final String EXT_TOT = "%etot";
-
-        private List<Pattern> storagePatterns;
-        private String storageFormat;
-
-        int color;
-
-        @Override
-        public void run() {
-            if(storageFormat == null) {
-                storageFormat = XMLPrefsManager.get(Behavior.storage_format);
-                color = XMLPrefsManager.getColor(Theme.storage_color);
-            }
-
-            if(storagePatterns == null) {
-                storagePatterns = new ArrayList<>();
-
-                storagePatterns.add(Pattern.compile(INT_AV + "tb", Pattern.CASE_INSENSITIVE | Pattern.LITERAL));
-                storagePatterns.add(Pattern.compile(INT_AV + "gb", Pattern.CASE_INSENSITIVE | Pattern.LITERAL));
-                storagePatterns.add(Pattern.compile(INT_AV + "mb", Pattern.CASE_INSENSITIVE | Pattern.LITERAL));
-                storagePatterns.add(Pattern.compile(INT_AV + "kb", Pattern.CASE_INSENSITIVE | Pattern.LITERAL));
-                storagePatterns.add(Pattern.compile(INT_AV + "b", Pattern.CASE_INSENSITIVE | Pattern.LITERAL));
-                storagePatterns.add(Pattern.compile(INT_AV + "%", Pattern.CASE_INSENSITIVE | Pattern.LITERAL));
-
-                storagePatterns.add(Pattern.compile(INT_TOT + "tb", Pattern.CASE_INSENSITIVE | Pattern.LITERAL));
-                storagePatterns.add(Pattern.compile(INT_TOT + "gb", Pattern.CASE_INSENSITIVE | Pattern.LITERAL));
-                storagePatterns.add(Pattern.compile(INT_TOT + "mb", Pattern.CASE_INSENSITIVE | Pattern.LITERAL));
-                storagePatterns.add(Pattern.compile(INT_TOT + "kb", Pattern.CASE_INSENSITIVE | Pattern.LITERAL));
-                storagePatterns.add(Pattern.compile(INT_TOT + "b", Pattern.CASE_INSENSITIVE | Pattern.LITERAL));
-
-                storagePatterns.add(Pattern.compile(EXT_AV + "tb", Pattern.CASE_INSENSITIVE | Pattern.LITERAL));
-                storagePatterns.add(Pattern.compile(EXT_AV + "gb", Pattern.CASE_INSENSITIVE | Pattern.LITERAL));
-                storagePatterns.add(Pattern.compile(EXT_AV + "mb", Pattern.CASE_INSENSITIVE | Pattern.LITERAL));
-                storagePatterns.add(Pattern.compile(EXT_AV + "kb", Pattern.CASE_INSENSITIVE | Pattern.LITERAL));
-                storagePatterns.add(Pattern.compile(EXT_AV + "b", Pattern.CASE_INSENSITIVE | Pattern.LITERAL));
-                storagePatterns.add(Pattern.compile(EXT_AV + "%", Pattern.CASE_INSENSITIVE | Pattern.LITERAL));
-
-                storagePatterns.add(Pattern.compile(EXT_TOT + "tb", Pattern.CASE_INSENSITIVE | Pattern.LITERAL));
-                storagePatterns.add(Pattern.compile(EXT_TOT + "gb", Pattern.CASE_INSENSITIVE | Pattern.LITERAL));
-                storagePatterns.add(Pattern.compile(EXT_TOT + "mb", Pattern.CASE_INSENSITIVE | Pattern.LITERAL));
-                storagePatterns.add(Pattern.compile(EXT_TOT + "kb", Pattern.CASE_INSENSITIVE | Pattern.LITERAL));
-                storagePatterns.add(Pattern.compile(EXT_TOT + "b", Pattern.CASE_INSENSITIVE | Pattern.LITERAL));
-
-                storagePatterns.add(Tuils.patternNewline);
-
-                storagePatterns.add(Pattern.compile(INT_AV, Pattern.CASE_INSENSITIVE | Pattern.LITERAL));
-                storagePatterns.add(Pattern.compile(INT_TOT, Pattern.CASE_INSENSITIVE | Pattern.LITERAL));
-                storagePatterns.add(Pattern.compile(EXT_AV, Pattern.CASE_INSENSITIVE | Pattern.LITERAL));
-                storagePatterns.add(Pattern.compile(EXT_TOT, Pattern.CASE_INSENSITIVE | Pattern.LITERAL));
-            }
-
-            double iav = DeviceStateManager.getAvailableInternalMemorySize(Tuils.BYTE);
-            double itot = DeviceStateManager.getTotalInternalMemorySize(Tuils.BYTE);
-            double eav = DeviceStateManager.getAvailableExternalMemorySize(Tuils.BYTE);
-            double etot = DeviceStateManager.getTotalExternalMemorySize(Tuils.BYTE);
-
-            String copy = storageFormat;
-
-            copy = storagePatterns.get(0).matcher(copy).replaceAll(Matcher.quoteReplacement(String.valueOf(Tuils.formatSize((long) iav, Tuils.TERA))));
-            copy = storagePatterns.get(1).matcher(copy).replaceAll(Matcher.quoteReplacement(String.valueOf(Tuils.formatSize((long) iav, Tuils.GIGA))));
-            copy = storagePatterns.get(2).matcher(copy).replaceAll(Matcher.quoteReplacement(String.valueOf(Tuils.formatSize((long) iav, Tuils.MEGA))));
-            copy = storagePatterns.get(3).matcher(copy).replaceAll(Matcher.quoteReplacement(String.valueOf(Tuils.formatSize((long) iav, Tuils.KILO))));
-            copy = storagePatterns.get(4).matcher(copy).replaceAll(Matcher.quoteReplacement(String.valueOf(Tuils.formatSize((long) iav, Tuils.BYTE))));
-            copy = storagePatterns.get(5).matcher(copy).replaceAll(Matcher.quoteReplacement(String.valueOf(Tuils.percentage(iav, itot))));
-
-            copy = storagePatterns.get(6).matcher(copy).replaceAll(Matcher.quoteReplacement(String.valueOf(Tuils.formatSize((long) itot, Tuils.TERA))));
-            copy = storagePatterns.get(7).matcher(copy).replaceAll(Matcher.quoteReplacement(String.valueOf(Tuils.formatSize((long) itot, Tuils.GIGA))));
-            copy = storagePatterns.get(8).matcher(copy).replaceAll(Matcher.quoteReplacement(String.valueOf(Tuils.formatSize((long) itot, Tuils.MEGA))));
-            copy = storagePatterns.get(9).matcher(copy).replaceAll(Matcher.quoteReplacement(String.valueOf(Tuils.formatSize((long) itot, Tuils.KILO))));
-            copy = storagePatterns.get(10).matcher(copy).replaceAll(Matcher.quoteReplacement(String.valueOf(Tuils.formatSize((long) itot, Tuils.BYTE))));
-
-            copy = storagePatterns.get(11).matcher(copy).replaceAll(Matcher.quoteReplacement(String.valueOf(Tuils.formatSize((long) eav, Tuils.TERA))));
-            copy = storagePatterns.get(12).matcher(copy).replaceAll(Matcher.quoteReplacement(String.valueOf(Tuils.formatSize((long) eav, Tuils.GIGA))));
-            copy = storagePatterns.get(13).matcher(copy).replaceAll(Matcher.quoteReplacement(String.valueOf(Tuils.formatSize((long) eav, Tuils.MEGA))));
-            copy = storagePatterns.get(14).matcher(copy).replaceAll(Matcher.quoteReplacement(String.valueOf(Tuils.formatSize((long) eav, Tuils.KILO))));
-            copy = storagePatterns.get(15).matcher(copy).replaceAll(Matcher.quoteReplacement(String.valueOf(Tuils.formatSize((long) eav, Tuils.BYTE))));
-            copy = storagePatterns.get(16).matcher(copy).replaceAll(Matcher.quoteReplacement(String.valueOf(Tuils.percentage(eav, etot))));
-
-            copy = storagePatterns.get(17).matcher(copy).replaceAll(Matcher.quoteReplacement(String.valueOf(Tuils.formatSize((long) etot, Tuils.TERA))));
-            copy = storagePatterns.get(18).matcher(copy).replaceAll(Matcher.quoteReplacement(String.valueOf(Tuils.formatSize((long) etot, Tuils.GIGA))));
-            copy = storagePatterns.get(19).matcher(copy).replaceAll(Matcher.quoteReplacement(String.valueOf(Tuils.formatSize((long) etot, Tuils.MEGA))));
-            copy = storagePatterns.get(20).matcher(copy).replaceAll(Matcher.quoteReplacement(String.valueOf(Tuils.formatSize((long) etot, Tuils.KILO))));
-            copy = storagePatterns.get(21).matcher(copy).replaceAll(Matcher.quoteReplacement(String.valueOf(Tuils.formatSize((long) etot, Tuils.BYTE))));
-
-            copy = storagePatterns.get(22).matcher(copy).replaceAll(Matcher.quoteReplacement(Tuils.NEWLINE));
-
-            copy = storagePatterns.get(23).matcher(copy).replaceAll(Matcher.quoteReplacement(String.valueOf(Tuils.formatSize((long) iav, Tuils.GIGA))));
-            copy = storagePatterns.get(24).matcher(copy).replaceAll(Matcher.quoteReplacement(String.valueOf(Tuils.formatSize((long) itot, Tuils.GIGA))));
-            copy = storagePatterns.get(25).matcher(copy).replaceAll(Matcher.quoteReplacement(String.valueOf(Tuils.formatSize((long) eav, Tuils.GIGA))));
-            copy = storagePatterns.get(26).matcher(copy).replaceAll(Matcher.quoteReplacement(String.valueOf(Tuils.formatSize((long) etot, Tuils.GIGA))));
-
-            updateText(Label.storage, TextProcessor.span(mContext, copy, color, labelSizes[Label.storage.ordinal()]));
-
-            handler.postDelayed(this, STORAGE_DELAY);
-        }
-    };
-
-    private TimeRunnable timeRunnable;
-    private class TimeRunnable implements Runnable {
-
-        boolean active;
-
-        @Override
-        public void run() {
-            if(!active) {
-                active = true;
-            }
-
-            updateText(Label.time, TimeManager.instance.getCharSequence(mContext, labelSizes[Label.time.ordinal()], "%t0"));
-            handler.postDelayed(this, TIME_DELAY);
-        }
-    };
-
-    private ActivityManager.MemoryInfo memory;
-    private ActivityManager activityManager;
-
-    private RamRunnable ramRunnable;
-    private class RamRunnable implements Runnable {
-        private final String AV = "%av";
-        private final String TOT = "%tot";
-
-        List<Pattern> ramPatterns;
-        String ramFormat;
-
-        int color;
-
-        @Override
-        public void run() {
-            if(ramFormat == null) {
-                ramFormat = XMLPrefsManager.get(Behavior.ram_format);
-
-                color = XMLPrefsManager.getColor(Theme.ram_color);
-            }
-
-            if(ramPatterns == null) {
-                ramPatterns = new ArrayList<>();
-
-                ramPatterns.add(Pattern.compile(AV + "tb", Pattern.CASE_INSENSITIVE | Pattern.LITERAL));
-                ramPatterns.add(Pattern.compile(AV + "gb", Pattern.CASE_INSENSITIVE | Pattern.LITERAL));
-                ramPatterns.add(Pattern.compile(AV + "mb", Pattern.CASE_INSENSITIVE | Pattern.LITERAL));
-                ramPatterns.add(Pattern.compile(AV + "kb", Pattern.CASE_INSENSITIVE | Pattern.LITERAL));
-                ramPatterns.add(Pattern.compile(AV + "b", Pattern.CASE_INSENSITIVE | Pattern.LITERAL));
-                ramPatterns.add(Pattern.compile(AV + "%", Pattern.CASE_INSENSITIVE | Pattern.LITERAL));
-
-                ramPatterns.add(Pattern.compile(TOT + "tb", Pattern.CASE_INSENSITIVE | Pattern.LITERAL));
-                ramPatterns.add(Pattern.compile(TOT + "gb", Pattern.CASE_INSENSITIVE | Pattern.LITERAL));
-                ramPatterns.add(Pattern.compile(TOT + "mb", Pattern.CASE_INSENSITIVE | Pattern.LITERAL));
-                ramPatterns.add(Pattern.compile(TOT + "kb", Pattern.CASE_INSENSITIVE | Pattern.LITERAL));
-                ramPatterns.add(Pattern.compile(TOT + "b", Pattern.CASE_INSENSITIVE | Pattern.LITERAL));
-
-                ramPatterns.add(Tuils.patternNewline);
-            }
-
-            String copy = ramFormat;
-
-            double av = DeviceStateManager.freeRam(activityManager, memory);
-            double tot = DeviceStateManager.totalRam() * 1024L;
-
-            copy = ramPatterns.get(0).matcher(copy).replaceAll(Matcher.quoteReplacement(String.valueOf(Tuils.formatSize((long) av, Tuils.TERA))));
-            copy = ramPatterns.get(1).matcher(copy).replaceAll(Matcher.quoteReplacement(String.valueOf(Tuils.formatSize((long) av, Tuils.GIGA))));
-            copy = ramPatterns.get(2).matcher(copy).replaceAll(Matcher.quoteReplacement(String.valueOf(Tuils.formatSize((long) av, Tuils.MEGA))));
-            copy = ramPatterns.get(3).matcher(copy).replaceAll(Matcher.quoteReplacement(String.valueOf(Tuils.formatSize((long) av, Tuils.KILO))));
-            copy = ramPatterns.get(4).matcher(copy).replaceAll(Matcher.quoteReplacement(String.valueOf(Tuils.formatSize((long) av, Tuils.BYTE))));
-            copy = ramPatterns.get(5).matcher(copy).replaceAll(Matcher.quoteReplacement(String.valueOf(Tuils.percentage(av, tot))));
-
-            copy = ramPatterns.get(6).matcher(copy).replaceAll(Matcher.quoteReplacement(String.valueOf(Tuils.formatSize((long) tot, Tuils.TERA))));
-            copy = ramPatterns.get(7).matcher(copy).replaceAll(Matcher.quoteReplacement(String.valueOf(Tuils.formatSize((long) tot, Tuils.GIGA))));
-            copy = ramPatterns.get(8).matcher(copy).replaceAll(Matcher.quoteReplacement(String.valueOf(Tuils.formatSize((long) tot, Tuils.MEGA))));
-            copy = ramPatterns.get(9).matcher(copy).replaceAll(Matcher.quoteReplacement(String.valueOf(Tuils.formatSize((long) tot, Tuils.KILO))));
-            copy = ramPatterns.get(10).matcher(copy).replaceAll(Matcher.quoteReplacement(String.valueOf(Tuils.formatSize((long) tot, Tuils.BYTE))));
-
-            copy = ramPatterns.get(11).matcher(copy).replaceAll(Matcher.quoteReplacement(Tuils.NEWLINE));
-
-            updateText(Label.ram, TextProcessor.span(mContext, copy, color, labelSizes[Label.ram.ordinal()]));
-
-            handler.postDelayed(this, RAM_DELAY);
-        }
-    };
-
-    private NetworkRunnable networkRunnable;
-    private class NetworkRunnable implements Runnable {
-//        %() -> wifi
-//        %[] -> data
-//        %{} -> bluetooth
-
-        final String zero = "0";
-        final String one = "1";
-        final String on = "on";
-        final String off = "off";
-        final String ON = on.toUpperCase();
-        final String OFF = off.toUpperCase();
-        final String _true = "true";
-        final String _false = "false";
-        final String TRUE = _true.toUpperCase();
-        final String FALSE = _false.toUpperCase();
-
-        final Pattern w0 = Pattern.compile("%w0", Pattern.CASE_INSENSITIVE | Pattern.LITERAL);
-        final Pattern w1 = Pattern.compile("%w1", Pattern.CASE_INSENSITIVE | Pattern.LITERAL);
-        final Pattern w2 = Pattern.compile("%w2", Pattern.CASE_INSENSITIVE | Pattern.LITERAL);
-        final Pattern w3 = Pattern.compile("%w3", Pattern.CASE_INSENSITIVE | Pattern.LITERAL);
-        final Pattern w4 = Pattern.compile("%w4", Pattern.CASE_INSENSITIVE | Pattern.LITERAL);
-        final Pattern wn = Pattern.compile("%wn", Pattern.CASE_INSENSITIVE | Pattern.LITERAL);
-        final Pattern d0 = Pattern.compile("%d0", Pattern.CASE_INSENSITIVE | Pattern.LITERAL);
-        final Pattern d1 = Pattern.compile("%d1", Pattern.CASE_INSENSITIVE | Pattern.LITERAL);
-        final Pattern d2 = Pattern.compile("%d2", Pattern.CASE_INSENSITIVE | Pattern.LITERAL);
-        final Pattern d3 = Pattern.compile("%d3", Pattern.CASE_INSENSITIVE | Pattern.LITERAL);
-        final Pattern d4 = Pattern.compile("%d4", Pattern.CASE_INSENSITIVE | Pattern.LITERAL);
-        final Pattern b0 = Pattern.compile("%b0", Pattern.CASE_INSENSITIVE | Pattern.LITERAL);
-        final Pattern b1 = Pattern.compile("%b1", Pattern.CASE_INSENSITIVE | Pattern.LITERAL);
-        final Pattern b2 = Pattern.compile("%b2", Pattern.CASE_INSENSITIVE | Pattern.LITERAL);
-        final Pattern b3 = Pattern.compile("%b3", Pattern.CASE_INSENSITIVE | Pattern.LITERAL);
-        final Pattern b4 = Pattern.compile("%b4", Pattern.CASE_INSENSITIVE | Pattern.LITERAL);
-        final Pattern ip4 = Pattern.compile("%ip4", Pattern.CASE_INSENSITIVE | Pattern.LITERAL);
-        final Pattern ip6 = Pattern.compile("%ip6", Pattern.CASE_INSENSITIVE | Pattern.LITERAL);
-        final Pattern dt = Pattern.compile("%dt", Pattern.CASE_INSENSITIVE | Pattern.LITERAL);
-
-//        final Pattern optionalWifi = Pattern.compile("%\\(([^/]*)/([^)]*)\\)", Pattern.CASE_INSENSITIVE);
-//        final Pattern optionalData = Pattern.compile("%\\[([^/]*)/([^\\]]*)\\]", Pattern.CASE_INSENSITIVE);
-//        final Pattern optionalBluetooth = Pattern.compile("%\\{([^/]*)/([^}]*)\\}", Pattern.CASE_INSENSITIVE);
-
-        Pattern optionalWifi, optionalData, optionalBluetooth;
-
-        String format, optionalValueSeparator;
-        int color;
-
-        WifiManager wifiManager;
-        BluetoothAdapter mBluetoothAdapter;
-
-        ConnectivityManager connectivityManager;
-
-        Class cmClass;
-        Method method;
-
-        int maxDepth;
-        int updateTime;
-
-        @Override
-        public void run() {
-            if (format == null) {
-                format = XMLPrefsManager.get(Behavior.network_info_format);
-                color = XMLPrefsManager.getColor(Theme.network_info_color);
-                maxDepth = XMLPrefsManager.getInt(Behavior.max_optional_depth);
-
-                updateTime = XMLPrefsManager.getInt(Behavior.network_info_update_ms);
-                if (updateTime < 1000)
-                    updateTime = Integer.parseInt(Behavior.network_info_update_ms.defaultValue());
-
-                connectivityManager = (ConnectivityManager) mContext.getSystemService(Context.CONNECTIVITY_SERVICE);
-                wifiManager = (WifiManager) mContext.getApplicationContext().getSystemService(Context.WIFI_SERVICE);
-                mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
-
-                optionalValueSeparator = "\\" + XMLPrefsManager.get(Behavior.optional_values_separator);
-
-                String wifiRegex = "%\\(([^" + optionalValueSeparator + "]*)" + optionalValueSeparator + "([^)]*)\\)";
-                String dataRegex = "%\\[([^" + optionalValueSeparator + "]*)" + optionalValueSeparator + "([^\\]]*)\\]";
-                String bluetoothRegex = "%\\{([^" + optionalValueSeparator + "]*)" + optionalValueSeparator + "([^}]*)\\}";
-
-                optionalWifi = Pattern.compile(wifiRegex, Pattern.CASE_INSENSITIVE);
-                optionalBluetooth = Pattern.compile(bluetoothRegex, Pattern.CASE_INSENSITIVE);
-                optionalData = Pattern.compile(dataRegex, Pattern.CASE_INSENSITIVE);
-
-                try {
-                    cmClass = Class.forName(connectivityManager.getClass().getName());
-                    method = cmClass.getDeclaredMethod("getMobileDataEnabled");
-                    method.setAccessible(true);
-                } catch (Exception e) {
-                    cmClass = null;
-                    method = null;
-                }
-            }
-
-//            wifi
-            boolean wifiOn = connectivityManager.getNetworkInfo(ConnectivityManager.TYPE_WIFI).isConnected();
-            String wifiName = null;
-            if (wifiOn) {
-                WifiInfo connectionInfo = wifiManager.getConnectionInfo();
-                if (connectionInfo != null) {
-                    wifiName = connectionInfo.getSSID();
-                }
-            }
-
-//            mobile data
-            boolean mobileOn = false;
-            try {
-                mobileOn = method != null && connectivityManager != null && (Boolean) method.invoke(connectivityManager);
-            } catch (Exception e) {
-            }
-
-            String mobileType = null;
-            if (mobileOn) {
-                mobileType = DeviceStateManager.getNetworkType(mContext);
-            } else {
-                mobileType = "unknown";
-            }
-
-//            bluetooth
-            boolean bluetoothOn = mBluetoothAdapter != null && mBluetoothAdapter.isEnabled();
-
-            String copy = format;
-
-            if (maxDepth > 0) {
-                copy = apply(1, copy, new boolean[]{wifiOn, mobileOn, bluetoothOn}, optionalWifi, optionalData, optionalBluetooth);
-                copy = apply(1, copy, new boolean[]{mobileOn, wifiOn, bluetoothOn}, optionalData, optionalWifi, optionalBluetooth);
-                copy = apply(1, copy, new boolean[]{bluetoothOn, wifiOn, mobileOn}, optionalBluetooth, optionalWifi, optionalData);
-            }
-
-            copy = w0.matcher(copy).replaceAll(wifiOn ? one : zero);
-            copy = w1.matcher(copy).replaceAll(wifiOn ? on : off);
-            copy = w2.matcher(copy).replaceAll(wifiOn ? ON : OFF);
-            copy = w3.matcher(copy).replaceAll(wifiOn ? _true : _false);
-            copy = w4.matcher(copy).replaceAll(wifiOn ? TRUE : FALSE);
-            copy = wn.matcher(copy).replaceAll(wifiName != null ? wifiName.replaceAll("\"", Tuils.EMPTYSTRING) : "null");
-            copy = d0.matcher(copy).replaceAll(mobileOn ? one : zero);
-            copy = d1.matcher(copy).replaceAll(mobileOn ? on : off);
-            copy = d2.matcher(copy).replaceAll(mobileOn ? ON : OFF);
-            copy = d3.matcher(copy).replaceAll(mobileOn ? _true : _false);
-            copy = d4.matcher(copy).replaceAll(mobileOn ? TRUE : FALSE);
-            copy = b0.matcher(copy).replaceAll(bluetoothOn ? one : zero);
-            copy = b1.matcher(copy).replaceAll(bluetoothOn ? on : off);
-            copy = b2.matcher(copy).replaceAll(bluetoothOn ? ON : OFF);
-            copy = b3.matcher(copy).replaceAll(bluetoothOn ? _true : _false);
-            copy = b4.matcher(copy).replaceAll(bluetoothOn ? TRUE : FALSE);
-            copy = ip4.matcher(copy).replaceAll(NetworkUtils.getIPAddress(true));
-            copy = ip6.matcher(copy).replaceAll(NetworkUtils.getIPAddress(false));
-            copy = dt.matcher(copy).replaceAll(mobileType);
-            copy = Tuils.patternNewline.matcher(copy).replaceAll(Tuils.NEWLINE);
-
-            updateText(Label.network, TextProcessor.span(mContext, copy, color, labelSizes[Label.network.ordinal()]));
-            handler.postDelayed(this, updateTime);
-        }
-
-        private String apply(int depth, String s, boolean[] on, Pattern... ps) {
-
-            if(ps.length == 0) return s;
-
-            Matcher m = ps[0].matcher(s);
-            while (m.find()) {
-                if(m.groupCount() < 2) {
-                    s = s.replace(m.group(0), Tuils.EMPTYSTRING);
-                    continue;
-                }
-
-                String g1 = m.group(1);
-                String g2 = m.group(2);
-
-                if(depth < maxDepth) {
-                    for(int c = 0; c < ps.length - 1; c++) {
-
-                        boolean[] subOn = new boolean[on.length - 1];
-                        subOn[0] = on[c+1];
-
-                        Pattern[] subPs = new Pattern[ps.length - 1];
-                        subPs[0] = ps[c+1];
-
-                        for(int j = 1, k = 1; j < subOn.length; j++, k++) {
-                            if(k == c+1) {
-                                j--;
-                                continue;
-                            }
-
-                            subOn[j] = on[k];
-                            subPs[j] = ps[k];
-                        }
-
-                        g1 = apply(depth + 1, g1, subOn, subPs);
-                        g2 = apply(depth + 1, g2, subOn, subPs);
-                    }
-                }
-
-                s = s.replace(m.group(0), on[0] ? g1 : g2);
-            }
-
-            return s;
-        }
-    }
-
-    private int weatherDelay;
-
-    private double lastLatitude, lastLongitude;
-    private String location;
-    private boolean fixedLocation = false;
-
-    private boolean weatherPerformedStartupRun = false;
-    private WeatherRunnable weatherRunnable;
-    private int weatherColor;
-    boolean showWeatherUpdate;
-
-    private class WeatherRunnable implements Runnable {
-
-        String key;
-        String url;
-
-        public WeatherRunnable() {
-
-            if(XMLPrefsManager.wasChanged(Behavior.weather_key, false)) {
-                weatherDelay = XMLPrefsManager.getInt(Behavior.weather_update_time);
-                key = XMLPrefsManager.get(Behavior.weather_key);
-            } else {
-                key = Behavior.weather_key.defaultValue();
-                weatherDelay = 60 * 60;
-            }
-            weatherDelay *= 1000;
-
-            String where = XMLPrefsManager.get(Behavior.weather_location);
-            if(where == null || where.length() == 0 || (!TextProcessor.isNumber(where) && !where.contains(","))) {
-//                Tuils.location(mContext, new Tuils.ArgsRunnable() {
-//                    @Override
-//                    public void run() {
-//                        setUrl(
-//                                "lat=" + get(int.class, 0) + "&lon=" + get(int.class, 1),
-//                                finalKey,
-//                                XMLPrefsManager.get(Behavior.weather_temperature_measure));
-//                        WeatherRunnable.this.run();
-//                    }
-//                }, new Runnable() {
-//                    @Override
-//                    public void run() {
-//                        updateText(Label.weather, TextProcessor.span(mContext, mContext.getString(R.string.location_error), XMLPrefsManager.getColor(Theme.weather_color), labelSizes[Label.weather.ordinal()]));
-//                    }
-//                }, handler);
-
-//                Location l = Tuils.getLocation(mContext);
-//                if(l != null) {
-//                    setUrl(
-//                            "lat=" + l.getLatitude() + "&lon=" + l.getLongitude(),
-//                            finalKey,
-//                            XMLPrefsManager.get(Behavior.weather_temperature_measure));
-//                    WeatherRunnable.this.run();
-//                } else {
-//                    updateText(Label.weather, TextProcessor.span(mContext, mContext.getString(R.string.location_error), XMLPrefsManager.getColor(Theme.weather_color), labelSizes[Label.weather.ordinal()]));
-//                }
-
-                TuiLocationManager l = TuiLocationManager.instance(mContext);
-                l.add(ACTION_WEATHER_GOT_LOCATION);
-
-            } else {
-                fixedLocation = true;
-
-                if(where.contains(",")) {
-                    String[] split = where.split(",");
-                    where = "lat=" + split[0] + "&lon=" + split[1];
-                } else {
-                    where = "id=" + where;
-                }
-
-                setUrl(where);
-            }
-        }
-
-        @Override
-        public void run() {
-            weatherPerformedStartupRun = true;
-            if(!fixedLocation) setUrl(lastLatitude, lastLongitude);
-
-            send();
-
-            if(handler != null) handler.postDelayed(this, weatherDelay);
-        }
-
-        private void send() {
-            if(url == null) return;
-
-            Intent i = new Intent(HTMLExtractManager.ACTION_WEATHER);
-            i.putExtra(XMLPrefsManager.VALUE_ATTRIBUTE, url);
-            i.putExtra(HTMLExtractManager.BROADCAST_COUNT, HTMLExtractManager.broadcastCount);
-            LocalBroadcastManager.getInstance(mContext.getApplicationContext()).sendBroadcast(i);
-        }
-
-        private void setUrl(String where) {
-            url = "https://api.openweathermap.org/data/2.5/weather?" + where + "&appid=" + key + "&units=" + XMLPrefsManager.get(Behavior.weather_temperature_measure);
-        }
-
-        private void setUrl(double latitude, double longitude) {
-            url = "https://api.openweathermap.org/data/2.5/weather?" + "lat=" + latitude + "&lon=" + longitude + "&appid=" + key + "&units=" + XMLPrefsManager.get(Behavior.weather_temperature_measure);
-        }
-    }
-
 //    you need to use labelIndexes[i]
-    private void updateText(Label l, CharSequence s) {
+    @Override
+    public void updateText(Label l, CharSequence s) {
         labelTexts[l.ordinal()] = s;
 
         int base = (int) labelIndexes[l.ordinal()];
@@ -782,6 +183,11 @@ public class UIManager implements OnTouchListener {
             labelViews[base].setVisibility(View.VISIBLE);
             labelViews[base].setText(sequence);
         }
+    }
+
+    @Override
+    public int getLabelSize(Label l) {
+        return labelSizes[l.ordinal()];
     }
 
     private SuggestionsManager suggestionsManager;
@@ -823,10 +229,6 @@ public class UIManager implements OnTouchListener {
 //        filter.addAction(ACTION_CLEAR_SUGGESTIONS);
         filter.addAction(ACTION_LOGTOFILE);
         filter.addAction(ACTION_CLEAR);
-        filter.addAction(ACTION_WEATHER);
-        filter.addAction(ACTION_WEATHER_GOT_LOCATION);
-        filter.addAction(ACTION_WEATHER_DELAY);
-        filter.addAction(ACTION_WEATHER_MANUAL_UPDATE);
 
         receiver = new BroadcastReceiver() {
             @Override
@@ -894,59 +296,6 @@ public class UIManager implements OnTouchListener {
                     mTerminalAdapter.clear();
                     if (suggestionsManager != null)
                         suggestionsManager.requestSuggestion(Tuils.EMPTYSTRING);
-                } else if(action.equals(ACTION_WEATHER)) {
-                    Calendar c = Calendar.getInstance();
-
-                    CharSequence s = intent.getCharSequenceExtra(XMLPrefsManager.VALUE_ATTRIBUTE);
-                    if(s == null) s = intent.getStringExtra(XMLPrefsManager.VALUE_ATTRIBUTE);
-                    if(s == null) return;
-
-                    s = TextProcessor.span(context, s, weatherColor, labelSizes[Label.weather.ordinal()]);
-
-                    updateText(Label.weather, s);
-
-                    if(showWeatherUpdate) {
-                        String message = context.getString(R.string.weather_updated) + Tuils.SPACE + c.get(Calendar.HOUR_OF_DAY) + "." + c.get(Calendar.MINUTE) + Tuils.SPACE + "(" + lastLatitude + ", " + lastLongitude + ")";
-                        Tuils.sendOutput(context, message, TerminalManager.CATEGORY_OUTPUT);
-                    }
-                } else if(action.equals(ACTION_WEATHER_GOT_LOCATION)) {
-//                    int result = intent.getIntExtra(XMLPrefsManager.VALUE_ATTRIBUTE, 0);
-//                    if(result == PackageManager.PERMISSION_DENIED) {
-//                        updateText(Label.weather, TextProcessor.span(context, context.getString(R.string.location_error), weatherColor, labelSizes[Label.weather.ordinal()]));
-//                    } else handler.post(weatherRunnable);
-
-                    if(intent.getBooleanExtra(TuiLocationManager.FAIL, false)) {
-                        handler.removeCallbacks(weatherRunnable);
-                        weatherRunnable = null;
-
-                        CharSequence s = TextProcessor.span(context, context.getString(R.string.location_error), weatherColor, labelSizes[Label.weather.ordinal()]);
-
-                        updateText(Label.weather, s);
-                    } else {
-                        lastLatitude = intent.getDoubleExtra(TuiLocationManager.LATITUDE, 0);
-                        lastLongitude = intent.getDoubleExtra(TuiLocationManager.LONGITUDE, 0);
-
-                        location = Tuils.locationName(context, lastLatitude, lastLongitude);
-
-                        if(!weatherPerformedStartupRun || XMLPrefsManager.wasChanged(Behavior.weather_key, false)) {
-                            handler.removeCallbacks(weatherRunnable);
-                            handler.post(weatherRunnable);
-                        }
-                    }
-                } else if(action.equals(ACTION_WEATHER_DELAY)) {
-                    Calendar c = Calendar.getInstance();
-                    c.setTimeInMillis(System.currentTimeMillis() + 1000 * 10);
-
-                    if(showWeatherUpdate) {
-                        String message = context.getString(R.string.weather_error) + Tuils.SPACE + c.get(Calendar.HOUR_OF_DAY) + "." + c.get(Calendar.MINUTE);
-                        Tuils.sendOutput(context, message, TerminalManager.CATEGORY_OUTPUT);
-                    }
-
-                    handler.removeCallbacks(weatherRunnable);
-                    handler.postDelayed(weatherRunnable, 1000 * 60);
-                } else if(action.equals(ACTION_WEATHER_MANUAL_UPDATE)) {
-                    handler.removeCallbacks(weatherRunnable);
-                    handler.post(weatherRunnable);
                 }
             }
         };
@@ -1204,145 +553,16 @@ public class UIManager implements OnTouchListener {
             }
         }
 
-        if (show[Label.ram.ordinal()]) {
-            ramRunnable = new RamRunnable();
-
-            memory = new ActivityManager.MemoryInfo();
-            activityManager = (ActivityManager) context.getSystemService(Activity.ACTIVITY_SERVICE);
-            handler.post(ramRunnable);
-        }
-
-        if(show[Label.storage.ordinal()]) {
-            storageRunnable = new StorageRunnable();
-            handler.post(storageRunnable);
-        }
-
-        if (show[Label.device.ordinal()]) {
-            Pattern USERNAME = Pattern.compile("%u", Pattern.CASE_INSENSITIVE | Pattern.LITERAL);
-            Pattern DV = Pattern.compile("%d", Pattern.CASE_INSENSITIVE | Pattern.LITERAL);
-
-            String deviceFormat = XMLPrefsManager.get(Behavior.device_format);
-
-            String username = XMLPrefsManager.get(Ui.username);
-            String deviceName = XMLPrefsManager.get(Ui.deviceName);
-            if (deviceName == null || deviceName.length() == 0) {
-                deviceName = Build.DEVICE;
-            }
-
-            deviceFormat = USERNAME.matcher(deviceFormat).replaceAll(Matcher.quoteReplacement(username != null ? username : "null"));
-            deviceFormat = DV.matcher(deviceFormat).replaceAll(Matcher.quoteReplacement(deviceName));
-            deviceFormat = Tuils.patternNewline.matcher(deviceFormat).replaceAll(Matcher.quoteReplacement(Tuils.NEWLINE));
-
-            updateText(Label.device, TextProcessor.span(mContext, deviceFormat, XMLPrefsManager.getColor(Theme.device_color), labelSizes[Label.device.ordinal()]));
-        }
-
-        if(show[Label.time.ordinal()]) {
-            timeRunnable = new TimeRunnable();
-            handler.post(timeRunnable);
-        }
-
-        if(show[Label.battery.ordinal()]) {
-            batteryUpdate = new BatteryUpdate();
-
-            mediumPercentage = XMLPrefsManager.getInt(Behavior.battery_medium);
-            lowPercentage = XMLPrefsManager.getInt(Behavior.battery_low);
-
-            DeviceStateManager.registerBatteryReceiver(context, batteryUpdate);
-        } else {
-            batteryUpdate = null;
-        }
-
-        if(show[Label.network.ordinal()]) {
-            networkRunnable = new NetworkRunnable();
-            handler.post(networkRunnable);
-        }
-
         final TextView notesView = getLabelViewSafe(Label.notes);
-        notesManager = new NotesManager(context, notesView);
-        if(show[Label.notes.ordinal()]) {
-            notesRunnable = new NotesRunnable();
-            handler.post(notesRunnable);
-
-            notesView.setMovementMethod(new LinkMovementMethod());
-
-            notesMaxLines = XMLPrefsManager.getInt(Ui.notes_max_lines);
-            if(notesMaxLines > 0) {
-                notesView.setMaxLines(notesMaxLines);
-                notesView.setEllipsize(TextUtils.TruncateAt.MARQUEE);
-//                notesView.setScrollBarStyle(View.SCROLLBARS_OUTSIDE_OVERLAY);
-//                notesView.setVerticalScrollBarEnabled(true);
-
-                if (XMLPrefsManager.getBoolean(Ui.show_scroll_notes_message)) {
-                    notesView.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
-
-                        int linesBefore = Integer.MIN_VALUE;
-
-                        @Override
-                        public void onGlobalLayout() {
-                            if(notesView.getLineCount() > notesMaxLines && linesBefore <= notesMaxLines) {
-                                Tuils.sendOutput(Color.RED, context, R.string.note_max_reached);
-                            }
-
-                            linesBefore = notesView.getLineCount();
-                        }
-                    });
-                }
+        statusUIController = new StatusUIController(context, handler, preferences, this, notesView, () -> {
+            if (clearOnLock) {
+                mTerminalAdapter.clear();
             }
-        }
+        });
+        statusUIController.init(show);
 
-        if(show[Label.weather.ordinal()]) {
-            weatherRunnable = new WeatherRunnable();
-
-            weatherColor = XMLPrefsManager.getColor(Theme.weather_color);
-
-            String where = XMLPrefsManager.get(Behavior.weather_location);
-            if(where.contains(",") || TextProcessor.isNumber(where)) handler.post(weatherRunnable);
-
-            showWeatherUpdate = XMLPrefsManager.getBoolean(Behavior.show_weather_updates);
-        }
-
-        if(show[Label.unlock.ordinal()]) {
-            unlockTimes = preferences.getInt(UNLOCK_KEY, 0);
-
-            unlockColor = XMLPrefsManager.getColor(Theme.unlock_counter_color);
-            unlockFormat = XMLPrefsManager.get(Behavior.unlock_counter_format);
-            notAvailableText = XMLPrefsManager.get(Behavior.not_available_text);
-            unlockTimeDivider = XMLPrefsManager.get(Behavior.unlock_time_divider);
-            unlockTimeDivider = Tuils.patternNewline.matcher(unlockTimeDivider).replaceAll(Tuils.NEWLINE);
-
-            String start = XMLPrefsManager.get(Behavior.unlock_counter_cycle_start);
-            Pattern p = Pattern.compile("(\\d{1,2}).(\\d{1,2})");
-            Matcher m = p.matcher(start);
-            if(!m.find()) {
-                m = p.matcher(Behavior.unlock_counter_cycle_start.defaultValue());
-                m.find();
-            }
-
-            unlockHour = Integer.parseInt(m.group(1));
-            unlockMinute = Integer.parseInt(m.group(2));
-
-            unlockTimeOrder = XMLPrefsManager.getInt(Behavior.unlock_time_order);
-
-            nextUnlockCycleRestart = preferences.getLong(NEXT_UNLOCK_CYCLE_RESTART, 0);
-//            Tuils.log("set", nextUnlockCycleRestart);
-
-            m = timePattern.matcher(unlockFormat);
-            if(m.find()) {
-                String s = m.group(3);
-                if(s == null || s.length() == 0) s = "1";
-
-                lastUnlocks = new long[Integer.parseInt(s)];
-
-                for(int c = 0; c < lastUnlocks.length; c++) {
-                    lastUnlocks[c] = -1;
-                }
-
-                registerLockReceiver();
-                handler.post(unlockTimeRunnable);
-            } else {
-                lastUnlocks = null;
-            }
-        }
+        weatherUIController = new WeatherUIController(context, handler, this);
+        weatherUIController.init();
 
         final boolean inputBottom = XMLPrefsManager.getBoolean(Ui.input_bottom);
         int layoutId = inputBottom ? R.layout.input_down_layout : R.layout.input_up_layout;
@@ -1521,29 +741,32 @@ public class UIManager implements OnTouchListener {
     }
 
     private static void applyShadow(TextView v, String color, int x, int y, float radius) {
-        if(!(color.startsWith("#00") && color.length() == 9)) {
-            v.setShadowLayer(radius, x, y, Color.parseColor(color));
-            v.setTag(OutlineTextView.SHADOW_TAG);
-
-//            if(radius > v.getPaddingTop()) v.setPadding(v.getPaddingLeft(), (int) Math.floor(radius), v.getPaddingRight(), (int) Math.floor(radius));
-//            if(radius > v.getPaddingLeft()) v.setPadding((int) Math.floor(radius), v.getPaddingTop(), (int) Math.floor(radius), v.getPaddingBottom());
+        try {
+            if(color != null && !(color.startsWith("#00") && color.length() == 9)) {
+                v.setShadowLayer(radius, x, y, Color.parseColor(color));
+                v.setTag(OutlineTextView.SHADOW_TAG);
+            }
+        } catch (Exception e) {
+            Tuils.log(e);
         }
     }
 
     public void dispose() {
-        if(handler != null) {
+        if (handler != null) {
             handler.removeCallbacksAndMessages(null);
             handler = null;
         }
 
-        if(suggestionsManager != null) suggestionsManager.dispose();
-        if(notesManager != null) notesManager.dispose(mContext);
+        if (suggestionsManager != null) suggestionsManager.dispose();
+        if (statusUIController != null) {
+            statusUIController.dispose();
+        }
+        if (weatherUIController != null) {
+            weatherUIController.dispose();
+        }
         LocalBroadcastManager.getInstance(mContext.getApplicationContext()).unregisterReceiver(receiver);
-        DeviceStateManager.unregisterBatteryReceiver(mContext);
 
         Tuils.cancelFont();
-
-        unregisterLockReceiver();
     }
 
     public void openKeyboard() {
@@ -1618,52 +841,22 @@ public class UIManager implements OnTouchListener {
     public void pause() {
         closeKeyboard();
         isPaused = true;
-        if (handler != null) {
-            if (timeRunnable != null) handler.removeCallbacks(timeRunnable);
-            if (ramRunnable != null) handler.removeCallbacks(ramRunnable);
-            if (storageRunnable != null) handler.removeCallbacks(storageRunnable);
-            if (networkRunnable != null) handler.removeCallbacks(networkRunnable);
-            if (notesRunnable != null) handler.removeCallbacks(notesRunnable);
-            if (weatherRunnable != null) handler.removeCallbacks(weatherRunnable);
-            if (unlockTimeRunnable != null) handler.removeCallbacks(unlockTimeRunnable);
+        if (statusUIController != null) {
+            statusUIController.pause();
+        }
+        if (weatherUIController != null) {
+            weatherUIController.pause();
         }
     }
 
     public void resume() {
         if (!isPaused) return;
         isPaused = false;
-        if (handler != null) {
-            if (timeRunnable != null && XMLPrefsManager.getBoolean(Ui.show_time)) {
-                handler.removeCallbacks(timeRunnable);
-                handler.post(timeRunnable);
-            }
-            if (ramRunnable != null && XMLPrefsManager.getBoolean(Ui.show_ram)) {
-                handler.removeCallbacks(ramRunnable);
-                handler.post(ramRunnable);
-            }
-            if (storageRunnable != null && XMLPrefsManager.getBoolean(Ui.show_storage_info)) {
-                handler.removeCallbacks(storageRunnable);
-                handler.post(storageRunnable);
-            }
-            if (networkRunnable != null && XMLPrefsManager.getBoolean(Ui.show_network_info)) {
-                handler.removeCallbacks(networkRunnable);
-                handler.post(networkRunnable);
-            }
-            if (notesRunnable != null && XMLPrefsManager.getBoolean(Ui.show_notes)) {
-                handler.removeCallbacks(notesRunnable);
-                handler.post(notesRunnable);
-            }
-            if (weatherRunnable != null && XMLPrefsManager.getBoolean(Ui.show_weather)) {
-                String where = XMLPrefsManager.get(Behavior.weather_location);
-                if (where != null && (where.contains(",") || TextProcessor.isNumber(where))) {
-                    handler.removeCallbacks(weatherRunnable);
-                    handler.post(weatherRunnable);
-                }
-            }
-            if (unlockTimeRunnable != null && XMLPrefsManager.getBoolean(Ui.show_unlock_counter) && lastUnlocks != null) {
-                handler.removeCallbacks(unlockTimeRunnable);
-                handler.post(unlockTimeRunnable);
-            }
+        if (statusUIController != null) {
+            statusUIController.resume();
+        }
+        if (weatherUIController != null) {
+            weatherUIController.resume();
         }
     }
 
@@ -1693,195 +886,6 @@ public class UIManager implements OnTouchListener {
         };
     }
 
-    private BroadcastReceiver lockReceiver = null;
-    private void registerLockReceiver() {
-        if(lockReceiver != null) return;
-
-        final IntentFilter theFilter = new IntentFilter();
-
-        theFilter.addAction(Intent.ACTION_SCREEN_ON);
-        theFilter.addAction(Intent.ACTION_SCREEN_OFF);
-        theFilter.addAction(Intent.ACTION_USER_PRESENT);
-
-        lockReceiver = new BroadcastReceiver() {
-            @Override
-            public void onReceive(Context context, Intent intent) {
-                String strAction = intent.getAction();
-
-                KeyguardManager myKM = (KeyguardManager) context.getSystemService(Context.KEYGUARD_SERVICE);
-                if(strAction.equals(Intent.ACTION_USER_PRESENT) || strAction.equals(Intent.ACTION_SCREEN_OFF) || strAction.equals(Intent.ACTION_SCREEN_ON)  )
-                    if(myKM.inKeyguardRestrictedInputMode()) onLock();
-                    else onUnlock();
-            }
-        };
-
-        mContext.getApplicationContext().registerReceiver(lockReceiver, theFilter);
-    }
-
-    private void unregisterLockReceiver() {
-        if(lockReceiver != null) mContext.getApplicationContext().unregisterReceiver(lockReceiver);
-    }
-
-    private void onLock() {
-        if(clearOnLock) {
-            mTerminalAdapter.clear();
-        }
-    }
-
-    private final long A_DAY = (1000 * 60 * 60 * 24);
-
-    private int unlockColor, unlockTimeOrder;
-
-    private int unlockTimes, unlockHour, unlockMinute, cycleDuration = (int) A_DAY;
-    private long lastUnlockTime = -1, nextUnlockCycleRestart;
-    private String unlockFormat, notAvailableText, unlockTimeDivider;
-
-    private final int UP_DOWN = 1;
-
-    public static String UNLOCK_KEY = "unlockTimes", NEXT_UNLOCK_CYCLE_RESTART = "nextUnlockRestart";
-
-//    last unlocks are stored here in this way
-//    0 - the first
-//    1 - the second
-//    2 - ...
-    private long[] lastUnlocks;
-
-    private void onUnlock() {
-        if(System.currentTimeMillis() - lastUnlockTime < 1000 || lastUnlocks == null) return;
-        lastUnlockTime = System.currentTimeMillis();
-
-        unlockTimes++;
-
-        System.arraycopy(lastUnlocks, 0, lastUnlocks, 1, lastUnlocks.length - 1);
-        lastUnlocks[0] = lastUnlockTime;
-
-        preferences.edit()
-                .putInt(UNLOCK_KEY, unlockTimes)
-                .apply();
-
-        invalidateUnlockText();
-    }
-
-    final int UNLOCK_RUNNABLE_DELAY = cycleDuration / 24;
-//    this invalidates the text and checks the time values
-    Runnable unlockTimeRunnable = new Runnable() {
-        @Override
-        public void run() {
-//            Tuils.log("run");
-            long delay = nextUnlockCycleRestart - System.currentTimeMillis();
-//            Tuils.log("nucr", nextUnlockCycleRestart);
-//            Tuils.log("now", System.currentTimeMillis());
-//            Tuils.log("delay", delay);
-            if(delay <= 0) {
-                unlockTimes = 0;
-
-                if(lastUnlocks != null) {
-                    for(int c = 0; c < lastUnlocks.length; c++) {
-                        lastUnlocks[c] = -1;
-                    }
-                }
-
-                Calendar now = Calendar.getInstance();
-//                Tuils.log("nw", now.toString());
-
-                int hour = now.get(Calendar.HOUR_OF_DAY), minute = now.get(Calendar.MINUTE);
-                if(unlockHour < hour || (unlockHour == hour && unlockMinute <= minute)) {
-                    now.set(Calendar.DAY_OF_YEAR, now.get(Calendar.DAY_OF_YEAR) + 1);
-                }
-                Calendar nextRestart = now;
-                nextRestart.set(Calendar.HOUR_OF_DAY, unlockHour);
-                nextRestart.set(Calendar.MINUTE, unlockMinute);
-                nextRestart.set(Calendar.SECOND, 0);
-//                Tuils.log("nr", nextRestart.toString());
-
-                nextUnlockCycleRestart = nextRestart.getTimeInMillis();
-//                Tuils.log("new setted", nextUnlockCycleRestart);
-
-                preferences.edit()
-                        .putLong(NEXT_UNLOCK_CYCLE_RESTART, nextUnlockCycleRestart)
-                        .putInt(UNLOCK_KEY, 0)
-                        .apply();
-
-                delay = nextUnlockCycleRestart - System.currentTimeMillis();
-                if(delay < 0) delay = 0;
-            }
-
-            invalidateUnlockText();
-
-            delay = Math.min(delay, UNLOCK_RUNNABLE_DELAY);
-//            Tuils.log("with delay", delay);
-            handler.postDelayed(this, delay);
-        }
-    };
-
-    Pattern unlockCount = Pattern.compile("%c", Pattern.CASE_INSENSITIVE);
-    Pattern advancement = Pattern.compile("%a(\\d+)(.)");
-//    Pattern timePattern = Pattern.compile("(%t\\d*)(?:\\((?:(\\d+)([^\\)]*))\\)|\\((?:([^\\)]*)(\\d+))\\))?");
-    Pattern timePattern = Pattern.compile("(%t\\d*)(?:\\(([^\\)]*)\\))?(\\d+)?");
-    Pattern indexPattern = Pattern.compile("%i", Pattern.CASE_INSENSITIVE);
-    String whenPattern = "%w";
-
-    private void invalidateUnlockText() {
-        String cp = new String(unlockFormat);
-
-        cp = unlockCount.matcher(cp).replaceAll(String.valueOf(unlockTimes));
-        cp = Tuils.patternNewline.matcher(cp).replaceAll(Tuils.NEWLINE);
-
-        Matcher m = advancement.matcher(cp);
-        if(m.find()) {
-            int denominator = Integer.parseInt(m.group(1));
-            String divider = m.group(2);
-
-            long lastCycleStart = nextUnlockCycleRestart - cycleDuration;
-
-            int elapsed = (int) (System.currentTimeMillis() - lastCycleStart);
-            int numerator = denominator * elapsed / cycleDuration;
-
-            cp = m.replaceAll(numerator + divider + denominator);
-        }
-
-        CharSequence s = TextProcessor.span(mContext, cp, unlockColor, labelSizes[Label.unlock.ordinal()]);
-
-        Matcher timeMatcher = timePattern.matcher(cp);
-        if(timeMatcher.find()) {
-            String timeGroup = timeMatcher.group(1);
-            String text = timeMatcher.group(2);
-            if(text == null) text = whenPattern;
-
-            CharSequence cs = Tuils.EMPTYSTRING;
-
-            int c, change;
-            if(unlockTimeOrder == UP_DOWN) {
-                c = 0;
-                change = +1;
-            } else {
-                c = lastUnlocks.length - 1;
-                change = -1;
-            }
-
-            for(int counter = 0; counter < lastUnlocks.length; counter++, c += change) {
-                String t = text;
-                t = indexPattern.matcher(t).replaceAll(String.valueOf(c + 1));
-
-                cs = TextUtils.concat(cs, t);
-
-                CharSequence time;
-                if(lastUnlocks[c] > 0) time = TimeManager.instance.getCharSequence(timeGroup, lastUnlocks[c]);
-                else time = notAvailableText;
-
-                if(time == null) continue;
-
-                cs = TextUtils.replace(cs, new String[] {whenPattern}, new CharSequence[] {time});
-
-                if(counter != lastUnlocks.length - 1) cs = TextUtils.concat(cs, unlockTimeDivider);
-            }
-
-            s = TextUtils.replace(s, new String[] {timeMatcher.group(0)}, new CharSequence[] {cs});
-        }
-
-        updateText(Label.unlock, s);
-    }
-
     public void setAIState(boolean running) {
         if (mTerminalAdapter != null) {
             mTerminalAdapter.onAIStateChanged(running);
@@ -1893,23 +897,23 @@ public class UIManager implements OnTouchListener {
 
         switch (key) {
             case "show_notes":
-                return applyNotesVisibility(XMLPrefsManager.getBoolean(Ui.show_notes));
+                return statusUIController != null && statusUIController.applyNotesVisibility(XMLPrefsManager.getBoolean(Ui.show_notes));
             case "show_ram":
-                return applySimpleLabelVisibility(Label.ram, XMLPrefsManager.getBoolean(Ui.show_ram), ramRunnable);
+                return statusUIController != null && statusUIController.applySimpleLabelVisibility(Label.ram, XMLPrefsManager.getBoolean(Ui.show_ram));
             case "show_time":
-                return applySimpleLabelVisibility(Label.time, XMLPrefsManager.getBoolean(Ui.show_time), timeRunnable);
+                return statusUIController != null && statusUIController.applySimpleLabelVisibility(Label.time, XMLPrefsManager.getBoolean(Ui.show_time));
             case "show_storage_info":
-                return applySimpleLabelVisibility(Label.storage, XMLPrefsManager.getBoolean(Ui.show_storage_info), storageRunnable);
+                return statusUIController != null && statusUIController.applySimpleLabelVisibility(Label.storage, XMLPrefsManager.getBoolean(Ui.show_storage_info));
             case "show_network_info":
-                return applySimpleLabelVisibility(Label.network, XMLPrefsManager.getBoolean(Ui.show_network_info), networkRunnable);
+                return statusUIController != null && statusUIController.applySimpleLabelVisibility(Label.network, XMLPrefsManager.getBoolean(Ui.show_network_info));
             case "show_weather":
-                return applyWeatherVisibility(XMLPrefsManager.getBoolean(Ui.show_weather));
+                return weatherUIController != null && weatherUIController.applyWeatherVisibility(XMLPrefsManager.getBoolean(Ui.show_weather));
             case "show_unlock_counter":
-                return applySimpleLabelVisibility(Label.unlock, XMLPrefsManager.getBoolean(Ui.show_unlock_counter), unlockTimeRunnable);
+                return statusUIController != null && statusUIController.applySimpleLabelVisibility(Label.unlock, XMLPrefsManager.getBoolean(Ui.show_unlock_counter));
             case "show_device_name":
-                return applyDeviceVisibility(XMLPrefsManager.getBoolean(Ui.show_device_name));
+                return statusUIController != null && statusUIController.applyDeviceVisibility(XMLPrefsManager.getBoolean(Ui.show_device_name));
             case "show_battery":
-                return applyBatteryVisibility(XMLPrefsManager.getBoolean(Ui.show_battery));
+                return statusUIController != null && statusUIController.applyBatteryVisibility(XMLPrefsManager.getBoolean(Ui.show_battery));
             case "notification_whitelist":
             case "notification_blacklist":
                 if (bhupendra.ai.launcher.managers.notifications.NotificationService.instance != null) {
@@ -1920,138 +924,5 @@ public class UIManager implements OnTouchListener {
             default:
                 return false;
         }
-    }
-
-    private boolean applyNotesVisibility(boolean visible) {
-        TextView notesView = getLabelViewSafe(Label.notes);
-        if (notesView == null || notesManager == null || handler == null) return false;
-
-        if (!visible) {
-            if (notesRunnable != null) handler.removeCallbacks(notesRunnable);
-            updateText(Label.notes, Tuils.EMPTYSTRING);
-            return true;
-        }
-
-        if (notesRunnable == null) {
-            notesRunnable = new NotesRunnable();
-        } else {
-            handler.removeCallbacks(notesRunnable);
-        }
-        notesView.setMovementMethod(new LinkMovementMethod());
-        notesMaxLines = XMLPrefsManager.getInt(Ui.notes_max_lines);
-        if (notesMaxLines > 0) {
-            notesView.setMaxLines(notesMaxLines);
-            notesView.setEllipsize(TextUtils.TruncateAt.MARQUEE);
-        } else {
-            notesView.setMaxLines(Integer.MAX_VALUE);
-            notesView.setEllipsize(null);
-        }
-        updateText(Label.notes, TextProcessor.span(mContext, labelSizes[Label.notes.ordinal()], notesManager.getNotes()));
-        handler.post(notesRunnable);
-        return true;
-    }
-
-    private boolean applySimpleLabelVisibility(Label label, boolean visible, Runnable runnable) {
-        TextView view = getLabelViewSafe(label);
-        if (view == null || handler == null) return false;
-
-        if (!visible) {
-            if (runnable != null) handler.removeCallbacks(runnable);
-            updateText(label, Tuils.EMPTYSTRING);
-            return true;
-        }
-
-        switch (label) {
-            case ram:
-                if (ramRunnable == null) ramRunnable = new RamRunnable();
-                handler.removeCallbacks(ramRunnable);
-                handler.post(ramRunnable);
-                return true;
-            case time:
-                if (timeRunnable == null) timeRunnable = new TimeRunnable();
-                handler.removeCallbacks(timeRunnable);
-                handler.post(timeRunnable);
-                return true;
-            case storage:
-                if (storageRunnable == null) storageRunnable = new StorageRunnable();
-                handler.removeCallbacks(storageRunnable);
-                handler.post(storageRunnable);
-                return true;
-            case network:
-                if (networkRunnable == null) networkRunnable = new NetworkRunnable();
-                handler.removeCallbacks(networkRunnable);
-                handler.post(networkRunnable);
-                return true;
-            case unlock:
-                handler.removeCallbacks(unlockTimeRunnable);
-                handler.post(unlockTimeRunnable);
-                return true;
-            default:
-                return false;
-        }
-    }
-
-    private boolean applyDeviceVisibility(boolean visible) {
-        TextView view = getLabelViewSafe(Label.device);
-        if (view == null) return false;
-        if (!visible) {
-            updateText(Label.device, Tuils.EMPTYSTRING);
-            return true;
-        }
-
-        Pattern USERNAME = Pattern.compile("%u", Pattern.CASE_INSENSITIVE | Pattern.LITERAL);
-        Pattern DV = Pattern.compile("%d", Pattern.CASE_INSENSITIVE | Pattern.LITERAL);
-        String deviceFormat = XMLPrefsManager.get(Behavior.device_format);
-        String username = XMLPrefsManager.get(Ui.username);
-        String deviceName = XMLPrefsManager.get(Ui.deviceName);
-        if (deviceName == null || deviceName.length() == 0) {
-            deviceName = Build.DEVICE;
-        }
-        deviceFormat = USERNAME.matcher(deviceFormat).replaceAll(Matcher.quoteReplacement(username != null ? username : "null"));
-        deviceFormat = DV.matcher(deviceFormat).replaceAll(Matcher.quoteReplacement(deviceName));
-        deviceFormat = Tuils.patternNewline.matcher(deviceFormat).replaceAll(Matcher.quoteReplacement(Tuils.NEWLINE));
-        updateText(Label.device, TextProcessor.span(mContext, deviceFormat, XMLPrefsManager.getColor(Theme.device_color), labelSizes[Label.device.ordinal()]));
-        return true;
-    }
-
-    private boolean applyBatteryVisibility(boolean visible) {
-        TextView view = getLabelViewSafe(Label.battery);
-        if (view == null) return false;
-        if (!visible) {
-            updateText(Label.battery, Tuils.EMPTYSTRING);
-            DeviceStateManager.unregisterBatteryReceiver(mContext);
-            batteryUpdate = null;
-            return true;
-        }
-
-        mediumPercentage = XMLPrefsManager.getInt(Behavior.battery_medium);
-        lowPercentage = XMLPrefsManager.getInt(Behavior.battery_low);
-        if (batteryUpdate == null) {
-            batteryUpdate = new BatteryUpdate();
-            DeviceStateManager.registerBatteryReceiver(mContext, batteryUpdate);
-        } else {
-            batteryUpdate.update(-1);
-        }
-        return true;
-    }
-
-    private boolean applyWeatherVisibility(boolean visible) {
-        TextView view = getLabelViewSafe(Label.weather);
-        if (view == null || handler == null) return false;
-        if (!visible) {
-            if (weatherRunnable != null) handler.removeCallbacks(weatherRunnable);
-            updateText(Label.weather, Tuils.EMPTYSTRING);
-            return true;
-        }
-
-        weatherColor = XMLPrefsManager.getColor(Theme.weather_color);
-        showWeatherUpdate = XMLPrefsManager.getBoolean(Behavior.show_weather_updates);
-        if (weatherRunnable == null) weatherRunnable = new WeatherRunnable();
-        handler.removeCallbacks(weatherRunnable);
-        String where = XMLPrefsManager.get(Behavior.weather_location);
-        if (where.contains(",") || TextProcessor.isNumber(where)) {
-            handler.post(weatherRunnable);
-        }
-        return true;
     }
 }

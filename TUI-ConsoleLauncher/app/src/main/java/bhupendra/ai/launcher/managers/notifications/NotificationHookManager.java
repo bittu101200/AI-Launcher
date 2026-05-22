@@ -27,7 +27,7 @@ import bhupendra.ai.launcher.ai.AISubsystem;
 import bhupendra.ai.launcher.ai.AICallback;
 import bhupendra.ai.launcher.ai.AIResponse;
 import bhupendra.ai.launcher.ai.AIRequestState;
-import bhupendra.ai.launcher.tuils.BeepPlayer;
+import bhupendra.ai.launcher.tuils.system.BeepPlayer;
 
 public class NotificationHookManager {
 

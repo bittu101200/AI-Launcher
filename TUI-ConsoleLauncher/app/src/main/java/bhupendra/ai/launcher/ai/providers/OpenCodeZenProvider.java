@@ -33,7 +33,7 @@ public class OpenCodeZenProvider implements AIProvider {
 
     private static final String TAG = "OpenCodeZenProvider";
     private static final String API_URL = "https://opencode.ai/zen/v1/chat/completions";
-    private static final String DEFAULT_MODEL = "minimax-m2.5-free";
+    private static final String DEFAULT_MODEL = "nemotron-3-super-free";
     private static final MediaType JSON_TYPE = MediaType.get("application/json");
 
     private final String apiKey;

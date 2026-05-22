@@ -24,6 +24,7 @@ import org.w3c.dom.NodeList;
 import org.xml.sax.SAXParseException;
 
 import java.io.BufferedInputStream;
+import java.io.InputStream;
 import java.io.File;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -60,7 +61,7 @@ import static bhupendra.ai.launcher.managers.xml.XMLPrefsManager.writeTo;
 
 public class RssManager implements XMLPrefsElement {
 
-    private final int RSS_CHECK_DELAY = 5000;
+    private final int RSS_CHECK_DELAY = 300000;
     private boolean isPaused = false;
 
     private final String RSS_FOLDER = "rss";
@@ -666,55 +667,58 @@ public class RssManager implements XMLPrefsElement {
 //                        builder.addHeader(IF_NONE_MATCH_FIELD, quotes + feed.etag + quotes);
 //                    }
 
-                    Response response = client.newCall(builder.build()).execute();
+                    try (Response response = client.newCall(builder.build()).execute()) {
+                        if(response.isSuccessful() && (firstTime || response.code() != 304)) {
+                            ResponseBody body = response.body();
 
-                    if(response.isSuccessful() && (firstTime || response.code() != 304)) {
-                        ResponseBody body = response.body();
+                            long bytes = 0;
+                            if(body != null) {
+                                try (InputStream is = body.byteStream();
+                                     BufferedInputStream bis = new BufferedInputStream(is)) {
+                                    bytes = FileSystemManager.download(bis, new File(root, RSS_LABEL + feed.id + ".xml"));
+                                }
+                            }
 
-                        long bytes = 0;
-                        if(body != null) bytes = FileSystemManager.download(new BufferedInputStream(body.byteStream()), new File(root, RSS_LABEL + feed.id + ".xml"));
+                            if(showDownloadMessage) {
+                                CharSequence c = TextProcessor.span(downloadFormat, downloadMessageColor);
 
-                        if(showDownloadMessage) {
-                            CharSequence c = TextProcessor.span(downloadFormat, downloadMessageColor);
+                                double kb = (double) bytes / (double) 1024;
+                                double mb = kb / (double) 1024;
+                                double gb = mb / (double) 1024;
 
-                            double kb = (double) bytes / (double) 1024;
-                            double mb = kb / (double) 1024;
-                            double gb = mb / (double) 1024;
+                                kb = Tuils.round(kb, 2);
+                                mb = Tuils.round(mb, 2);
+                                gb = Tuils.round(gb, 2);
 
-                            kb = Tuils.round(kb, 2);
-                            mb = Tuils.round(mb, 2);
-                            gb = Tuils.round(gb, 2);
+                                c = urlPattern.matcher(c).replaceAll(feed.url);
+                                c = idPattern.matcher(c).replaceAll(String.valueOf(feed.id));
+                                c = gbPattern.matcher(c).replaceAll(String.valueOf(gb));
+                                c = mbPattern.matcher(c).replaceAll(String.valueOf(mb));
+                                c = kbPattern.matcher(c).replaceAll(String.valueOf(kb));
+                                c = bPattern.matcher(c).replaceAll(String.valueOf(bytes));
 
-                            c = urlPattern.matcher(c).replaceAll(feed.url);
-                            c = idPattern.matcher(c).replaceAll(String.valueOf(feed.id));
-                            c = gbPattern.matcher(c).replaceAll(String.valueOf(gb));
-                            c = mbPattern.matcher(c).replaceAll(String.valueOf(mb));
-                            c = kbPattern.matcher(c).replaceAll(String.valueOf(kb));
-                            c = bPattern.matcher(c).replaceAll(String.valueOf(bytes));
+                                c = TimeManager.instance.replace(c);
 
-                            c = TimeManager.instance.replace(c);
+                                Tuils.sendOutput(downloadMessageColor, context, c);
+                            }
 
-                            Tuils.sendOutput(downloadMessageColor, context, c);
+                            if(bytes == 0) {
+                                Tuils.sendOutput(Color.RED, context, context.getString(R.string.rss_invalid_empty) + Tuils.SPACE + feed.id);
+                                return;
+                            }
+
+    //                        feed.lMod = response.header(LAST_MODIFIED_FIELD);
+    //                        feed.etag = response.header(ETAG_FIELD);
+    //                        if(feed.etag != null) feed.etag = feed.etag.replaceAll("\"", Tuils.EMPTYSTRING);
+
+                            if(feed.show) parse(feed, true);
+                        } else {
+    //                        not modified
                         }
 
-                        if(bytes == 0) {
-                            Tuils.sendOutput(Color.RED, context, context.getString(R.string.rss_invalid_empty) + Tuils.SPACE + feed.id);
-                            return;
-                        }
-
-//                        feed.lMod = response.header(LAST_MODIFIED_FIELD);
-//                        feed.etag = response.header(ETAG_FIELD);
-//                        if(feed.etag != null) feed.etag = feed.etag.replaceAll("\"", Tuils.EMPTYSTRING);
-
-                        response.close();
-
-                        if(feed.show) parse(feed, true);
-                    } else {
-//                        not modified
+                        feed.lastCheckedClient = System.currentTimeMillis();
+                        feed.updateFile(rssIndexFile);
                     }
-
-                    feed.lastCheckedClient = System.currentTimeMillis();
-                    feed.updateFile(rssIndexFile);
 
                 } catch (Exception e) {
                     Tuils.log(e);
@@ -1144,6 +1148,122 @@ public class RssManager implements XMLPrefsElement {
         }
 
         return null;
+    }
+
+    public String fetchFeedSynchronously(int id) {
+        Rss feed = findId(id);
+        if(feed == null) return "Error: Feed not found.";
+        try {
+            okhttp3.Request request = new okhttp3.Request.Builder()
+                    .url(feed.url)
+                    .get()
+                    .build();
+            try (okhttp3.Response response = client.newCall(request).execute()) {
+                if(response.isSuccessful()) {
+                    okhttp3.ResponseBody body = response.body();
+                    if(body != null) {
+                        File file = new File(root, RSS_LABEL + feed.id + ".xml");
+                        try (InputStream is = body.byteStream();
+                             BufferedInputStream bis = new BufferedInputStream(is)) {
+                            FileSystemManager.download(bis, file);
+                        }
+                        feed.lastCheckedClient = System.currentTimeMillis();
+                        feed.updateFile(rssIndexFile);
+                        return "Success: Feed fetched and saved. Use 'read' action to retrieve contents.";
+                    } else {
+                        return "Error: Empty response body.";
+                    }
+                } else {
+                    return "Error: HTTP request failed with code " + response.code();
+                }
+            }
+        } catch (Exception e) {
+            return "Error: " + e.getMessage();
+        }
+    }
+
+    public String getFeedItemsAsString(int id) {
+        Rss feed = findId(id);
+        if(feed == null) return "Error: Feed not found.";
+        File rssFile = new File(root, RSS_LABEL + feed.id + ".xml");
+        if(!rssFile.exists()) {
+            return "No local items cached for this feed yet. Use fetch_latest first.";
+        }
+        try {
+            DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
+            DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
+            Document doc = dBuilder.parse(rssFile);
+            doc.getDocumentElement().normalize();
+            
+            String entryTag = feed.entryTag != null ? feed.entryTag : ENTRY_CHILD;
+            String dateTag = feed.dateTag != null ? feed.dateTag : PUBDATE_CHILD;
+            
+            NodeList list = doc.getElementsByTagName(entryTag);
+            if(list.getLength() == 0) {
+                return "No items found under tag " + entryTag;
+            }
+            
+            StringBuilder builder = new StringBuilder();
+            builder.append("Feed ID: ").append(feed.id).append("\n");
+            builder.append("URL: ").append(feed.url).append("\n");
+            builder.append("Items:\n");
+            
+            int count = Math.min(list.getLength(), 20);
+            for(int i = 0; i < count; i++) {
+                Element item = (Element) list.item(i);
+                if(item == null) continue;
+                
+                String title = "";
+                NodeList titleList = item.getElementsByTagName("title");
+                if(titleList.getLength() > 0) {
+                    title = titleList.item(0).getTextContent().trim();
+                }
+                
+                String link = "";
+                NodeList linkList = item.getElementsByTagName(LINK_CHILD);
+                if(linkList.getLength() > 0) {
+                    Node n = linkList.item(0);
+                    link = n.getTextContent().trim();
+                    if(n.getNodeType() == Node.ELEMENT_NODE && link.isEmpty()) {
+                        link = ((Element) n).getAttribute(HREF_ATTRIBUTE).trim();
+                    }
+                }
+                
+                String description = "";
+                NodeList descList = item.getElementsByTagName("description");
+                if(descList.getLength() == 0) {
+                    descList = item.getElementsByTagName("summary");
+                }
+                if(descList.getLength() > 0) {
+                    description = descList.item(0).getTextContent().trim();
+                    description = removeTags.matcher(description).replaceAll("").trim();
+                    if(description.length() > 200) {
+                        description = description.substring(0, 200) + "...";
+                    }
+                }
+                
+                String pubDate = "";
+                NodeList dateList = item.getElementsByTagName(dateTag);
+                if(dateList.getLength() > 0) {
+                    pubDate = dateList.item(0).getTextContent().trim();
+                }
+                
+                builder.append("- Title: ").append(title).append("\n");
+                if(!pubDate.isEmpty()) {
+                    builder.append("  Published: ").append(pubDate).append("\n");
+                }
+                if(!link.isEmpty()) {
+                    builder.append("  Link: ").append(link).append("\n");
+                }
+                if(!description.isEmpty()) {
+                    builder.append("  Description: ").append(description).append("\n");
+                }
+                builder.append("\n");
+            }
+            return builder.toString();
+        } catch (Exception e) {
+            return "Error parsing XML: " + e.getMessage();
+        }
     }
 
     private boolean prepare() {

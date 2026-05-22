@@ -22,12 +22,18 @@ public class OpenAIProvider implements AIProvider {
     private final String apiKey;
     private final String baseUrl;
     private final String model;
+    private final String providerId;
     private final OkHttpClient client;
 
     public OpenAIProvider(String apiKey, String baseUrl, String model) {
+        this(apiKey, baseUrl, model, "openai");
+    }
+
+    public OpenAIProvider(String apiKey, String baseUrl, String model, String providerId) {
         this.apiKey = apiKey;
         this.baseUrl = (baseUrl != null && !baseUrl.isEmpty()) ? baseUrl : DEFAULT_BASE;
         this.model = (model != null && !model.isEmpty()) ? model : DEFAULT_MODEL;
+        this.providerId = providerId;
         this.client = SharedHttpClient.get();
     }
 
@@ -102,7 +108,13 @@ public class OpenAIProvider implements AIProvider {
                 body.put("tool_choice", "auto");
             }
 
-            String endpoint = baseUrl.replaceAll("/$", "") + "/v1/chat/completions";
+            String endpoint;
+            String base = baseUrl.replaceAll("/$", "");
+            if (base.endsWith("/v1")) {
+                endpoint = base + "/chat/completions";
+            } else {
+                endpoint = base + "/v1/chat/completions";
+            }
             Log.d(TAG, "Request: endpoint=" + endpoint + " model=" + model);
             
             Request.Builder reqBuilder = new Request.Builder()
@@ -265,7 +277,7 @@ public class OpenAIProvider implements AIProvider {
 
     @Override public boolean supportsToolUse() { return true; }
     @Override public boolean supportsStreaming() { return true; }
-    @Override public String providerId() { return "openai"; }
+    @Override public String providerId() { return this.providerId; }
 
     private static class StreamedToolCall {
         int index;

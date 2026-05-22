@@ -61,4 +61,11 @@ public class OpenAIToolSupportTest {
         assertEquals("launch:com.apple.android.music", response.toolCalls.get(0).toolName);
         assertEquals("{}", response.toolCalls.get(0).argumentsJson);
     }
+
+    @Test
+    public void decodeToolName_resilientDecoding() {
+        assertEquals("system.execute_command", OpenAIToolSupport.decodeToolName("tool_system_2e_execute_command"));
+        assertEquals("system_execute_command", OpenAIToolSupport.decodeToolName("tool_system_execute_command"));
+        assertEquals("system.execute_command_", OpenAIToolSupport.decodeToolName("tool_system_2e_execute_command_"));
+    }
 }

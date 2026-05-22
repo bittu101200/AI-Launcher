@@ -1,5 +1,6 @@
-package bhupendra.ai.launcher.tuils;
+package bhupendra.ai.launcher.integration.termux;
 
+import bhupendra.ai.launcher.tuils.Tuils;
 import android.app.PendingIntent;
 import android.content.ComponentName;
 import android.content.Context;

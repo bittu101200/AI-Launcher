@@ -1,4 +1,4 @@
-package bhupendra.ai.launcher.tuils;
+package bhupendra.ai.launcher.ui.views;
 
 import android.app.PendingIntent;
 import android.content.Context;
@@ -21,6 +21,8 @@ import bhupendra.ai.launcher.managers.notifications.NotificationManager;
 import bhupendra.ai.launcher.managers.notifications.NotificationService;
 import bhupendra.ai.launcher.managers.xml.XMLPrefsManager;
 import bhupendra.ai.launcher.managers.xml.options.Notifications;
+import bhupendra.ai.launcher.tuils.PrivateIOReceiver;
+import bhupendra.ai.launcher.tuils.Tuils;
 
 /**
  * Created by francescoandreuzzi on 22/10/2017.

@@ -48,12 +48,13 @@ import bhupendra.ai.launcher.UIManager;
 import bhupendra.ai.launcher.managers.xml.XMLPrefsManager;
 import bhupendra.ai.launcher.managers.xml.options.Behavior;
 import bhupendra.ai.launcher.managers.xml.options.Theme;
-import bhupendra.ai.launcher.tuils.LongClickableSpan;
+import bhupendra.ai.launcher.ui.views.LongClickableSpan;
 import bhupendra.ai.launcher.tuils.Tuils;
 import okhttp3.CacheControl;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
+import okhttp3.ResponseBody;
 
 import static bhupendra.ai.launcher.managers.xml.XMLPrefsManager.resetFile;
 
@@ -383,30 +384,31 @@ public class HTMLExtractManager {
                             .addHeader("User-Agent", "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:15.0) Gecko/20100101 Firefox/15.0.1")
                             .get();
 
-                    Response response = client.newCall(builder.build()).execute();
-
-                    if(response.code() == 429 && weatherArea) {
-                        Intent i = new Intent(UIManager.ACTION_WEATHER_DELAY);
-                        LocalBroadcastManager.getInstance(context.getApplicationContext()).sendBroadcast(i);
-
-                        return;
-                    } else if(!response.isSuccessful()) {
-                        String message = context.getString(R.string.internet_error) + Tuils.SPACE + response.code();
-
-                        if(weatherArea) {
-                            Intent i = new Intent(UIManager.ACTION_WEATHER);
-                            i.putExtra(XMLPrefsManager.VALUE_ATTRIBUTE, message);
+                    try (Response response = client.newCall(builder.build()).execute()) {
+                        if (response.code() == 429 && weatherArea) {
+                            Intent i = new Intent(UIManager.ACTION_WEATHER_DELAY);
                             LocalBroadcastManager.getInstance(context.getApplicationContext()).sendBroadcast(i);
-                        } else {
-                            output(message, context, false);
+                            return;
+                        } else if (!response.isSuccessful()) {
+                            String message = context.getString(R.string.internet_error) + Tuils.SPACE + response.code();
+                            if (weatherArea) {
+                                Intent i = new Intent(UIManager.ACTION_WEATHER);
+                                i.putExtra(XMLPrefsManager.VALUE_ATTRIBUTE, message);
+                                LocalBroadcastManager.getInstance(context.getApplicationContext()).sendBroadcast(i);
+                            } else {
+                                output(message, context, false);
+                            }
+                            return;
                         }
 
-                        return;
-                    }
+                        ResponseBody responseBody = response.body();
+                        if (responseBody == null) {
+                            output("Empty response body", context, weatherArea);
+                            return;
+                        }
 
-                    InputStream inputStream = response.body().byteStream();
-
-                    CharSequence output = TextProcessor.span(Tuils.EMPTYSTRING, outputColor);
+                        try (InputStream inputStream = responseBody.byteStream()) {
+                            CharSequence output = TextProcessor.span(Tuils.EMPTYSTRING, outputColor);
 
                     if(weatherArea) {
                         String json = FileSystemManager.inputStreamToString(inputStream);
@@ -528,7 +530,9 @@ public class HTMLExtractManager {
                             Tuils.sendOutput(outputColor, context, o.toString());
                         }
                     }
-                } catch (Exception e) {
+                }
+            }
+        } catch (Exception e) {
                     output(e.toString(), context, weatherArea);
                     FileSystemManager.toFile(e);
                     Tuils.log(e);

@@ -36,8 +36,8 @@ import bhupendra.ai.launcher.managers.xml.XMLPrefsManager;
 import bhupendra.ai.launcher.managers.xml.options.Behavior;
 import bhupendra.ai.launcher.managers.xml.options.Theme;
 import bhupendra.ai.launcher.managers.xml.options.Ui;
-import bhupendra.ai.launcher.tuils.LongClickMovementMethod;
-import bhupendra.ai.launcher.tuils.LongClickableSpan;
+import bhupendra.ai.launcher.ui.views.LongClickMovementMethod;
+import bhupendra.ai.launcher.ui.views.LongClickableSpan;
 import bhupendra.ai.launcher.tuils.PrivateIOReceiver;
 import bhupendra.ai.launcher.tuils.Tuils;
 import bhupendra.ai.launcher.tuils.interfaces.CommandExecuter;
@@ -300,7 +300,8 @@ public class TerminalManager {
         this.mInputView.setTextSize(ioSize);
         this.mInputView.setTextColor(XMLPrefsManager.getColor(Theme.input_color));
         this.mInputView.setTypeface(Tuils.getTypeface(context));
-        this.mInputView.setHint(Tuils.getHint(mainPack.currentDirectory.getAbsolutePath()));
+        String path = (mainPack != null && mainPack.currentDirectory != null) ? mainPack.currentDirectory.getAbsolutePath() : "";
+        this.mInputView.setHint(Tuils.getHint(path));
         this.mInputView.setInputType(InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
         this.mInputView.setImportantForAutofill(View.IMPORTANT_FOR_AUTOFILL_NO_EXCLUDE_DESCENDANTS);
         this.mInputView.setAutofillHints("");
@@ -349,7 +350,8 @@ public class TerminalManager {
         mInputView.setText(Tuils.EMPTYSTRING);
 
         if(defaultHint) {
-            mInputView.setHint(Tuils.getHint(mainPack.currentDirectory.getAbsolutePath()));
+            String path = (mainPack != null && mainPack.currentDirectory != null) ? mainPack.currentDirectory.getAbsolutePath() : "";
+            mInputView.setHint(Tuils.getHint(path));
         }
 
         requestInputFocus();
@@ -483,7 +485,15 @@ public class TerminalManager {
 
     private void writeToView(final CharSequence text) {
         mTerminalView.post(() -> {
-            mTerminalView.append(text);
+            if (text == null || text.length() == 0) return;
+            CharSequence finalSeq = text;
+            CharSequence current = mTerminalView.getText();
+            if (current.length() > 0 && current.charAt(current.length() - 1) == '\n') {
+                if (text.charAt(0) == '\n') {
+                    finalSeq = text.subSequence(1, text.length());
+                }
+            }
+            mTerminalView.append(finalSeq);
             scrollToEnd();
         });
     }
@@ -608,7 +618,8 @@ public class TerminalManager {
         defaultHint = true;
 
         if(mInputView != null) {
-            mInputView.setHint(Tuils.getHint(mainPack.currentDirectory.getAbsolutePath()));
+            String path = (mainPack != null && mainPack.currentDirectory != null) ? mainPack.currentDirectory.getAbsolutePath() : "";
+            mInputView.setHint(Tuils.getHint(path));
         }
     }
 
@@ -648,7 +659,10 @@ public class TerminalManager {
 
     public void startStreaming() {
         mTerminalView.post(() -> {
-            mTerminalView.append(Tuils.NEWLINE);
+            CharSequence current = mTerminalView.getText();
+            if (current.length() == 0 || current.charAt(current.length() - 1) != '\n') {
+                mTerminalView.append(Tuils.NEWLINE);
+            }
             streamStartOffset = mTerminalView.getText().length();
             
             SpannableString initial = new SpannableString("[thinking...]");

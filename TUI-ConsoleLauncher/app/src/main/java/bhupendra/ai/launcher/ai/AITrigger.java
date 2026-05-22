@@ -123,6 +123,12 @@ public class AITrigger {
             }
 
             @Override public void onStateChange(String rid, AIRequestState state) {
+                if (supportsStreaming && !streamStartedHolder[0] && (state == AIRequestState.FOLLOWUP || state == AIRequestState.THINKING)) {
+                    streamStartedHolder[0] = true;
+                    apiThinkingBuffer.setLength(0);
+                    apiContentBuffer.setLength(0);
+                    TerminalEventBus.get().post(new TerminalEventBus.StartStreamEvent(rid));
+                }
                 ContentSplit split = ContentSplit.split(apiContentBuffer.toString());
                 String combinedThinking = apiThinkingBuffer.toString() + split.thinking;
                 if (supportsStreaming && streamStartedHolder[0]) {

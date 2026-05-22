@@ -654,7 +654,12 @@ public class Tuils {
     private static String getNicePath(String filePath) {
         if(filePath == null) return "null";
 
-        String home = XMLPrefsManager.get(File.class, Behavior.home_path).getAbsolutePath();
+        File homeFile = XMLPrefsManager.get(File.class, Behavior.home_path);
+        String home = homeFile != null ? homeFile.getAbsolutePath() : null;
+
+        if(home == null) {
+            return filePath;
+        }
 
         if(filePath.equals(home)) {
             return "~";

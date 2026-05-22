@@ -281,7 +281,7 @@
             </intent-filter>
         </receiver>
 
-        <receiver android:name="bhupendra.ai.launcher.tuils.TermuxResultReceiver"
+        <receiver android:name="bhupendra.ai.launcher.integration.termux.TermuxResultReceiver"
             android:exported="true">
             <intent-filter>
                 <action android:name="bhupendra.ai.launcher.TERMUX_RESULT" />

@@ -71,6 +71,12 @@ public class MainPack extends ExecutePack {
         super(commandGroup);
 
         this.currentDirectory = XMLPrefsManager.get(File.class, Behavior.home_path);
+        if (this.currentDirectory == null) {
+            this.currentDirectory = bhupendra.ai.launcher.managers.FileSystemManager.getFolder();
+            if (this.currentDirectory == null) {
+                this.currentDirectory = context.getFilesDir();
+            }
+        }
 
         this.rssManager = rssManager;
 
@@ -115,18 +121,18 @@ public class MainPack extends ExecutePack {
     @Override public File getCurrentDirectory() { return currentDirectory; }
     @Override public void setCurrentDirectory(File directory) { this.currentDirectory = directory; }
     @Override public WifiManager getWifiManager() { return wifi; }
-    @Override public ContactManager getContactManager() { return contacts; }
-    @Override public MusicManager2 getMusicManager() { return player; }
-    @Override public AliasManager getAliasManager() { return aliasManager; }
-    @Override public AppsManager getAppsManager() { return appsManager; }
+    @Deprecated @Override public ContactManager getContactManager() { return contacts; }
+    @Deprecated @Override public MusicManager2 getMusicManager() { return player; }
+    @Deprecated @Override public AliasManager getAliasManager() { return aliasManager; }
+    @Deprecated @Override public AppsManager getAppsManager() { return appsManager; }
     @Override public bhupendra.ai.launcher.commands.CommandsPreferences getCmdPrefs() { return cmdPrefs; }
     @Override public String getLastCommand() { return lastCommand; }
     @Override public void setLastCommand(String command) { this.lastCommand = command; }
     @Override public Redirectator getRedirectator() { return redirectator; }
     @Override public ShellHolder getShellHolder() { return shellHolder; }
-    @Override public RssManager getRssManager() { return rssManager; }
-    @Override public OkHttpClient getHttpClient() { return client; }
-    @Override public bhupendra.ai.launcher.ai.AISubsystem getAiSubsystem() { return aiSubsystem; }
+    @Deprecated @Override public RssManager getRssManager() { return rssManager; }
+    @Deprecated @Override public OkHttpClient getHttpClient() { return client; }
+    @Deprecated @Override public bhupendra.ai.launcher.ai.AISubsystem getAiSubsystem() { return aiSubsystem; }
     @Override public int getCommandColor() { return commandColor; }
     @Override public void setCommandColor(int color) { this.commandColor = color; }
 

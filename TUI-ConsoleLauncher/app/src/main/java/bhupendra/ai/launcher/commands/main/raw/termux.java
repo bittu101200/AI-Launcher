@@ -11,7 +11,7 @@ import bhupendra.ai.launcher.R;
 import bhupendra.ai.launcher.commands.CommandAbstraction;
 import bhupendra.ai.launcher.commands.ExecutePack;
 import bhupendra.ai.launcher.commands.main.MainPack;
-import bhupendra.ai.launcher.tuils.TermuxManager;
+import bhupendra.ai.launcher.integration.termux.TermuxManager;
 import bhupendra.ai.launcher.tuils.Tuils;
 
 public class termux implements CommandAbstraction {

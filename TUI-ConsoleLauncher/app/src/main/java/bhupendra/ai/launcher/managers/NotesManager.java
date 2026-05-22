@@ -50,7 +50,7 @@ import bhupendra.ai.launcher.managers.xml.XMLPrefsManager;
 import bhupendra.ai.launcher.managers.xml.options.Behavior;
 import bhupendra.ai.launcher.managers.xml.options.Theme;
 import bhupendra.ai.launcher.managers.xml.options.Ui;
-import bhupendra.ai.launcher.tuils.LongClickableSpan;
+import bhupendra.ai.launcher.ui.views.LongClickableSpan;
 import bhupendra.ai.launcher.tuils.Tuils;
 
 import static android.content.Context.CLIPBOARD_SERVICE;
@@ -74,6 +74,16 @@ public class NotesManager {
     public static String CREATION_TIME = "creationTime", TEXT = "text", LOCK = "lock";
 
     private final String PATH = "notes.xml", NAME = "NOTES", NOTE_NODE = "note";
+
+    public interface OnNotesChangedListener {
+        void onNotesChanged();
+    }
+
+    private OnNotesChangedListener onNotesChangedListener;
+
+    public void setOnNotesChangedListener(OnNotesChangedListener listener) {
+        this.onNotesChangedListener = listener;
+    }
 
     CharSequence oldNotes;
     public boolean hasChanged;
@@ -359,6 +369,9 @@ public class NotesManager {
         }
 
         hasChanged = true;
+        if (onNotesChangedListener != null) {
+            onNotesChangedListener.onNotesChanged();
+        }
     }
 
     public CharSequence getNotes() {

@@ -46,8 +46,8 @@ import bhupendra.ai.launcher.managers.notifications.KeeperService;
 import bhupendra.ai.launcher.managers.xml.XMLPrefsManager;
 import bhupendra.ai.launcher.managers.xml.options.Behavior;
 import bhupendra.ai.launcher.managers.xml.options.Theme;
-import bhupendra.ai.launcher.tuils.BeepPlayer;
-import bhupendra.ai.launcher.tuils.TermuxManager;
+import bhupendra.ai.launcher.tuils.system.BeepPlayer;
+import bhupendra.ai.launcher.integration.termux.TermuxManager;
 import bhupendra.ai.launcher.tuils.PrivateIOReceiver;
 
 import bhupendra.ai.launcher.tuils.Tuils;
@@ -58,6 +58,8 @@ import bhupendra.ai.launcher.tuils.libsuperuser.Shell;
 import bhupendra.ai.launcher.tuils.libsuperuser.ShellHolder;
 import okhttp3.Cache;
 import okhttp3.OkHttpClient;
+import javax.inject.Inject;
+import androidx.annotation.Nullable;
 
 /*Copyright Francesco Andreuzzi
 
@@ -136,28 +138,28 @@ public class MainManager {
 
     public static int commandCount = 0;
 
-    protected MainManager(LauncherActivity c) {
+    @Inject
+    public MainManager(
+            LauncherActivity c,
+            @Nullable ContactManager contactManager,
+            AppsManager appsManager,
+            AliasManager aliasManager,
+            RssManager rssManager,
+            ThemeManager themeManager,
+            @Nullable MusicManager2 musicManager2,
+            HTMLExtractManager htmlExtractManager,
+            OkHttpClient client
+    ) {
         mContext = c;
+        this.contactManager = contactManager;
+        this.appsManager = appsManager;
+        this.aliasManager = aliasManager;
+        this.rssManager = rssManager;
+        this.themeManager = themeManager;
+        this.musicManager2 = musicManager2;
+        this.htmlExtractManager = htmlExtractManager;
 
         CommandGroup group = new CommandGroup(mContext, COMMANDS_PKG);
-
-        try {
-            contactManager = new ContactManager(mContext);
-        } catch (NullPointerException e) {
-            Tuils.log(e);
-        }
-
-        appsManager = new AppsManager(c);
-        aliasManager = new AliasManager(mContext);
-
-        final OkHttpClient client = new OkHttpClient.Builder()
-                .cache(new Cache(mContext.getCacheDir(), 10*1024*1024))
-                .build();
-
-        rssManager = new RssManager(mContext, client);
-        themeManager = new ThemeManager(client, mContext, c);
-        musicManager2 = XMLPrefsManager.getBoolean(Behavior.enable_music) ? new MusicManager2(mContext) : null;
-        htmlExtractManager = new HTMLExtractManager(mContext, client);
 
         mainPack = new MainPack(mContext, group, aliasManager, appsManager, musicManager2, contactManager, redirectator, rssManager, client);
         commandController = new CommandExecutionController(mContext, mainPack);

@@ -1,4 +1,4 @@
-package bhupendra.ai.launcher.tuils;
+package bhupendra.ai.launcher.ui.views;
 
 import android.text.Layout;
 import android.text.Spannable;

@@ -61,33 +61,33 @@ public class ChangelogManager {
                                 .url(changelogUrl)
                                 .get();
 
-                        Response response = client.newCall(builder.build()).execute();
+                        try (Response response = client.newCall(builder.build()).execute()) {
+                            if (!response.isSuccessful() || response.code() == 304) {
+                                if (force) Tuils.sendOutput(context, R.string.internet_error + Tuils.SPACE + response.code());
+                                return;
+                            }
 
-                        if (!response.isSuccessful() || response.code() == 304) {
-                            if(force) Tuils.sendOutput(context, R.string.internet_error + Tuils.SPACE + response.code());
-                            return;
+                            String header = "Changelog " + BuildConfig.VERSION_NAME;
+
+                            String log = response.body().string();
+                            log = newlinePattern.matcher(log).replaceAll(Tuils.DOUBLE_SPACE + "-");
+
+                            boolean cut = !force && log.length() >= MAX_LENGTH;
+                            if (cut) log = log.substring(0, MAX_LENGTH) + "...";
+
+                            Tuils.sendOutput(context, header + Tuils.NEWLINE + log);
+
+                            if (cut) {
+                                SpannableString sp = new SpannableString("Click here to see the full changelog");
+                                sp.setSpan(new ForegroundColorSpan(XMLPrefsManager.getColor(Theme.output_color)), 0, sp.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                                sp.setSpan(new ForegroundColorSpan(XMLPrefsManager.getColor(Theme.link_color)), 6, 10, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                                Tuils.sendOutput(context, sp, TerminalManager.CATEGORY_NO_COLOR, Uri.parse(changelogUrl));
+                            }
+
+                            SharedPreferences.Editor editor = preferences.edit();
+                            editor.putBoolean(changelogUrl, true);
+                            editor.apply();
                         }
-
-                        String header = "Changelog " + BuildConfig.VERSION_NAME;
-
-                        String log = response.body().string();
-                        log = newlinePattern.matcher(log).replaceAll(Tuils.DOUBLE_SPACE + "-");
-
-                        boolean cut = !force && log.length() >= MAX_LENGTH;
-                        if(cut) log = log.substring(0, MAX_LENGTH) + "...";
-
-                        Tuils.sendOutput(context, header + Tuils.NEWLINE + log);
-
-                        if(cut) {
-                            SpannableString sp = new SpannableString("Click here to see the full changelog");
-                            sp.setSpan(new ForegroundColorSpan(XMLPrefsManager.getColor(Theme.output_color)), 0, sp.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-                            sp.setSpan(new ForegroundColorSpan(XMLPrefsManager.getColor(Theme.link_color)), 6, 10, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-                            Tuils.sendOutput(context, sp, TerminalManager.CATEGORY_NO_COLOR, Uri.parse(changelogUrl));
-                        }
-
-                        SharedPreferences.Editor editor = preferences.edit();
-                        editor.putBoolean(changelogUrl, true);
-                        editor.apply();
                     } catch (Exception e) {
                         Tuils.sendOutput(context, e.toString());
                         Tuils.log(e);

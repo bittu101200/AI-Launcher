@@ -15,7 +15,7 @@ import bhupendra.ai.launcher.managers.xml.XMLPrefsManager;
 import bhupendra.ai.launcher.managers.xml.classes.XMLPrefsSave;
 import bhupendra.ai.launcher.managers.xml.options.Ai;
 import bhupendra.ai.launcher.commands.main.MainPack;
-import bhupendra.ai.launcher.tuils.TermuxManager;
+import bhupendra.ai.launcher.integration.termux.TermuxManager;
 import bhupendra.ai.launcher.ai.tools.*;
 import bhupendra.ai.launcher.ai.providers.MockProvider;
 import bhupendra.ai.launcher.managers.DeviceStateManager;
@@ -178,8 +178,7 @@ public class AISubsystem {
 
     private void syncSystemPromptToDisk() {
         if (appContext == null) return;
-        try {
-            java.io.InputStream in = appContext.getAssets().open("ai_system_prompt.md");
+        try (java.io.InputStream in = appContext.getAssets().open("ai_system_prompt.md")) {
             String assetPrompt = FileSystemManager.inputStreamToString(in);
             java.io.File promptFile = new java.io.File(FileSystemManager.getFolder(), "ai_system_prompt.md");
             
@@ -197,13 +196,17 @@ public class AISubsystem {
 
         switch (normalizedProvider) {
             case "opencode_zen": {
-                String zenModel = (model != null && !model.isEmpty()) ? model : "minimax-m2.5-free";
+                String zenModel = (model != null && !model.isEmpty()) ? model : "nemotron-3-super-free";
                 return new bhupendra.ai.launcher.ai.providers.OpenCodeZenProvider(key, zenModel);
             }
             case "openai":
             case "ollama": {
                 String baseUrl = XMLPrefsManager.get(Ai.base_url);
                 return new bhupendra.ai.launcher.ai.providers.OpenAIProvider(key, baseUrl, model);
+            }
+            case "openrouter": {
+                String openrouterModel = (model != null && !model.isEmpty()) ? model : "google/gemini-2.5-flash:free";
+                return new bhupendra.ai.launcher.ai.providers.OpenAIProvider(key, "https://openrouter.ai/api/v1", openrouterModel, "openrouter");
             }
             case "gemini": {
                 String geminiModel = (model != null && !model.isEmpty()) ? model : "gemini-flash-latest";
@@ -360,6 +363,8 @@ public class AISubsystem {
             ToolRiskClass.READ_ONLY));
 
         toolRegistry.register(ToolRegistry.Tier.SYSTEM, new SystemSpeedTestTool());
+
+        toolRegistry.register(ToolRegistry.Tier.SYSTEM, new SystemRssTool());
             
         toolRegistry.register(ToolRegistry.Tier.SYSTEM, new SystemSearchWebTool(
             "system.search_web",
@@ -528,6 +533,10 @@ public class AISubsystem {
             conversationManager.append(ConversationTurn.assistantCalls(response.toolCalls));
             beginToolExecution(requestId, response.toolCalls, callback);
         } else if (response.type == AIResponse.Type.TEXT) {
+            if (response.isToolOutput) {
+                callback.onResponse(response);
+                return;
+            }
             if (response.text != null && !response.text.isEmpty()) {
                 conversationManager.append(ConversationTurn.assistant(response.text));
             }
@@ -605,6 +614,10 @@ public class AISubsystem {
             history.append(ConversationTurn.assistantCalls(response.toolCalls));
             beginAutomationToolExecution(requestId, contextId, response.toolCalls, callback);
         } else if (response.type == AIResponse.Type.TEXT) {
+            if (response.isToolOutput) {
+                callback.onResponse(response);
+                return;
+            }
             if (response.text != null && !response.text.isEmpty()) {
                 history.append(ConversationTurn.assistant(response.text));
             }
@@ -732,18 +745,19 @@ public class AISubsystem {
             java.io.File promptFile = new java.io.File(FileSystemManager.getFolder(), "ai_system_prompt.md");
             try {
                 if (appContext != null) {
-                    java.io.InputStream in = appContext.getAssets().open("ai_system_prompt.md");
-                    bundledPrompt = FileSystemManager.inputStreamToString(in);
+                    try (java.io.InputStream in = appContext.getAssets().open("ai_system_prompt.md")) {
+                        bundledPrompt = FileSystemManager.inputStreamToString(in);
+                    }
                 }
             } catch (Exception e) {}
             try {
                 if (promptFile.exists()) {
-                    java.io.BufferedReader reader = new java.io.BufferedReader(new java.io.FileReader(promptFile));
-                    StringBuilder sb = new StringBuilder();
-                    String line;
-                    while ((line = reader.readLine()) != null) sb.append(line).append("\n");
-                    reader.close();
-                    localPrompt = sb.toString();
+                    try (java.io.BufferedReader reader = new java.io.BufferedReader(new java.io.FileReader(promptFile))) {
+                        StringBuilder sb = new StringBuilder();
+                        String line;
+                        while ((line = reader.readLine()) != null) sb.append(line).append("\n");
+                        localPrompt = sb.toString();
+                    }
                 }
             } catch (Exception e) {}
 
@@ -756,8 +770,9 @@ public class AISubsystem {
 
             if (basePrompt.isEmpty() && appContext != null) {
                 try {
-                    java.io.InputStream in = appContext.getAssets().open("ai_system_prompt.md");
-                    basePrompt = FileSystemManager.inputStreamToString(in);
+                    try (java.io.InputStream in = appContext.getAssets().open("ai_system_prompt.md")) {
+                        basePrompt = FileSystemManager.inputStreamToString(in);
+                    }
                 } catch (Exception ignored) {}
             }
             if (basePrompt.isEmpty()) basePrompt = "You are an AI assistant.";

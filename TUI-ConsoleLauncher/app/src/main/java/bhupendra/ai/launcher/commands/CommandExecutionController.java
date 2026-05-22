@@ -25,7 +25,7 @@ import bhupendra.ai.launcher.managers.music.MusicService;
 import bhupendra.ai.launcher.managers.xml.XMLPrefsManager;
 import bhupendra.ai.launcher.managers.xml.options.Behavior;
 import bhupendra.ai.launcher.managers.xml.options.Theme;
-import bhupendra.ai.launcher.tuils.BeepPlayer;
+import bhupendra.ai.launcher.tuils.system.BeepPlayer;
 
 import bhupendra.ai.launcher.tuils.Tuils;
 import bhupendra.ai.launcher.tuils.libsuperuser.Shell;
@@ -357,13 +357,13 @@ public class CommandExecutionController {
             final String trimmed = input.trim();
             final String cmd = trimmed.split(" ")[0];
 
-            if (bhupendra.ai.launcher.tuils.TermuxManager.isTermuxInstalled(mContext)) {
+            if (bhupendra.ai.launcher.integration.termux.TermuxManager.isTermuxInstalled(mContext)) {
                 String[] common = {"ping", "echo", "ls", "grep", "cat", "vi", "top", "ps", "ip", "pkg", "git", "python", "node", "vim", "sed", "awk", "find"};
                 for (String c : common) {
                     if (cmd.equalsIgnoreCase(c)) {
                         String argsStr = input.length() > cmd.length() ? input.substring(cmd.length()).trim() : "";
                         String[] finalArgs = argsStr.isEmpty() ? new String[0] : argsStr.split(" ");
-                        bhupendra.ai.launcher.tuils.TermuxManager.runCommand(mContext, cmd, finalArgs, null, false);
+                        bhupendra.ai.launcher.integration.termux.TermuxManager.runCommand(mContext, cmd, finalArgs, null, false);
                         
                         if (mainPack.aiSubsystem == null || !mainPack.aiSubsystem.isInFlight()) {
                             logCommandFinished(requestId);

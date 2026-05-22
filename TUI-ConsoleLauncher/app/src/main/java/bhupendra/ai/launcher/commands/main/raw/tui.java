@@ -121,15 +121,17 @@ public class tui extends ParamCommand {
         folder {
             @Override
             public String exec(ExecutePack pack) {
+                File folder = FileSystemManager.getFolder();
+                if (folder == null) return "Folder not initialized";
 
-                Uri selectedUri = Uri.parse(FileSystemManager.getFolder().getAbsolutePath());
+                Uri selectedUri = Uri.parse(folder.getAbsolutePath());
                 Intent intent = new Intent(Intent.ACTION_VIEW);
                 intent.setDataAndType(selectedUri, "resource/folder");
 
                 if (intent.resolveActivityInfo(pack.getContext().getPackageManager(), 0) != null) {
                     pack.getContext().startActivity(intent);
                 } else {
-                    return FileSystemManager.getFolder().getAbsolutePath();
+                    return folder.getAbsolutePath();
                 }
 
                 return null;

@@ -94,37 +94,34 @@ public class ThemeManager {
                         .url(url)
                         .get();
 
-                Response response;
-                try {
-                    response = client.newCall(builder.build()).execute();
+                try (Response response = client.newCall(builder.build()).execute()) {
+                    if(response.isSuccessful()) {
+                        String string;
+                        try {
+                            string = response.body().string();
+                        } catch (IOException e) {
+                            string = Tuils.EMPTYSTRING;
+                        }
+
+                        if(string.length() == 0) {
+                            Tuils.sendOutput(context, R.string.theme_not_found);
+                            return;
+                        }
+
+                        Matcher m = parser.matcher(string);
+                        if(m.find()) {
+                            String suggestions = m.group(1);
+                            String theme = m.group(2);
+
+                            applyTheme(theme, suggestions, true, themeName);
+                        } else {
+                            Tuils.sendOutput(context, R.string.theme_not_found);
+                            return;
+                        }
+                    }
                 } catch (IOException e) {
                     Tuils.sendOutput(context, e.toString());
                     return;
-                }
-
-                if(response.isSuccessful()) {
-                    String string;
-                    try {
-                        string = response.body().string();
-                    } catch (IOException e) {
-                        string = Tuils.EMPTYSTRING;
-                    }
-
-                    if(string.length() == 0) {
-                        Tuils.sendOutput(context, R.string.theme_not_found);
-                        return;
-                    }
-
-                    Matcher m = parser.matcher(string);
-                    if(m.find()) {
-                        String suggestions = m.group(1);
-                        String theme = m.group(2);
-
-                        applyTheme(theme, suggestions, true, themeName);
-                    } else {
-                        Tuils.sendOutput(context, R.string.theme_not_found);
-                        return;
-                    }
                 }
         });
     }

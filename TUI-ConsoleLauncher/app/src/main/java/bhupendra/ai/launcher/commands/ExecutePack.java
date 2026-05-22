@@ -73,18 +73,18 @@ public abstract class ExecutePack implements CommandContext {
     @Override public java.io.File getCurrentDirectory() { return null; }
     @Override public void setCurrentDirectory(java.io.File directory) {}
     @Override public android.net.wifi.WifiManager getWifiManager() { return null; }
-    @Override public bhupendra.ai.launcher.managers.ContactManager getContactManager() { return null; }
-    @Override public bhupendra.ai.launcher.managers.music.MusicManager2 getMusicManager() { return null; }
-    @Override public bhupendra.ai.launcher.managers.AliasManager getAliasManager() { return null; }
-    @Override public bhupendra.ai.launcher.managers.AppsManager getAppsManager() { return null; }
+    @Deprecated @Override public bhupendra.ai.launcher.managers.ContactManager getContactManager() { return null; }
+    @Deprecated @Override public bhupendra.ai.launcher.managers.music.MusicManager2 getMusicManager() { return null; }
+    @Deprecated @Override public bhupendra.ai.launcher.managers.AliasManager getAliasManager() { return null; }
+    @Deprecated @Override public bhupendra.ai.launcher.managers.AppsManager getAppsManager() { return null; }
     @Override public bhupendra.ai.launcher.commands.CommandsPreferences getCmdPrefs() { return null; }
     @Override public String getLastCommand() { return null; }
     @Override public void setLastCommand(String command) {}
     @Override public bhupendra.ai.launcher.tuils.interfaces.Redirectator getRedirectator() { return null; }
     @Override public bhupendra.ai.launcher.tuils.libsuperuser.ShellHolder getShellHolder() { return null; }
-    @Override public bhupendra.ai.launcher.managers.RssManager getRssManager() { return null; }
-    @Override public okhttp3.OkHttpClient getHttpClient() { return null; }
-    @Override public bhupendra.ai.launcher.ai.AISubsystem getAiSubsystem() { return null; }
+    @Deprecated @Override public bhupendra.ai.launcher.managers.RssManager getRssManager() { return null; }
+    @Deprecated @Override public okhttp3.OkHttpClient getHttpClient() { return null; }
+    @Deprecated @Override public bhupendra.ai.launcher.ai.AISubsystem getAiSubsystem() { return null; }
     @Override public int getCommandColor() { return 0; }
     @Override public void setCommandColor(int color) {}
     @Override public void dispose() {}

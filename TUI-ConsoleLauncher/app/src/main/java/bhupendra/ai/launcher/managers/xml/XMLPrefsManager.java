@@ -179,7 +179,7 @@ public class XMLPrefsManager {
                 continue;
             } catch (Exception e) {
                 Tuils.log(e);
-                return;
+                continue;
             }
 
             Document d = (Document) o[0];
@@ -285,11 +285,7 @@ public class XMLPrefsManager {
         if(c == double.class) return Double.parseDouble(s);
         if(c == File.class) {
             if(s.length() == 0) return null;
-
-            File file = new File(s);
-            if(!file.exists()) throw new UnsupportedOperationException();
-
-            return file;
+            return new File(s);
         }
 
         return Tuils.getDefaultValue(c);

@@ -12,6 +12,8 @@ import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 
+import bhupendra.ai.launcher.ui.views.LongClickableSpan;
+
 import bhupendra.ai.launcher.BuildConfig;
 import bhupendra.ai.launcher.MainManager;
 import bhupendra.ai.launcher.managers.notifications.reply.ReplyDispatcher;

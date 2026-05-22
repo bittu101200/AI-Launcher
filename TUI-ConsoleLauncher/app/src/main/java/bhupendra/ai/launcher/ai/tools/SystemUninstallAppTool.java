@@ -24,7 +24,7 @@ import bhupendra.ai.launcher.commands.main.MainPack;
 import bhupendra.ai.launcher.managers.xml.XMLPrefsManager;
 import bhupendra.ai.launcher.managers.xml.classes.XMLPrefsSave;
 import bhupendra.ai.launcher.managers.CronManager;
-import bhupendra.ai.launcher.tuils.TermuxManager;
+import bhupendra.ai.launcher.integration.termux.TermuxManager;
 import bhupendra.ai.launcher.ai.AISubsystem;
 import bhupendra.ai.launcher.ai.ToolRiskClass;
 import bhupendra.ai.launcher.ai.WebFetcher;

@@ -59,8 +59,8 @@ import bhupendra.ai.launcher.managers.xml.options.Notifications;
 import bhupendra.ai.launcher.managers.xml.options.Theme;
 import bhupendra.ai.launcher.managers.xml.options.Ui;
 import bhupendra.ai.launcher.tuils.Assist;
-import bhupendra.ai.launcher.tuils.CustomExceptionHandler;
-import bhupendra.ai.launcher.tuils.LongClickableSpan;
+import bhupendra.ai.launcher.tuils.system.CustomExceptionHandler;
+import bhupendra.ai.launcher.ui.views.LongClickableSpan;
 import bhupendra.ai.launcher.tuils.PrivateIOReceiver;
 import bhupendra.ai.launcher.tuils.PublicIOReceiver;
 import bhupendra.ai.launcher.tuils.SimpleMutableEntry;
@@ -73,7 +73,10 @@ import bhupendra.ai.launcher.ai.AISubsystem;
 import bhupendra.ai.launcher.ai.AndroidToolExecutor;
 import bhupendra.ai.launcher.managers.xml.options.Ai;
 import bhupendra.ai.launcher.tuils.interfaces.Reloadable;
+import dagger.hilt.android.AndroidEntryPoint;
+import javax.inject.Inject;
 
+@AndroidEntryPoint
 public class LauncherActivity extends AppCompatActivity implements Reloadable {
     private static CharSequence pendingReloadMessage;
 
@@ -85,7 +88,8 @@ public class LauncherActivity extends AppCompatActivity implements Reloadable {
     public static final int TUIXT_REQUEST = 10;
 
     private UIManager ui;
-    private MainManager main;
+    @Inject
+    MainManager main;
 
     private PrivateIOReceiver privateIOReceiver;
     private PublicIOReceiver publicIOReceiver;
@@ -367,7 +371,7 @@ public class LauncherActivity extends AppCompatActivity implements Reloadable {
             if(s != null) out.onOutput(TextProcessor.span(s, XMLPrefsManager.getColor(Theme.restart_message_color)));
         }
 
-        main = new MainManager(this);
+        // main is injected via Hilt
 
         try {
             String providerName = XMLPrefsManager.get(Ai.provider);

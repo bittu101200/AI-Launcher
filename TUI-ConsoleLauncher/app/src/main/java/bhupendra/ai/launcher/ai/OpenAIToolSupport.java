@@ -44,9 +44,17 @@ public final class OpenAIToolSupport {
             }
 
             int end = encoded.indexOf('_', i + 1);
-            if (end <= i) throw new IllegalArgumentException("Invalid encoded tool name: " + functionName);
-            decoded.append((char) Integer.parseInt(encoded.substring(i + 1, end), 16));
-            i = end;
+            if (end <= i) {
+                decoded.append('_');
+                continue;
+            }
+
+            try {
+                decoded.append((char) Integer.parseInt(encoded.substring(i + 1, end), 16));
+                i = end;
+            } catch (NumberFormatException e) {
+                decoded.append('_');
+            }
         }
         return decoded.toString();
     }

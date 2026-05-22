@@ -13,7 +13,7 @@ public enum Ai implements XMLPrefsSave {
     },
     provider {
         @Override public String defaultValue() { return "mock"; }
-        @Override public String info() { return "AI provider: opencode_zen, claude, openai, ollama, gemini, mock"; }
+        @Override public String info() { return "AI provider: opencode_zen, claude, openai, ollama, gemini, openrouter, mock"; }
         @Override public String type() { return XMLPrefsSave.TEXT; }
     },
     api_key {

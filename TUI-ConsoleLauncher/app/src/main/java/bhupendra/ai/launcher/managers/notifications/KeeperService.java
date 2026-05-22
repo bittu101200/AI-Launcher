@@ -16,6 +16,7 @@ import android.content.Intent;
 import android.os.Build;
 import android.os.Environment;
 import android.os.IBinder;
+import java.io.File;
 import androidx.core.app.NotificationCompat;
 import androidx.core.app.NotificationManagerCompat;
 import androidx.core.app.RemoteInput;
@@ -75,7 +76,8 @@ public class KeeperService extends Service {
             if(priority > 2) priority = 2;
             if(priority < -2) priority = -2;
 
-            String path = intent != null ? intent.getStringExtra(PATH_KEY) : FileSystemManager.getFolder().getAbsolutePath();
+            File folder = FileSystemManager.getFolder();
+            String path = intent != null ? intent.getStringExtra(PATH_KEY) : (folder != null ? folder.getAbsolutePath() : "");
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
                 startForeground(ONGOING_NOTIFICATION_ID, buildNotification(getApplicationContext(), title, subtitle, Tuils.getHint(path),
@@ -96,7 +98,8 @@ public class KeeperService extends Service {
 
             if(lastCommands != null) updateCmds(intent.getStringExtra(CMD_KEY));
 
-            String path = intent != null ? intent.getStringExtra(PATH_KEY) : FileSystemManager.getFolder().getAbsolutePath();
+            File folder = FileSystemManager.getFolder();
+            String path = intent != null ? intent.getStringExtra(PATH_KEY) : (folder != null ? folder.getAbsolutePath() : "");
 
             NotificationManagerCompat.from(getApplicationContext()).notify(KeeperService.ONGOING_NOTIFICATION_ID,
                     KeeperService.buildNotification(getApplicationContext(), title, subtitle, Tuils.getHint(path),

@@ -32,11 +32,8 @@ public class FileSystemManager {
     }
     public static int nOfBytes(File file) {
             int count = 0;
-            try {
-                FileInputStream in = new FileInputStream(file);
-    
+            try (FileInputStream in = new FileInputStream(file)) {
                 while(in.read() != -1) count++;
-    
                 return count;
             } catch (IOException e) {
                 Tuils.log(e);
@@ -82,32 +79,31 @@ public class FileSystemManager {
         }
 
     public static String inputStreamToString(InputStream is) {
-            java.util.Scanner s = new java.util.Scanner(is).useDelimiter("\\A");
+        try (java.util.Scanner s = new java.util.Scanner(is).useDelimiter("\\A")) {
             return s.hasNext() ? s.next() : Tuils.EMPTYSTRING;
         }
+    }
 
     public static String readerToString(Reader initialReader) throws IOException {
-            char[] arr = new char[8 * 1024];
-            StringBuilder buffer = new StringBuilder();
-            int numCharsRead;
-            while ((numCharsRead = initialReader.read(arr, 0, arr.length)) != -1) {
-                buffer.append(arr, 0, numCharsRead);
+            try (Reader r = initialReader) {
+                char[] arr = new char[8 * 1024];
+                StringBuilder buffer = new StringBuilder();
+                int numCharsRead;
+                while ((numCharsRead = r.read(arr, 0, arr.length)) != -1) {
+                    buffer.append(arr, 0, numCharsRead);
+                }
+                return buffer.toString();
             }
-            initialReader.close();
-            return buffer.toString();
         }
 
     public static void toFile(String s) {
-            try {
-                RandomAccessFile f = new RandomAccessFile(new File(FileSystemManager.getFolder(), "crash.txt"), "rw");
+            try (RandomAccessFile f = new RandomAccessFile(new File(FileSystemManager.getFolder(), "crash.txt"), "rw")) {
                 f.seek(0);
                 f.write((new Date().toString() + Tuils.NEWLINE + Tuils.NEWLINE).getBytes());
-                OutputStream is = Channels.newOutputStream(f.getChannel());
-                is.write(s.getBytes());
+                try (OutputStream is = Channels.newOutputStream(f.getChannel())) {
+                    is.write(s.getBytes());
+                }
                 f.write((Tuils.NEWLINE + Tuils.NEWLINE).getBytes());
-    
-                is.close();
-                f.close();
             } catch (Exception e1) {}
         }
 
@@ -124,20 +120,18 @@ public class FileSystemManager {
     //            is.close();
     //            f.close();
     
-            try {
-                FileOutputStream stream = new FileOutputStream(new File(FileSystemManager.getFolder(), "crash.txt"));
+            try (FileOutputStream stream = new FileOutputStream(new File(FileSystemManager.getFolder(), "crash.txt"))) {
                 stream.write((Tuils.NEWLINE + Tuils.NEWLINE).getBytes());
     
                 if(o instanceof Throwable) {
                     PrintStream ps = new PrintStream(stream);
                     ((Throwable) o).printStackTrace(ps);
+                    ps.flush();
                 } else {
                     stream.write(o.toString().getBytes());
                 }
     
                 stream.write((Tuils.NEWLINE + "----------------------------").getBytes());
-    
-                stream.close();
             } catch (Exception e1) {}
         }
 
@@ -174,37 +168,30 @@ public class FileSystemManager {
         }
 
     public static long download(InputStream in, File file) throws Exception {
-            OutputStream out = new FileOutputStream(file, false);
-    
+        try (InputStream input = in;
+             OutputStream out = new FileOutputStream(file, false)) {
             byte data[] = new byte[1024];
-    
             long bytes = 0;
-    
             int count;
-            while ((count = in.read(data)) != -1) {
+            while ((count = input.read(data)) != -1) {
                 out.write(data, 0, count);
                 bytes += count;
             }
-    
             out.flush();
-            out.close();
-            in.close();
-    
             return bytes;
         }
+    }
 
     public static void write(File file, String separator, String... ss) throws Exception {
-            FileOutputStream headerStream = new FileOutputStream(file, false);
-    
+        try (FileOutputStream headerStream = new FileOutputStream(file, false)) {
             for(int c = 0; c < ss.length - 1; c++) {
                 headerStream.write(ss[c].getBytes());
                 headerStream.write(separator.getBytes());
             }
             headerStream.write(ss[ss.length - 1].getBytes());
-    
             headerStream.flush();
-            headerStream.close();
         }
+    }
 
     public static void deleteContentOnly(File dir) {
             File[] files = dir.listFiles();
@@ -250,17 +237,16 @@ public class FileSystemManager {
         }
 
     public static String readFile(File file) throws IOException {
-        FileInputStream in = new FileInputStream(file);
-        String s = inputStreamToString(in);
-        in.close();
-        return s;
+        try (FileInputStream in = new FileInputStream(file)) {
+            return inputStreamToString(in);
+        }
     }
 
     public static void saveFile(File file, String content) throws IOException {
-        FileOutputStream out = new FileOutputStream(file, false);
-        out.write(content.getBytes());
-        out.flush();
-        out.close();
+        try (FileOutputStream out = new FileOutputStream(file, false)) {
+            out.write(content.getBytes());
+            out.flush();
+        }
     }
 
     public static void copyFile(File src, File dst) throws IOException {
@@ -268,20 +254,13 @@ public class FileSystemManager {
         if (parent != null && !parent.exists()) {
             parent.mkdirs();
         }
-        InputStream in = new FileInputStream(src);
-        try {
-            OutputStream out = new FileOutputStream(dst);
-            try {
-                byte[] buf = new byte[1024];
-                int len;
-                while ((len = in.read(buf)) > 0) {
-                    out.write(buf, 0, len);
-                }
-            } finally {
-                out.close();
+        try (InputStream in = new FileInputStream(src);
+             OutputStream out = new FileOutputStream(dst)) {
+            byte[] buf = new byte[1024];
+            int len;
+            while ((len = in.read(buf)) > 0) {
+                out.write(buf, 0, len);
             }
-        } finally {
-            in.close();
         }
     }
 

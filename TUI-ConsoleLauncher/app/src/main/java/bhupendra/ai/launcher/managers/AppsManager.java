@@ -55,6 +55,7 @@ import bhupendra.ai.launcher.managers.xml.XMLPrefsManager;
 import bhupendra.ai.launcher.managers.xml.classes.XMLPrefsElement;
 import bhupendra.ai.launcher.managers.xml.classes.XMLPrefsList;
 import bhupendra.ai.launcher.managers.xml.classes.XMLPrefsSave;
+import bhupendra.ai.launcher.managers.xml.classes.XMLPrefsEntry;
 import bhupendra.ai.launcher.managers.xml.options.Apps;
 import bhupendra.ai.launcher.managers.xml.options.Behavior;
 import bhupendra.ai.launcher.managers.xml.options.Theme;
@@ -905,7 +906,11 @@ public class AppsManager implements XMLPrefsElement {
     }
 
     public void unregisterReceiver(Context context) {
-        context.unregisterReceiver(appsBroadcast);
+        try {
+            context.unregisterReceiver(appsBroadcast);
+        } catch (IllegalArgumentException e) {
+            // Receiver not registered
+        }
     }
 
     public void onDestroy() {
@@ -1226,7 +1231,9 @@ public class AppsManager implements XMLPrefsElement {
 
                 final String PREFIX = "default_app_n";
                 for(int count = 0; count < MAX_SUGGESTED_SLOTS; count++) {
-                    String vl = values.get(Apps.valueOf(PREFIX + (count + 1))).value;
+                    Apps appEnum = Apps.valueOf(PREFIX + (count + 1));
+                    XMLPrefsEntry entry = values.get(appEnum);
+                    String vl = entry != null ? entry.value : appEnum.defaultValue();
 
                     if(vl.equals(Apps.NULL)) continue;
                     if(vl.equals(Apps.MOST_USED)) suggested.add(new SuggestedApp(MOST_USED, count + 1));

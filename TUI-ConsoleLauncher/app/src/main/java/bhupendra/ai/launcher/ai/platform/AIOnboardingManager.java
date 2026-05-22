@@ -190,6 +190,7 @@ public class AIOnboardingManager {
         Tuils.sendOutput(pack.context, "Please choose an AI provider by typing its name:", TerminalManager.CATEGORY_OUTPUT);
         Tuils.sendOutput(Color.GREEN, pack.context, "- opencode_zen (Recommended, OpenCode Zen endpoint; requires an API key)", TerminalManager.CATEGORY_OUTPUT);
         Tuils.sendOutput(Color.GREEN, pack.context, "- gemini (Recommended, fast & free tier)", TerminalManager.CATEGORY_OUTPUT);
+        Tuils.sendOutput(Color.GREEN, pack.context, "- openrouter (Free & paid models, e.g. google/gemini-2.5-flash:free)", TerminalManager.CATEGORY_OUTPUT);
         Tuils.sendOutput(Color.GREEN, pack.context, "- claude (Anthropic, powerful reasoning)", TerminalManager.CATEGORY_OUTPUT);
         Tuils.sendOutput(Color.GREEN, pack.context, "- openai (requires GPT-4o API key)", TerminalManager.CATEGORY_OUTPUT);
         Tuils.sendOutput(Color.GREEN, pack.context, "- ollama (local, requires server URL)", TerminalManager.CATEGORY_OUTPUT);
@@ -212,7 +213,7 @@ public class AIOnboardingManager {
                 return "Please complete the login in your browser. The launcher will automatically update when done.";
             }
 
-            if (input.equals("opencode_zen") || input.equals("gemini") || input.equals("openai") || input.equals("ollama") || input.equals("claude")) {
+            if (input.equals("opencode_zen") || input.equals("gemini") || input.equals("openrouter") || input.equals("openai") || input.equals("ollama") || input.equals("claude")) {
                 Ai.provider.parent().write(Ai.provider, input);
                 cleanup();
                 
@@ -223,7 +224,7 @@ public class AIOnboardingManager {
                 return null;
             } else {
                 afterObjects.clear();
-                return "Invalid choice. Please choose: opencode_zen, gemini, claude, openai, ollama, or login.";
+                return "Invalid choice. Please choose: opencode_zen, gemini, openrouter, claude, openai, ollama, or login.";
             }
         }
 

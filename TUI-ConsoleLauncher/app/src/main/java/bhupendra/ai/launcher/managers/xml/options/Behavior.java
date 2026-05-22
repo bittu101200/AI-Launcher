@@ -571,7 +571,8 @@ public enum Behavior implements XMLPrefsSave {
     home_path {
         @Override
         public String defaultValue() {
-            return FileSystemManager.getFolder().getAbsolutePath();
+            File folder = FileSystemManager.getFolder();
+            return folder != null ? folder.getAbsolutePath() : "";
         }
 
         @Override

@@ -7,7 +7,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 import bhupendra.ai.launcher.ai.ToolRiskClass;
-import bhupendra.ai.launcher.tuils.BeepPlayer;
+import bhupendra.ai.launcher.tuils.system.BeepPlayer;
 
 public class SystemBeepTool extends BaseAITool {
 

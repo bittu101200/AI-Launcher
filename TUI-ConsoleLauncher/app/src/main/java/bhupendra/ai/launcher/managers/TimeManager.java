@@ -70,6 +70,11 @@ public class TimeManager {
         return dateFormatList[index];
     }
 
+    public SimpleDateFormat getDateFormat(int index) {
+        Map.Entry<Integer, SimpleDateFormat> entry = get(index);
+        return entry != null ? entry.getValue() : null;
+    }
+
     public CharSequence replace(CharSequence cs) {
         return replace(cs, -1, TerminalManager.NO_COLOR);
     }

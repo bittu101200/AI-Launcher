@@ -24,10 +24,10 @@ public interface CommandContext {
     
     WifiManager getWifiManager();
     
-    ContactManager getContactManager();
-    MusicManager2 getMusicManager();
-    AliasManager getAliasManager();
-    AppsManager getAppsManager();
+    @Deprecated ContactManager getContactManager();
+    @Deprecated MusicManager2 getMusicManager();
+    @Deprecated AliasManager getAliasManager();
+    @Deprecated AppsManager getAppsManager();
     CommandsPreferences getCmdPrefs();
     
     String getLastCommand();
@@ -35,10 +35,10 @@ public interface CommandContext {
     
     Redirectator getRedirectator();
     ShellHolder getShellHolder();
-    RssManager getRssManager();
-    OkHttpClient getHttpClient();
+    @Deprecated RssManager getRssManager();
+    @Deprecated OkHttpClient getHttpClient();
     
-    AISubsystem getAiSubsystem();
+    @Deprecated AISubsystem getAiSubsystem();
     
     int getCommandColor();
     void setCommandColor(int color);

@@ -250,6 +250,7 @@ public class DeviceStateManager {
                     context.unregisterReceiver(batteryReceiver);
                     batteryReceiver = null;
                 }
+                batteryUpdate = null;
             } catch (Exception ignored) {}
         }
 
